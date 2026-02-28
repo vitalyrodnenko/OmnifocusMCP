@@ -246,7 +246,7 @@ Reference implementations:
           Projects and subfolders are direct children only.
         - Implement and test in all 3 implementations.
 
-17. [ ] **`update_folder`** — all 3 implementations.
+17. [x] **`update_folder`** — all 3 implementations.
         - **Input:** `folder_name_or_id: str` (non-empty),
           `name: str | null` (new name),
           `status: str | null` (one of: "active", "dropped")
