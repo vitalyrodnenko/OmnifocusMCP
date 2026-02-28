@@ -1,7 +1,7 @@
 use std::{
     future::Future,
     pin::Pin,
-    time::{SystemTime, UNIX_EPOCH},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use omnifocus_mcp::{
@@ -24,6 +24,7 @@ use omnifocus_mcp::{
     },
 };
 use serde_json::Value;
+use tokio::time::sleep;
 
 struct SmokeTest {
     total: usize,
@@ -592,12 +593,16 @@ impl SmokeTest {
                 "delete_tasks_batch summary did not confirm deleting all three tasks.".to_string(),
             ));
         }
-        for id in &batch_ids {
-            if get_task(runner, id).await.is_ok() {
-                return Err(OmniFocusError::Validation(
-                    "delete_tasks_batch did not remove one or more tasks.".to_string(),
-                ));
-            }
+        let delete_items = require_array(&delete_result, "delete_tasks_batch result entries")?;
+        if delete_items.len() != 3
+            || delete_items
+                .iter()
+                .any(|item| item.get("deleted").and_then(Value::as_bool) != Some(true))
+        {
+            return Err(OmniFocusError::Validation(
+                "delete_tasks_batch result entries did not confirm all tasks were deleted."
+                    .to_string(),
+            ));
         }
         for id in batch_ids {
             self.created_task_ids.retain(|existing| existing != &id);
