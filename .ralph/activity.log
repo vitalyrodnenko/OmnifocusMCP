@@ -317,3 +317,84 @@ EOF
 ═══════════════════════════════════════════════════════════════
 Ralph Session Started: Fri Feb 27 22:58:58 CST 2026
 ═══════════════════════════════════════════════════════════════
+[22:59:01] 🟢 SESSION START: model=Auto
+[22:59:08] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/guardrails.md (28 lines, ~2.7KB)
+[22:59:08] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/RALPH_TASK.md (367 lines, ~35.8KB)
+[22:59:08] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/errors.log (5 lines, ~.4KB)
+[22:59:08] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/progress.md (295 lines, ~28.8KB)
+[22:59:11] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/activity.log (325 lines, ~31.7KB)
+[22:59:14] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/tests/conftest.py (30 lines, ~2.9KB)
+[22:59:14] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/src/omnifocus_mcp/server.py (627 lines, ~61.2KB)
+[22:59:14] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/src/omnifocus_mcp/jxa.py (102 lines, ~9.9KB)
+[22:59:36] 🟢 TOKENS: 45482 / 80000 (56%) [read:173KB write:0KB assist:1KB shell:0KB]
+[22:59:41] 🟢 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[22:59:44] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/progress.md (295 lines, ~28.8KB)
+[22:59:48] 🟡 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/progress.md (295 lines, ~28.8KB)
+[22:59:50] 🟡 SHELL date '+%Y-%m-%d %H:%M:%S' → exit 0
+[23:00:06] 🟡 TOKENS: 60320 / 80000 (75%) - approaching limit [read:231KB write:0KB assist:1KB shell:0KB]
+[23:00:07] 🟡 SHELL git log --oneline -n 6 → exit 0
+[23:00:07] 🟡 SHELL git diff -- . ':(exclude).ralph/activity.log' → exit 0
+[23:00:07] 🟡 SHELL git status --short → exit 0
+[23:00:16] 🟡 SHELL git add "python/src/omnifocus_mcp/server.py" "RALPH_TASK.md" ".ralph/progress.md" && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: implement create_tasks_batch write tool
+
+Add a batch task creation tool that validates each task definition and creates all items in a single OmniJS execution for better performance. This marks criterion 30 complete and updates Ralph progress tracking to criterion 31.
+EOF
+)" && git status --short → exit 0
+[23:00:27] 🟡 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[23:00:29] 🟡 SHELL date '+%Y-%m-%d %H:%M:%S' → exit 0
+[23:00:39] 🟡 TOKENS: 60369 / 80000 (75%) - approaching limit [read:231KB write:0KB assist:1KB shell:0KB]
+[23:00:43] 🟡 SHELL git log --oneline -n 6 → exit 0
+[23:00:43] 🟡 SHELL git diff -- . ':(exclude).ralph/activity.log' → exit 0
+[23:00:43] 🟡 SHELL git status --short → exit 0
+[23:00:47] 🟡 SHELL git add "python/src/omnifocus_mcp/server.py" "RALPH_TASK.md" ".ralph/progress.md" && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: implement complete_task write tool
+
+Add complete_task to resolve tasks by stable id, call markComplete in OmniJS, and return a confirmation payload with the completed task identity. This marks criterion 31 complete and advances Ralph tracking to criterion 32.
+EOF
+)" && git status --short → exit 0
+[23:00:50] 🟡 SHELL git push → exit 0
+[23:01:11] 🟡 TOKENS: 60453 / 80000 (75%) - approaching limit [read:231KB write:0KB assist:1KB shell:0KB]
+[23:01:16] 🟡 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[23:01:18] 🟡 SHELL date '+%Y-%m-%d %H:%M:%S' → exit 0
+[23:01:30] 🟡 SHELL git status --short → exit 0
+[23:01:31] 🟡 SHELL git log --oneline -n 6 → exit 0
+[23:01:31] 🟡 SHELL git diff -- . ':(exclude).ralph/activity.log' → exit 0
+[23:01:34] 🟡 SHELL git add "python/src/omnifocus_mcp/server.py" "RALPH_TASK.md" ".ralph/progress.md" && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: implement update_task write tool
+
+Add update_task with selective field mutation so omitted fields are preserved, and support tag replacement in a single OmniJS call keyed by task id. This marks criterion 32 complete and advances tracking to criterion 33.
+EOF
+)" && git status --short → exit 0
+[23:01:41] 🟡 TOKENS: 60493 / 80000 (75%) - approaching limit [read:231KB write:0KB assist:2KB shell:0KB]
+[23:01:46] 🟡 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[23:01:49] 🟡 SHELL date '+%Y-%m-%d %H:%M:%S' → exit 0
+[23:02:00] 🟡 SHELL git diff -- . ':(exclude).ralph/activity.log' → exit 0
+[23:02:00] 🟡 SHELL git status --short → exit 0
+[23:02:00] 🟡 SHELL git log --oneline -n 6 → exit 0
+[23:02:03] 🟡 SHELL git add "python/src/omnifocus_mcp/server.py" "RALPH_TASK.md" ".ralph/progress.md" && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: implement delete_task write tool
+
+Add delete_task to remove tasks by stable id and return deletion confirmation, including an explicit warning when the deleted task had children. This marks criterion 33 complete and advances tracking to criterion 34.
+EOF
+)" && git status --short → exit 0
+[23:02:08] 🟡 SHELL git push → exit 0
+[23:02:12] 🟡 TOKENS: 60493 / 80000 (75%) - approaching limit [read:231KB write:0KB assist:2KB shell:0KB]
+[23:02:22] 🟡 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[23:02:25] 🟡 SHELL date '+%Y-%m-%d %H:%M:%S' → exit 0
+[23:02:38] 🟡 SHELL git log --oneline -n 6 → exit 0
+[23:02:38] 🟡 SHELL git status --short → exit 0
+[23:02:38] 🟡 SHELL git diff -- . ':(exclude).ralph/activity.log' → exit 0
+[23:02:41] 🟡 SHELL git add "python/src/omnifocus_mcp/server.py" "RALPH_TASK.md" ".ralph/progress.md" && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: implement move_task write tool
+
+Add move_task to relocate tasks by stable id to either a named project or inbox, with clear not-found errors and confirmation of destination state. This marks criterion 34 complete and advances progress to criterion 35.
+EOF
+)" && git status --short → exit 0
+[23:02:46] 🟡 TOKENS: 60539 / 80000 (75%) - approaching limit [read:231KB write:0KB assist:2KB shell:0KB]
+[23:02:50] 🟡 SESSION END: 228854ms, ~60882 tokens used
+[23:02:50] 🟡 TOKENS: 60882 / 80000 (76%) - approaching limit [read:231KB write:0KB assist:3KB shell:0KB]
+
+═══════════════════════════════════════════════════════════════
+Ralph Session Started: Fri Feb 27 23:02:53 CST 2026
+═══════════════════════════════════════════════════════════════
