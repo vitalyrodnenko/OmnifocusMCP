@@ -2,6 +2,7 @@ from omnifocus_mcp.app import mcp
 from omnifocus_mcp.jxa import run_omnijs  # noqa: F401
 from omnifocus_mcp.registration import typed_tool
 
+
 @typed_tool(mcp)
 async def ping() -> dict[str, str]:
     return {"status": "ok", "message": "pong"}

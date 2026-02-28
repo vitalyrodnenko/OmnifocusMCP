@@ -2,7 +2,7 @@ import json
 
 from omnifocus_mcp.jxa import escape_for_jxa, run_omnijs
 from omnifocus_mcp.registration import typed_tool
-from omnifocus_mcp.server import mcp
+from omnifocus_mcp.app import mcp
 
 
 @typed_tool(mcp)
