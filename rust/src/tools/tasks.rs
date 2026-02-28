@@ -2121,69 +2121,50 @@ const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId)
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
-const insertionLocation = (() => {{
-  if (task.containingTask) return task.containingTask.ending;
-  if (task.containingProject) return task.containingProject.ending;
-  return inbox.ending;
+const insertionLocation = task.containingProject ? task.containingProject.ending : inbox.ending;
+const clonedTask = (() => {{
+  if (includeChildren) {{
+    const duplicates = duplicateTasks([task], insertionLocation);
+    return duplicates && duplicates.length > 0 ? duplicates[0] : null;
+  }}
+  const manualClone = new Task(task.name, insertionLocation);
+  manualClone.note = task.note;
+  manualClone.flagged = task.flagged;
+  manualClone.dueDate = task.dueDate;
+  manualClone.deferDate = task.deferDate;
+  manualClone.estimatedMinutes = task.estimatedMinutes;
+  task.tags.forEach(tag => {{
+    manualClone.addTag(tag);
+  }});
+  return manualClone;
 }})();
-
-const taskStatusValue = (taskItem) => {{
-  const s = String(taskItem.taskStatus);
-  if (s.includes("Available")) return "available";
-  if (s.includes("Blocked")) return "blocked";
-  if (s.includes("Next")) return "next";
-  if (s.includes("DueSoon")) return "due_soon";
-  if (s.includes("Overdue")) return "overdue";
-  if (s.includes("Completed")) return "completed";
-  if (s.includes("Dropped")) return "dropped";
-  return "unknown";
-}};
-
-const plannedDateValue = (taskItem) => {{
-  try {{
-    return taskItem.plannedDate ? taskItem.plannedDate.toISOString() : null;
-  }} catch (e) {{
-    return null;
-  }}
-}};
-
-let duplicatedTask;
-if (includeChildren) {{
-  const duplicated = duplicateTasks([task], insertionLocation);
-  if (!duplicated || duplicated.length === 0) {{
-    throw new Error("Failed to duplicate task.");
-  }}
-  duplicatedTask = duplicated[0];
-}} else {{
-  duplicatedTask = new Task(task.name, insertionLocation);
-  duplicatedTask.note = task.note;
-  duplicatedTask.flagged = task.flagged;
-  duplicatedTask.dueDate = task.dueDate;
-  duplicatedTask.deferDate = task.deferDate;
-  duplicatedTask.estimatedMinutes = task.estimatedMinutes;
-  task.tags.forEach(tag => duplicatedTask.addTag(tag));
-  try {{
-    duplicatedTask.plannedDate = task.plannedDate;
-  }} catch (e) {{
-  }}
+if (!clonedTask) {{
+  throw new Error(`Failed to duplicate task: ${{taskId}}`);
 }}
-
 return {{
-  id: duplicatedTask.id.primaryKey,
-  name: duplicatedTask.name,
-  note: duplicatedTask.note,
-  flagged: duplicatedTask.flagged,
-  dueDate: duplicatedTask.dueDate ? duplicatedTask.dueDate.toISOString() : null,
-  deferDate: duplicatedTask.deferDate ? duplicatedTask.deferDate.toISOString() : null,
-  completed: duplicatedTask.completed,
-  completionDate: duplicatedTask.completionDate ? duplicatedTask.completionDate.toISOString() : null,
-  plannedDate: plannedDateValue(duplicatedTask),
-  projectName: duplicatedTask.containingProject ? duplicatedTask.containingProject.name : null,
-  inInbox: duplicatedTask.inInbox,
-  tags: duplicatedTask.tags.map(tag => tag.name),
-  estimatedMinutes: duplicatedTask.estimatedMinutes,
-  hasChildren: duplicatedTask.hasChildren,
-  taskStatus: taskStatusValue(duplicatedTask)
+  id: clonedTask.id.primaryKey,
+  name: clonedTask.name,
+  note: clonedTask.note,
+  flagged: clonedTask.flagged,
+  dueDate: clonedTask.dueDate ? clonedTask.dueDate.toISOString() : null,
+  deferDate: clonedTask.deferDate ? clonedTask.deferDate.toISOString() : null,
+  completed: clonedTask.completed,
+  completionDate: clonedTask.completionDate ? clonedTask.completionDate.toISOString() : null,
+  projectName: clonedTask.containingProject ? clonedTask.containingProject.name : null,
+  tags: clonedTask.tags.map(tag => tag.name),
+  estimatedMinutes: clonedTask.estimatedMinutes,
+  hasChildren: clonedTask.hasChildren,
+  taskStatus: (() => {{
+    const s = String(clonedTask.taskStatus);
+    if (s.includes("Available")) return "available";
+    if (s.includes("Blocked")) return "blocked";
+    if (s.includes("Next")) return "next";
+    if (s.includes("DueSoon")) return "due_soon";
+    if (s.includes("Overdue")) return "overdue";
+    if (s.includes("Completed")) return "completed";
+    if (s.includes("Dropped")) return "dropped";
+    return "unknown";
+  }})()
 }};"#
     );
 
