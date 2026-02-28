@@ -112,7 +112,9 @@ impl SmokeTest {
     }
 
     async fn check_read_tools<R: JxaRunner>(&mut self, runner: &R) -> Result<()> {
-        let inbox_items = get_inbox(runner, 20).await?;
+        let inbox_items = get_inbox(runner, 20)
+            .await
+            .map_err(|error| OmniFocusError::Validation(format!("get_inbox failed: {error}")))?;
         if let Some(first) = inbox_items.first() {
             if first.id.trim().is_empty() || first.name.trim().is_empty() {
                 return Err(OmniFocusError::Validation(
@@ -135,13 +137,18 @@ impl SmokeTest {
                 None,
                 None,
             )
-            .await?;
+            .await
+            .map_err(|error| {
+                OmniFocusError::Validation(format!("create_task fallback failed: {error}"))
+            })?;
             let created_id = require_string_key(&created, "id", "create_task fallback result")?;
             self.created_task_ids.push(created_id.to_string());
             created_id.to_string()
         };
 
-        let task_value = get_task(runner, &task_id).await?;
+        let task_value = get_task(runner, &task_id)
+            .await
+            .map_err(|error| OmniFocusError::Validation(format!("get_task failed: {error}")))?;
         let task_obj = require_object(&task_value, "get_task result")?;
         self.require_keys(
             task_obj,
@@ -149,7 +156,11 @@ impl SmokeTest {
             "get_task result",
         )?;
 
-        let projects_value = list_projects(runner, None, "active", 50).await?;
+        let projects_value = list_projects(runner, None, "active", 10)
+            .await
+            .map_err(|error| {
+                OmniFocusError::Validation(format!("list_projects failed: {error}"))
+            })?;
         let projects = require_array(&projects_value, "list_projects result")?;
         let project_id = if let Some(first) = projects.first() {
             require_string_key(first, "id", "list_projects item")?.to_string()
@@ -163,23 +174,36 @@ impl SmokeTest {
                 None,
                 Some(false),
             )
-            .await?;
+            .await
+            .map_err(|error| {
+                OmniFocusError::Validation(format!("create_project fallback failed: {error}"))
+            })?;
             let created_id = require_string_key(&created, "id", "create_project fallback result")?;
             self.created_project_ids.push(created_id.to_string());
             created_id.to_string()
         };
-        let _ = get_project(runner, &project_id).await?;
+        let _ = get_project(runner, &project_id).await.map_err(|error| {
+            OmniFocusError::Validation(format!("get_project failed: {error}"))
+        })?;
 
-        let _ = list_tags(runner, 50).await?;
-        let _ = list_folders(runner, 50).await?;
-        let forecast = get_forecast(runner, 50).await?;
+        let _ = list_tags(runner, 20)
+            .await
+            .map_err(|error| OmniFocusError::Validation(format!("list_tags failed: {error}")))?;
+        let _ = list_folders(runner, 20)
+            .await
+            .map_err(|error| OmniFocusError::Validation(format!("list_folders failed: {error}")))?;
+        let forecast = get_forecast(runner, 20).await.map_err(|error| {
+            OmniFocusError::Validation(format!("get_forecast failed: {error}"))
+        })?;
         let forecast_obj = require_object(&forecast, "get_forecast result")?;
         self.require_keys(
             forecast_obj,
             &["overdue", "dueToday", "flagged"],
             "get_forecast result",
         )?;
-        let _ = list_perspectives(runner, 50).await?;
+        let _ = list_perspectives(runner, 20).await.map_err(|error| {
+            OmniFocusError::Validation(format!("list_perspectives failed: {error}"))
+        })?;
         Ok(())
     }
 
