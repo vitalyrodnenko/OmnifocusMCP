@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 3
-- Current status: Phase 3 in progress (criteria 16-24 complete).
+- Current status: Phase 3 in progress (criteria 16-26 complete).
 
 ## How This Works
 
@@ -19,14 +19,14 @@ This is how Ralph maintains continuity across iterations.
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
-| 3     | Python: Read Tools + Tests        | 16–28     | 9/13 |
+| 3     | Python: Read Tools + Tests        | 16–28     | 11/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 24 / 75 criteria complete**
+**Total: 26 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -229,3 +229,26 @@ This is how Ralph maintains continuity across iterations.
   - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 3 criterion 25 (`list_perspectives`)
+
+### 2026-02-28 05:04:20
+**Session 4 update**
+- completed phase 3 criterion 25 (`list_perspectives`)
+- extended `python/src/omnifocus_mcp/server.py` with `list_perspectives(limit=100)`:
+  - validates positive `limit`
+  - collects perspectives from built-in and document sources
+  - normalizes each perspective to `{id, name}` and de-duplicates by id
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 3 criterion 26 (read-tool happy-path tests)
+
+### 2026-02-28 05:08:35
+**Session 4 update**
+- completed phase 3 criterion 26 (read-tool happy-path tests)
+- added `python/tests/test_tools_read.py` with mocked `run_omnijs` tests for all phase 3 read tools:
+  - `get_inbox`, `list_tasks`, `get_task`, `search_tasks`
+  - `list_projects`, `get_project`, `list_tags`, `list_folders`
+  - `get_forecast`, `list_perspectives`
+- added test-local `FastMCP` stubbing so `omnifocus_mcp.server` imports cleanly in this environment
+- re-ran full command from `RALPH_TASK.md`; all checks passed
+- next up: phase 3 criterion 27 (error-path read-tool tests)

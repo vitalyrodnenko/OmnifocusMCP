@@ -193,12 +193,12 @@ parameter (default 100).
         `parentName`, `projectCount`.
 24. [x] Tool `get_forecast` — today's dashboard: overdue + due today +
         flagged tasks, grouped by section.
-25. [ ] Tool `list_perspectives` — available perspectives (built-in + custom):
+25. [x] Tool `list_perspectives` — available perspectives (built-in + custom):
         `id`, `name`.
 
 ### Tests (Phase 3)
 
-26. [ ] Happy-path tests for every read tool (mocked `run_omnijs`): mock
+26. [x] Happy-path tests for every read tool (mocked `run_omnijs`): mock
         returns realistic JSON → verify correct parsing, field mapping,
         and return shape. One test per tool minimum.
 27. [ ] Error-path tests: task not found by ID → error response. Invalid
