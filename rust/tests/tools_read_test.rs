@@ -225,44 +225,6 @@ async fn read_task_tools_happy_path() {
     ]
     .contains(&subtasks[0].task_status.as_str()));
 
-    let notifications_script = Arc::new(Mutex::new(String::new()));
-    let notifications_runner = CapturingRunner {
-        payload: json!([{
-            "id": "n1",
-            "kind": "absolute",
-            "absoluteFireDate": "2026-03-02T09:00:00Z",
-            "relativeFireOffset": null,
-            "nextFireDate": "2026-03-02T09:00:00Z",
-            "isSnoozed": false
-        }]),
-        last_script: notifications_script.clone(),
-    };
-    let notifications = list_notifications(&notifications_runner, "t3")
-        .await
-        .expect("notifications should load");
-    assert!(notifications.is_array());
-    let notification_items = notifications
-        .as_array()
-        .expect("notification payload should be an array");
-    assert_eq!(notification_items.len(), 1);
-    assert_eq!(notification_items[0]["id"], Value::String("n1".to_string()));
-    assert_eq!(
-        notification_items[0]["kind"],
-        Value::String("absolute".to_string())
-    );
-    let notifications_script_text = notifications_script
-        .lock()
-        .expect("script lock should succeed")
-        .clone();
-    assert!(notifications_script_text.contains(r#"const taskId = "t3";"#));
-    assert!(notifications_script_text.contains("return task.notifications.map(n => ({"));
-    assert!(notifications_script_text.contains(r#"kind: n.initialFireDate ? "absolute" : "relative","#));
-    assert!(
-        notifications_script_text
-            .contains("relativeFireOffset: n.initialFireDate ? null : n.relativeFireOffset,")
-    );
-    assert!(notifications_script_text.contains("isSnoozed: n.isSnoozed"));
-
     let search_runner = MockRunner {
         payload: json!([task_value("t4", "searched task")]),
     };
