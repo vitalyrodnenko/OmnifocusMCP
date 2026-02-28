@@ -267,3 +267,9 @@ This is how Ralph maintains continuity across iterations.
 - reran the Ralph test command from `RALPH_TASK.md` after the guide change; python checks/tests and TypeScript typecheck/tests all passed
 - marked criterion 26 complete in `RALPH_TASK.md`
 - next focus: implement criterion 27 (`docs/development-docker.md` and root Docker setup)
+
+### 2026-02-28 10:36:00
+- completed criterion 27 by adding a root `Dockerfile` (Node 20 + Python 3 + `uv`) and creating `docs/development-docker.md` with explicit dev/ci-only scope, container commands for lint/typecheck/tests, and a GitHub Actions example
+- reran the Ralph test command from `RALPH_TASK.md`; all python and TypeScript checks/tests passed after Docker documentation changes
+- marked criterion 27 complete in `RALPH_TASK.md`
+- next focus: implement criterion 28 (top-level `README.md` quick start and full capabilities table)

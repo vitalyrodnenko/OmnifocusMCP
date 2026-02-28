@@ -207,7 +207,7 @@ running mocked tests). The Docker guide must explain this clearly.
           and generic `stdio`. Use: `node /absolute/path/to/typescript/dist/index.js`
         - Troubleshooting section: OmniFocus not running, permission
           denied, Node version mismatch, build errors
-27. [ ] Create `docs/development-docker.md` with:
+27. [x] Create `docs/development-docker.md` with:
         - Clear upfront note: Docker is for **development and CI only**,
           not for running the server (explain why: `osascript` requires
           macOS host access)
