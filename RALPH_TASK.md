@@ -227,7 +227,7 @@ write tools return confirmation with the affected item's current state.
         fields change. Returns updated task.
 33. [x] Tool `delete_task` — drops/removes by `id`. Warns if task has
         children. Returns confirmation.
-34. [ ] Tool `move_task` — moves task to a different project (by name) or
+34. [x] Tool `move_task` — moves task to a different project (by name) or
         back to inbox. Returns confirmation.
 35. [ ] Tool `create_project` — required `name`, optional `folder` (name),
         `note`, `dueDate`, `deferDate`, `sequential` (bool). Returns `{id}`.

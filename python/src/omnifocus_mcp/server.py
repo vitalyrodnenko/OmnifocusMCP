@@ -882,3 +882,46 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def move_task(task_id: str, project: str | None = None) -> str:
+    """move a task to a named project or back to inbox.
+
+    accepts a task id and optional project name. when project is omitted, the
+    task is moved to inbox.
+    """
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+
+    task_id_value = escape_for_jxa(task_id.strip())
+    project_value = "null" if project is None else escape_for_jxa(project.strip())
+
+    script = f"""
+const taskId = {task_id_value};
+const projectName = {project_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const destination = (() => {{
+  if (projectName === null || projectName === "") return inbox.ending;
+  const targetProject = document.flattenedProjects.byName(projectName);
+  if (!targetProject) {{
+    throw new Error(`Project not found: ${{projectName}}`);
+  }}
+  return targetProject.ending;
+}})();
+
+task.move(destination);
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  inInbox: task.inInbox
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

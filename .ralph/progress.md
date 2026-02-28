@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 5
-- Current status: Phase 4 in progress (criterion 33 complete; next 34).
+- Current status: Phase 4 in progress (criterion 34 complete; next 35).
 
 ## How This Works
 
@@ -20,13 +20,13 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
-| 4     | Python: Write Tools + Tests       | 29–43     | 5/15 |
+| 4     | Python: Write Tools + Tests       | 29–43     | 6/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 33 / 75 criteria complete**
+**Total: 34 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -341,3 +341,15 @@ This is how Ralph maintains continuity across iterations.
   - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 4 criterion 34 (`move_task`)
+
+### 2026-02-27 23:02:25
+**Session 5 update**
+- completed phase 4 criterion 34 (`move_task`)
+- extended `python/src/omnifocus_mcp/server.py` with `move_task(task_id, project)`:
+  - validates non-empty task id and resolves source task by `id.primaryKey`
+  - moves task to a target project by name or to inbox when project is omitted
+  - returns move confirmation including resulting `projectName` and `inInbox`
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 4 criterion 35 (`create_project`)
