@@ -352,7 +352,7 @@ See individual phase criteria below.
 
 ### Success Criteria
 
-17. [ ] **Enrich `get_forecast` response** — all 3 implementations.
+17. [x] **Enrich `get_forecast` response** — all 3 implementations.
         - Add `completionDate` and `hasChildren` to all task summaries
           in the forecast response.
         - Add new section `deferred`: tasks where deferDate is in the
@@ -376,7 +376,7 @@ See individual phase criteria below.
           present, counts object present.
         - All lint/test commands pass.
 
-18. [ ] All lint and test commands pass for Phase 5 (same as criterion 6).
+18. [x] All lint and test commands pass for Phase 5 (same as criterion 6).
 
 ---
 

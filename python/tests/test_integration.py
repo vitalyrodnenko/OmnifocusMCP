@@ -249,7 +249,7 @@ async def test_read_tools_return_valid_json(cleanup_registry: dict[str, list[str
 
     forecast = _parse_json(await get_forecast(limit=20))
     assert isinstance(forecast, dict)
-    _assert_keys(forecast, {"overdue", "dueToday", "flagged"})
+    _assert_keys(forecast, {"overdue", "dueToday", "flagged", "deferred", "dueThisWeek", "counts"})
 
     perspectives = _parse_json(await list_perspectives(limit=20))
     assert isinstance(perspectives, list)

@@ -55,6 +55,47 @@ describe("tool happy paths", () => {
     expect(String(runOmniJsMock.mock.calls[0][0])).toContain("const tasks = inbox");
   });
 
+  test("get_forecast returns enriched sections and counts", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      overdue: [{ id: "t1", completionDate: null, hasChildren: false }],
+      dueToday: [{ id: "t2", completionDate: null, hasChildren: true }],
+      flagged: [{ id: "t3", completionDate: null, hasChildren: false }],
+      deferred: [{ id: "t4", completionDate: null, hasChildren: false }],
+      dueThisWeek: [{ id: "t5", completionDate: null, hasChildren: false }],
+      counts: {
+        overdueCount: 2,
+        dueTodayCount: 1,
+        flaggedCount: 3,
+        deferredCount: 4,
+        dueThisWeekCount: 5,
+      },
+    });
+    const handler = registeredTools.get("get_forecast");
+    expect(handler).toBeDefined();
+    const result = await handler!({ limit: 6 });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      overdue: [{ id: "t1", completionDate: null, hasChildren: false }],
+      dueToday: [{ id: "t2", completionDate: null, hasChildren: true }],
+      flagged: [{ id: "t3", completionDate: null, hasChildren: false }],
+      deferred: [{ id: "t4", completionDate: null, hasChildren: false }],
+      dueThisWeek: [{ id: "t5", completionDate: null, hasChildren: false }],
+      counts: {
+        overdueCount: 2,
+        dueTodayCount: 1,
+        flaggedCount: 3,
+        deferredCount: 4,
+        dueThisWeekCount: 5,
+      },
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain("const dueThisWeek = [];");
+    expect(script).toContain("const deferred = [];");
+    expect(script).toContain("const counts = {");
+    expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
+    expect(script).toContain("hasChildren: task.hasChildren");
+    expect(script).toContain("if (dueThisWeek.length < 6) dueThisWeek.push(toTaskSummary(task));");
+  });
+
   test("list_tasks builds filtered script and returns payload", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "t1", name: "Task 1" }]);
     const handler = registeredTools.get("list_tasks");

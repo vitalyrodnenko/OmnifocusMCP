@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772313553
-generated_at: 2026-02-28T21:19:18Z
+source_mtime: 1772313710
+generated_at: 2026-02-28T21:22:03Z
 
 tasks:
   - id: "line_108"
@@ -121,14 +121,14 @@ tasks:
     raw_marker: 16.
   - id: "line_355"
     line_number: 355
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Enrich `get_forecast` response** — all 3 implementations.
     indent_level: 0
     raw_marker: 17.
   - id: "line_379"
     line_number: 379
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All lint and test commands pass for Phase 5 (same as criterion 6).
     indent_level: 0

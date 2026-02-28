@@ -1022,7 +1022,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "get forecast sections and tasks.")]
+    #[tool(
+        description = "get forecast sections for overdue, due today, flagged, deferred, and due-this-week tasks."
+    )]
     async fn get_forecast(
         &self,
         Parameters(params): Parameters<LimitParams>,

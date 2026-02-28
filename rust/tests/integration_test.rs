@@ -333,7 +333,17 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
     }
 
     let forecast = get_forecast(&runner, 20).await?;
-    assert_has_keys(&forecast, &["overdue", "dueToday", "flagged"]);
+    assert_has_keys(
+        &forecast,
+        &[
+            "overdue",
+            "dueToday",
+            "flagged",
+            "deferred",
+            "dueThisWeek",
+            "counts",
+        ],
+    );
 
     let perspectives = list_perspectives(&runner, 20).await?;
     let perspectives_array = require_array(&perspectives, "list_perspectives result");

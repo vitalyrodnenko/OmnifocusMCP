@@ -18,8 +18,7 @@ const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 const endOfToday = new Date(startOfToday.getTime() + (24 * 60 * 60 * 1000));
 const endOfWeek = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
 
-const toTaskSummary = (task) => {{
-  return {{
+const toTaskSummary = task => ({
     id: task.id.primaryKey,
     name: task.name,
     note: task.note,
@@ -32,8 +31,7 @@ const toTaskSummary = (task) => {{
     tags: task.tags.map(tag => tag.name),
     estimatedMinutes: task.estimatedMinutes,
     hasChildren: task.hasChildren
-  }};
-}};
+});
 
 const openTasks = document.flattenedTasks.filter(task => !task.completed);
 const overdue = [];
@@ -73,14 +71,7 @@ openTasks.forEach(task => {{
   }}
 }});
 
-return {{
-  overdue: overdue,
-  dueToday: dueToday,
-  flagged: flagged,
-  deferred: deferred,
-  dueThisWeek: dueThisWeek,
-  counts: counts
-}};"#
+return { overdue, dueToday, flagged, deferred, dueThisWeek, counts };"#
     );
 
     runner.run_omnijs(&script).await
