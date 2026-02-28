@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 12
-- Current status: Phase 5 in progress (criterion 46 complete; next 47).
+- Current status: Phase 5 in progress (criterion 47 complete; next 48).
 
 ## How This Works
 
@@ -21,12 +21,12 @@ This is how Ralph maintains continuity across iterations.
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
-| 5     | Python: Resources & Prompts + Tests | 44–53   | 3/10 |
+| 5     | Python: Resources & Prompts + Tests | 44–53   | 4/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 46 / 75 criteria complete**
+**Total: 47 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -560,8 +560,25 @@ This is how Ralph maintains continuity across iterations.
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 5 criterion 47 (`daily_review` prompt)
 
+### 2026-02-27 23:35:00
+**Session 14 update**
+- reconciled task tracking by marking phase 5 criterion 45 complete in `RALPH_TASK.md`
+- verified full validation command still passes after state update:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 5 criterion 47 (`daily_review` prompt)
+
 ### 2026-02-27 23:11:58
 **Session 14 ended** - 🔄 Context rotation (token limit reached)
 
 ### 2026-02-27 23:12:00
 **Session 15 started** (model: auto)
+
+### 2026-02-27 23:17:55
+**Session 15 update**
+- completed phase 5 criterion 47 by adding `daily_review` prompt in `python/src/omnifocus_mcp/server.py`
+- prompt gathers due-soon, overdue, and flagged task sets and returns a prioritization-focused review template
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 5 criterion 48 (`weekly_review` prompt)
