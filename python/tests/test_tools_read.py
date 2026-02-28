@@ -287,6 +287,34 @@ async def test_get_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[
 
 
 @pytest.mark.asyncio
+async def test_list_subtasks_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = [
+        {
+            "id": "st1",
+            "name": "Child task",
+            "note": "detail",
+            "flagged": False,
+            "dueDate": None,
+            "deferDate": None,
+            "completed": False,
+            "tags": ["home"],
+            "estimatedMinutes": 10,
+            "hasChildren": False,
+        }
+    ]
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.list_subtasks(task_id="t3", limit=4)
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const taskId = "t3";' in state["calls"][0]["script"]
+    assert "const subtasks = task.children.slice(0, 4);" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
 async def test_search_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = [
         {
@@ -447,6 +475,12 @@ async def test_get_task_not_found_error(server_module: Any, monkeypatch: pytest.
 
     with pytest.raises(RuntimeError, match="Task not found: missing-id"):
         await server_module.get_task("missing-id")
+
+
+@pytest.mark.asyncio
+async def test_list_subtasks_empty_task_id_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="task_id must not be empty"):
+        await server_module.list_subtasks(task_id="   ")
 
 
 @pytest.mark.asyncio

@@ -220,6 +220,47 @@ return tasks.map(task => {{
 
 
 @typed_tool(mcp)
+async def list_subtasks(task_id: str, limit: int = 100) -> str:
+    """list direct subtasks for a parent task id.
+
+    returns task summary fields for direct children, limited to the provided
+    count.
+    """
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+    if limit < 1:
+        raise ValueError("limit must be greater than 0.")
+
+    task_id_filter = escape_for_jxa(task_id.strip())
+    script = f"""
+const taskId = {task_id_filter};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const subtasks = task.children.slice(0, {limit});
+return subtasks.map(subtask => {{
+  const tags = subtask.tags.map(taskTag => taskTag.name);
+  return {{
+    id: subtask.id.primaryKey,
+    name: subtask.name,
+    note: subtask.note,
+    flagged: subtask.flagged,
+    dueDate: subtask.dueDate ? subtask.dueDate.toISOString() : null,
+    deferDate: subtask.deferDate ? subtask.deferDate.toISOString() : null,
+    completed: subtask.completed,
+    tags: tags,
+    estimatedMinutes: subtask.estimatedMinutes,
+    hasChildren: subtask.hasChildren
+  }};
+}});
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def create_task(
     name: str,
     project: str | None = None,

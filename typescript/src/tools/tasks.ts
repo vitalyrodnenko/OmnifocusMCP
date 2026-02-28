@@ -68,6 +68,48 @@ return {
   });
 
   server.tool(
+    "list_subtasks",
+    "list direct subtasks for a task id.",
+    { task_id: z.string().min(1), limit: z.number().int().min(1).default(100) },
+    async ({ task_id, limit }) => {
+      try {
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        const taskId = escapeForJxa(normalizedTaskId);
+        const script = `
+const taskId = ${taskId};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+
+const subtasks = task.children.slice(0, ${limit});
+return subtasks.map(subtask => {
+  const tags = subtask.tags.map(taskTag => taskTag.name);
+  return {
+    id: subtask.id.primaryKey,
+    name: subtask.name,
+    note: subtask.note,
+    flagged: subtask.flagged,
+    dueDate: subtask.dueDate ? subtask.dueDate.toISOString() : null,
+    deferDate: subtask.deferDate ? subtask.deferDate.toISOString() : null,
+    completed: subtask.completed,
+    tags: tags,
+    estimatedMinutes: subtask.estimatedMinutes,
+    hasChildren: subtask.hasChildren
+  };
+});
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "search_tasks",
     "search tasks by case-insensitive query across name and note.",
     { query: z.string().min(1), limit: z.number().int().min(1).default(100) },

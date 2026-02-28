@@ -97,6 +97,18 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-2", name: "filtered" }]);
   });
 
+  test("list_subtasks generates child query script with limit", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "sub-1", name: "child" }]);
+    const result = await getTool("list_subtasks")({
+      task_id: "parent-1",
+      limit: 2,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const taskId = "parent-1";');
+    expect(script).toContain("const subtasks = task.children.slice(0, 2);");
+    expect(JSON.parse(result.content[0].text)).toEqual([{ id: "sub-1", name: "child" }]);
+  });
+
   test("get_project generates id/name lookup script", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "proj-1", name: "Project" });
     const result = await getTool("get_project")({ project_id_or_name: "Project" });

@@ -548,6 +548,99 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+#[allow(clippy::too_many_arguments)]
+pub async fn create_subtask<R: JxaRunner>(
+    runner: &R,
+    name: &str,
+    parent_task_id: &str,
+    note: Option<&str>,
+    due_date: Option<&str>,
+    defer_date: Option<&str>,
+    flagged: Option<bool>,
+    tags: Option<Vec<String>>,
+    estimated_minutes: Option<i32>,
+) -> Result<Value> {
+    if name.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "name must not be empty.".to_string(),
+        ));
+    }
+    if parent_task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "parent_task_id must not be empty.".to_string(),
+        ));
+    }
+
+    let task_name = escape_for_jxa(name.trim());
+    let parent_task_id_value = escape_for_jxa(parent_task_id.trim());
+    let note_value = note
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let due_date_value = due_date
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let defer_date_value = defer_date
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let flagged_value = flagged
+        .map(|value| {
+            if value {
+                "true".to_string()
+            } else {
+                "false".to_string()
+            }
+        })
+        .unwrap_or_else(|| "null".to_string());
+    let tags_value = if let Some(values) = tags {
+        serde_json::to_string(&values)?
+    } else {
+        "null".to_string()
+    };
+    let estimated_minutes_value = estimated_minutes
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "null".to_string());
+
+    let script = format!(
+        r#"const taskName = {task_name};
+const parentTaskId = {parent_task_id_value};
+const noteValue = {note_value};
+const dueDateValue = {due_date_value};
+const deferDateValue = {defer_date_value};
+const flaggedValue = {flagged_value};
+const tagNames = {tags_value};
+const estimatedMinutesValue = {estimated_minutes_value};
+
+const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+if (!parentTask) {{
+  throw new Error(`Parent task not found: ${{parentTaskId}}`);
+}}
+
+const task = new Task(taskName, parentTask.ending);
+
+if (noteValue !== null) task.note = noteValue;
+if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
+if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (flaggedValue !== null) task.flagged = flaggedValue;
+if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
+
+if (tagNames !== null) {{
+  tagNames.forEach(tagName => {{
+    const tag = document.flattenedTags.byName(tagName);
+    if (tag) task.addTag(tag);
+  }});
+}}
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  parentTaskId: parentTask.id.primaryKey,
+  parentTaskName: parentTask.name
+}};"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
 pub async fn create_tasks_batch<R: JxaRunner>(
     runner: &R,
     tasks: Vec<CreateTaskInput>,
