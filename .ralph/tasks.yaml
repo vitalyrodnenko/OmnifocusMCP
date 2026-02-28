@@ -3,245 +3,336 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772297461
-generated_at: 2026-02-28T16:51:36Z
+source_mtime: 1772298234
+generated_at: 2026-02-28T17:04:18Z
 
 tasks:
-  - id: "line_30"
-    line_number: 30
+  - id: "line_44"
+    line_number: 44
     status: completed
     parallel_group: 999999
-    description: Create `python/scripts/smoke_test.py` — a standalone async script
+    description: Research the `rmcp` crate (official Rust MCP SDK at
     indent_level: 0
     raw_marker: 1.
-  - id: "line_35"
-    line_number: 35
+  - id: "line_52"
+    line_number: 52
     status: completed
     parallel_group: 999999
-    description: Smoke test verifies JXA bridge basics: `run_omnijs` can execute
+    description: Create `.cursor/rules/rust-conventions.mdc` with:
     indent_level: 0
     raw_marker: 2.
-  - id: "line_37"
-    line_number: 37
-    status: completed
-    parallel_group: 999999
-    description: Smoke test calls every read tool function and verifies each returns
-    indent_level: 0
-    raw_marker: 3.
-  - id: "line_42"
-    line_number: 42
-    status: completed
-    parallel_group: 999999
-    description: Smoke test runs a full task CRUD lifecycle:
-    indent_level: 0
-    raw_marker: 4.
-  - id: "line_50"
-    line_number: 50
-    status: completed
-    parallel_group: 999999
-    description: Smoke test runs successfully against real OmniFocus with zero
-    indent_level: 0
-    raw_marker: 5.
-  - id: "line_63"
-    line_number: 63
-    status: completed
-    parallel_group: 999999
-    description: Every `# BUG:` documented in Phase 1 has a corresponding fix
-    indent_level: 0
-    raw_marker: 6.
-  - id: "line_65"
-    line_number: 65
-    status: completed
-    parallel_group: 999999
-    description: The same fixes are applied to the TypeScript source
-    indent_level: 0
-    raw_marker: 7.
   - id: "line_67"
     line_number: 67
     status: completed
     parallel_group: 999999
-    description: All existing mocked unit tests still pass after fixes:
+    description: Create `rust/Cargo.toml` with:
     indent_level: 0
-    raw_marker: 8.
-  - id: "line_70"
-    line_number: 70
+    raw_marker: 3.
+  - id: "line_75"
+    line_number: 75
     status: completed
     parallel_group: 999999
-    description: Smoke test (`python/scripts/smoke_test.py`) passes cleanly
+    description: Create `rust/src/error.rs`:
     indent_level: 0
-    raw_marker: 9.
-  - id: "line_122"
-    line_number: 122
+    raw_marker: 4.
+  - id: "line_88"
+    line_number: 88
     status: completed
     parallel_group: 999999
-    description: Python: `server.py` refactored to < 50 lines. Creates FastMCP
+    description: Create `rust/src/types.rs` with result structs:
     indent_level: 0
-    raw_marker: 10.
+    raw_marker: 5.
+  - id: "line_101"
+    line_number: 101
+    status: completed
+    parallel_group: 999999
+    description: Create `rust/src/jxa.rs` with three layers matching Python's jxa.py:
+    indent_level: 0
+    raw_marker: 6.
   - id: "line_125"
     line_number: 125
     status: completed
     parallel_group: 999999
-    description: Python: `tools/` directory created with separate files per entity.
+    description: Create `rust/src/lib.rs` that re-exports all modules: `error`,
     indent_level: 0
-    raw_marker: 11.
+    raw_marker: 7.
   - id: "line_128"
     line_number: 128
     status: completed
     parallel_group: 999999
-    description: Python: `resources.py` and `prompts.py` created with their
+    description: `cargo build` succeeds with no errors.
     indent_level: 0
-    raw_marker: 12.
-  - id: "line_130"
-    line_number: 130
+    raw_marker: 8.
+  - id: "line_129"
+    line_number: 129
     status: completed
     parallel_group: 999999
-    description: Python: `ruff check src/ && ruff format --check src/ && mypy src/
+    description: Create `rust/tests/jxa_test.rs` with unit tests:
     indent_level: 0
-    raw_marker: 13.
-  - id: "line_132"
-    line_number: 132
+    raw_marker: 9.
+  - id: "line_136"
+    line_number: 136
     status: completed
     parallel_group: 999999
-    description: TypeScript: `index.ts` refactored to < 50 lines. Creates
+    description: JXA bridge probe against real OmniFocus:
     indent_level: 0
-    raw_marker: 14.
-  - id: "line_135"
-    line_number: 135
-    status: completed
-    parallel_group: 999999
-    description: TypeScript: `tools/` directory created with separate files.
-    indent_level: 0
-    raw_marker: 15.
-  - id: "line_138"
-    line_number: 138
-    status: completed
-    parallel_group: 999999
-    description: TypeScript: `npx tsc --noEmit && npm test` passes. Zero failures.
-    indent_level: 0
-    raw_marker: 16.
+    raw_marker: 10.
   - id: "line_139"
     line_number: 139
     status: completed
     parallel_group: 999999
-    description: Smoke test still passes against real OmniFocus after refactor.
+    description: `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
     indent_level: 0
-    raw_marker: 17.
-  - id: "line_150"
-    line_number: 150
+    raw_marker: 11.
+  - id: "line_155"
+    line_number: 155
     status: completed
     parallel_group: 999999
-    description: `python/pyproject.toml` has pytest marker config:
+    description: Create `rust/src/tools/mod.rs` re-exporting all tool modules.
     indent_level: 0
-    raw_marker: 18.
-  - id: "line_154"
-    line_number: 154
+    raw_marker: 12.
+  - id: "line_156"
+    line_number: 156
     status: completed
     parallel_group: 999999
-    description: `python/tests/test_integration.py` created with
+    description: Create `rust/src/tools/tasks.rs` with read tools — **signatures
     indent_level: 0
-    raw_marker: 19.
-  - id: "line_163"
-    line_number: 163
-    status: completed
-    parallel_group: 999999
-    description: Python integration tests pass when run explicitly:
-    indent_level: 0
-    raw_marker: 20.
+    raw_marker: 13.
   - id: "line_165"
     line_number: 165
     status: completed
     parallel_group: 999999
-    description: Python integration tests skip cleanly when run normally:
+    description: Add write tools to `rust/src/tools/tasks.rs`:
+    indent_level: 0
+    raw_marker: 14.
+  - id: "line_176"
+    line_number: 176
+    status: completed
+    parallel_group: 999999
+    description: Create `rust/src/tools/projects.rs` — **read Python file first**:
+    indent_level: 0
+    raw_marker: 15.
+  - id: "line_185"
+    line_number: 185
+    status: pending
+    parallel_group: 999999
+    description: Create `rust/src/tools/tags.rs`:
+    indent_level: 0
+    raw_marker: 16.
+  - id: "line_188"
+    line_number: 188
+    status: pending
+    parallel_group: 999999
+    description: Create `rust/src/tools/folders.rs`:
+    indent_level: 0
+    raw_marker: 17.
+  - id: "line_190"
+    line_number: 190
+    status: pending
+    parallel_group: 999999
+    description: Create `rust/src/tools/forecast.rs`:
+    indent_level: 0
+    raw_marker: 18.
+  - id: "line_192"
+    line_number: 192
+    status: pending
+    parallel_group: 999999
+    description: Create `rust/src/tools/perspectives.rs`:
+    indent_level: 0
+    raw_marker: 19.
+  - id: "line_194"
+    line_number: 194
+    status: pending
+    parallel_group: 999999
+    description: Create `rust/tests/tools_read_test.rs` with mocked `JxaRunner`:
+    indent_level: 0
+    raw_marker: 20.
+  - id: "line_199"
+    line_number: 199
+    status: pending
+    parallel_group: 999999
+    description: Create `rust/tests/tools_write_test.rs` with mocked `JxaRunner`:
     indent_level: 0
     raw_marker: 21.
-  - id: "line_167"
-    line_number: 167
-    status: completed
+  - id: "line_204"
+    line_number: 204
+    status: pending
     parallel_group: 999999
-    description: TypeScript: `typescript/tests/integration.test.ts` created with
+    description: `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
     indent_level: 0
     raw_marker: 22.
-  - id: "line_170"
-    line_number: 170
-    status: completed
+  - id: "line_215"
+    line_number: 215
+    status: pending
     parallel_group: 999999
-    description: TypeScript integration tests pass when run explicitly.
+    description: Create `rust/src/resources.rs` with 3 resource handlers matching
     indent_level: 0
     raw_marker: 23.
-  - id: "line_171"
-    line_number: 171
-    status: completed
+  - id: "line_223"
+    line_number: 223
+    status: pending
     parallel_group: 999999
-    description: No test data leaks — all `[TEST-MCP]` items are cleaned up by
+    description: Create `rust/src/prompts.rs` with 4 prompt handlers matching
     indent_level: 0
     raw_marker: 24.
-  - id: "line_189"
-    line_number: 189
-    status: completed
+  - id: "line_240"
+    line_number: 240
+    status: pending
     parallel_group: 999999
-    description: Create `docs/install-python.md` with:
+    description: Create `rust/src/server.rs`:
     indent_level: 0
     raw_marker: 25.
-  - id: "line_200"
-    line_number: 200
-    status: completed
+  - id: "line_249"
+    line_number: 249
+    status: pending
     parallel_group: 999999
-    description: Create `docs/install-typescript.md` with:
+    description: Create `rust/src/main.rs`:
     indent_level: 0
     raw_marker: 26.
-  - id: "line_210"
-    line_number: 210
-    status: completed
+  - id: "line_256"
+    line_number: 256
+    status: pending
     parallel_group: 999999
-    description: Create `docs/development-docker.md` with:
+    description: `echo '{}' | cargo run` starts the server and exits cleanly
     indent_level: 0
     raw_marker: 27.
-  - id: "line_219"
-    line_number: 219
-    status: completed
+  - id: "line_258"
+    line_number: 258
+    status: pending
     parallel_group: 999999
-    description: Update the top-level `README.md`:
+    description: `cargo run -- --version` prints `omnifocus-mcp` followed by
     indent_level: 0
     raw_marker: 28.
-  - id: "line_224"
-    line_number: 224
-    status: completed
+  - id: "line_260"
+    line_number: 260
+    status: pending
     parallel_group: 999999
-    description: Verify each guide by following its steps on this machine:
+    description: Create `rust/tests/resources_test.rs` — verify resource content
     indent_level: 0
     raw_marker: 29.
-  - id: "line_229"
-    line_number: 229
-    status: completed
+  - id: "line_265"
+    line_number: 265
+    status: pending
     parallel_group: 999999
-    description: All existing tests still pass after guide changes:
+    description: `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
     indent_level: 0
     raw_marker: 30.
-  - id: "line_241"
-    line_number: 241
-    status: completed
+  - id: "line_277"
+    line_number: 277
+    status: pending
     parallel_group: 999999
-    description: Both servers start and stop cleanly:
+    description: Create `rust/examples/smoke_test.rs` — standalone async binary
     indent_level: 0
     raw_marker: 31.
-  - id: "line_244"
-    line_number: 244
-    status: completed
+  - id: "line_280"
+    line_number: 280
+    status: pending
     parallel_group: 999999
-    description: Full test commands pass for both implementations (mocked tests):
+    description: Smoke test passes against real OmniFocus with zero failures.
     indent_level: 0
     raw_marker: 32.
-  - id: "line_248"
-    line_number: 248
-    status: completed
+  - id: "line_283"
+    line_number: 283
+    status: pending
+    parallel_group: 999999
+    description: Create `rust/tests/integration_test.rs` gated by
+    indent_level: 0
+    raw_marker: 33.
+  - id: "line_292"
+    line_number: 292
+    status: pending
+    parallel_group: 999999
+    description: Integration tests pass: `cargo test --features integration`
+    indent_level: 0
+    raw_marker: 34.
+  - id: "line_294"
+    line_number: 294
+    status: pending
+    parallel_group: 999999
+    description: Integration tests are excluded from normal `cargo test`.
+    indent_level: 0
+    raw_marker: 35.
+  - id: "line_295"
+    line_number: 295
+    status: pending
+    parallel_group: 999999
+    description: No test data leaks — all `[TEST-MCP]` items cleaned up by
+    indent_level: 0
+    raw_marker: 36.
+  - id: "line_308"
+    line_number: 308
+    status: pending
+    parallel_group: 999999
+    description: `cargo build --release` produces a working binary at
+    indent_level: 0
+    raw_marker: 37.
+  - id: "line_311"
+    line_number: 311
+    status: pending
+    parallel_group: 999999
+    description: Create `.github/workflows/release-rust.yml`:
+    indent_level: 0
+    raw_marker: 38.
+  - id: "line_321"
+    line_number: 321
+    status: pending
+    parallel_group: 999999
+    description: Create `homebrew/omnifocus-mcp.rb` — Homebrew formula template:
+    indent_level: 0
+    raw_marker: 39.
+  - id: "line_329"
+    line_number: 329
+    status: pending
+    parallel_group: 999999
+    description: Create `docs/install-rust.md` with:
+    indent_level: 0
+    raw_marker: 40.
+  - id: "line_347"
+    line_number: 347
+    status: pending
+    parallel_group: 999999
+    description: Update top-level `README.md`:
+    indent_level: 0
+    raw_marker: 41.
+  - id: "line_352"
+    line_number: 352
+    status: pending
+    parallel_group: 999999
+    description: Release binary smoke test: build release binary, run the
+    indent_level: 0
+    raw_marker: 42.
+  - id: "line_361"
+    line_number: 361
+    status: pending
+    parallel_group: 999999
+    description: `cargo fmt --check` is clean (no formatting issues).
+    indent_level: 0
+    raw_marker: 43.
+  - id: "line_362"
+    line_number: 362
+    status: pending
+    parallel_group: 999999
+    description: `cargo clippy -- -D warnings` is clean (no lint warnings).
+    indent_level: 0
+    raw_marker: 44.
+  - id: "line_363"
+    line_number: 363
+    status: pending
+    parallel_group: 999999
+    description: `cargo test` passes (all mocked tests, integration skipped).
+    indent_level: 0
+    raw_marker: 45.
+  - id: "line_364"
+    line_number: 364
+    status: pending
+    parallel_group: 999999
+    description: `.gitignore` updated to exclude `rust/target/`.
+    indent_level: 0
+    raw_marker: 46.
+  - id: "line_366"
+    line_number: 366
+    status: pending
     parallel_group: 999999
     description: Git status is clean — no untracked source files, no uncommitted
     indent_level: 0
-    raw_marker: 33.
-  - id: "line_250"
-    line_number: 250
-    status: completed
-    parallel_group: 999999
-    description: Tag the repo as `v1.1.0`.
-    indent_level: 0
-    raw_marker: 34.
+    raw_marker: 47.
