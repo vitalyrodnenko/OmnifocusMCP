@@ -110,7 +110,7 @@ Reference:
 
 ### Success Criteria
 
-14. [ ] Add `delete_tasks_batch` to the Rust smoke test
+14. [x] Add `delete_tasks_batch` to the Rust smoke test
         (`rust/examples/smoke_test.rs`): create 3 test tasks, batch
         delete them, verify all deleted.
 15. [ ] Run the smoke test against real OmniFocus — zero failures.

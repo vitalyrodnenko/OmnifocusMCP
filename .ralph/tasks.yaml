@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772301911
-generated_at: 2026-02-28T18:05:15Z
+source_mtime: 1772301939
+generated_at: 2026-02-28T18:05:50Z
 
 tasks:
   - id: "line_39"
@@ -100,7 +100,7 @@ tasks:
     raw_marker: 13.
   - id: "line_113"
     line_number: 113
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Add `delete_tasks_batch` to the Rust smoke test
     indent_level: 0

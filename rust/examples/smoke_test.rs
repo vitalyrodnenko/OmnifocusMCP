@@ -10,8 +10,8 @@ use omnifocus_mcp::{
         projects::{complete_project, create_project, get_project, list_projects},
         tags::{create_tag, list_tags},
         tasks::{
-            complete_task, create_task, create_tasks_batch, delete_task, get_inbox, get_task,
-            list_tasks, move_task, search_tasks, update_task, CreateTaskInput,
+            complete_task, create_task, create_tasks_batch, delete_task, delete_tasks_batch,
+            get_inbox, get_task, list_tasks, move_task, search_tasks, update_task, CreateTaskInput,
         },
     },
 };
@@ -226,25 +226,82 @@ impl SmokeTest {
 
         let batch_result = create_tasks_batch(
             runner,
-            vec![CreateTaskInput {
-                name: self.unique_name("smoke batch task"),
-                project: Some(project_name),
-                note: Some("created by rust smoke test batch".to_string()),
-                due_date: None,
-                defer_date: None,
-                flagged: Some(false),
-                tags: Some(vec![tag_name]),
-                estimated_minutes: Some(5),
-            }],
+            vec![
+                CreateTaskInput {
+                    name: self.unique_name("smoke batch task"),
+                    project: Some(project_name.clone()),
+                    note: Some("created by rust smoke test batch".to_string()),
+                    due_date: None,
+                    defer_date: None,
+                    flagged: Some(false),
+                    tags: Some(vec![tag_name.clone()]),
+                    estimated_minutes: Some(5),
+                },
+                CreateTaskInput {
+                    name: self.unique_name("smoke batch task"),
+                    project: Some(project_name.clone()),
+                    note: Some("created by rust smoke test batch".to_string()),
+                    due_date: None,
+                    defer_date: None,
+                    flagged: Some(false),
+                    tags: Some(vec![tag_name.clone()]),
+                    estimated_minutes: Some(5),
+                },
+                CreateTaskInput {
+                    name: self.unique_name("smoke batch task"),
+                    project: Some(project_name.clone()),
+                    note: Some("created by rust smoke test batch".to_string()),
+                    due_date: None,
+                    defer_date: None,
+                    flagged: Some(false),
+                    tags: Some(vec![tag_name.clone()]),
+                    estimated_minutes: Some(5),
+                },
+            ],
         )
         .await?;
+        let mut batch_ids: Vec<String> = Vec::new();
         for item in require_array(&batch_result, "create_tasks_batch result")? {
-            let batch_id = require_string_key(item, "id", "create_tasks_batch item")?;
-            self.created_task_ids.push(batch_id.to_string());
+            let batch_id = require_string_key(item, "id", "create_tasks_batch item")?.to_string();
+            self.created_task_ids.push(batch_id.clone());
+            batch_ids.push(batch_id);
+        }
+        if batch_ids.len() != 3 {
+            return Err(OmniFocusError::Validation(
+                "create_tasks_batch did not return three tasks.".to_string(),
+            ));
         }
 
-        for id in self.created_task_ids.clone() {
-            let _ = delete_task(runner, &id).await;
+        let delete_result = delete_tasks_batch(runner, batch_ids.clone()).await?;
+        let deleted_count = delete_result
+            .get("deleted_count")
+            .and_then(Value::as_i64)
+            .ok_or_else(|| {
+                OmniFocusError::Validation(
+                    "delete_tasks_batch result missing deleted_count.".to_string(),
+                )
+            })?;
+        let not_found_count = delete_result
+            .get("not_found_count")
+            .and_then(Value::as_i64)
+            .ok_or_else(|| {
+                OmniFocusError::Validation(
+                    "delete_tasks_batch result missing not_found_count.".to_string(),
+                )
+            })?;
+        if deleted_count != 3 || not_found_count != 0 {
+            return Err(OmniFocusError::Validation(
+                "delete_tasks_batch summary did not confirm deleting all three tasks.".to_string(),
+            ));
+        }
+
+        let delete_results = require_array(&delete_result["results"], "delete_tasks_batch result")?;
+        if delete_results.len() != 3 || delete_results.iter().any(|item| item["deleted"] != true) {
+            return Err(OmniFocusError::Validation(
+                "delete_tasks_batch results did not mark all three tasks as deleted.".to_string(),
+            ));
+        }
+        for id in batch_ids {
             self.created_task_ids.retain(|existing| existing != &id);
         }
 
