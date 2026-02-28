@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 0
-- Current status: Phase 4 in progress. Phase 3 criteria 10-17 are complete with passing smoke validation after refactor.
+- Current status: Phase 4 in progress. TypeScript integration test suite is now added with default skip gating.
 - Previous task: v1 completed (75/75), archived at `.ralph/RALPH_TASK_v1_complete.md`.
 
 ## How This Works
@@ -21,10 +21,10 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Real OmniFocus Smoke Test      | 1–5       | 5/5  |
 | 2     | Fix JXA Bugs                   | 6–9       | 4/4  |
 | 3     | Split Monolith Files           | 10–17     | 8/8  |
-| 4     | Integration Tests              | 18–24     | 4/7  |
+| 4     | Integration Tests              | 18–24     | 5/7  |
 | 5     | Final Cleanup                  | 25–28     | 0/4  |
 
-**Total: 21 / 28 criteria complete**
+**Total: 22 / 28 criteria complete**
 
 ## Key Context
 
@@ -209,6 +209,14 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 09:29:02
 **Session 15 started** (model: auto)
+
+### 2026-02-28 09:33:30
+- completed criterion 22 by adding `typescript/tests/integration.test.ts` with real-OmniFocus parity tests: bridge connectivity, read-tool payload validation, task lifecycle, search, and project lifecycle
+- integration suite uses `describe.skipIf()` with runtime availability checks and `OMNIFOCUS_INTEGRATION=1` gating so normal runs skip cleanly when integration is not enabled
+- added teardown cleanup for all created `[TEST-MCP]` task/project artifacts via `afterEach`, even if a test fails mid-run
+- validated with `cd typescript && npx tsc --noEmit && npm test` resulting in passing unit tests and skipped integration tests by default
+- marked criterion 22 complete in `RALPH_TASK.md`
+- next focus: criterion 23 (run TypeScript integration tests explicitly)
 
 ### 2026-02-28 09:32:09
 **Session 15 ended** - 🔄 Context rotation (token limit reached)

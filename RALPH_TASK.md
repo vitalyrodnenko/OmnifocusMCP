@@ -166,7 +166,7 @@ default and only run when explicitly requested.
         `cd python && pytest tests/ -v -m integration` (with OmniFocus running).
 21. [x] Python integration tests skip cleanly when run normally:
         `cd python && pytest tests/ -v` shows them as skipped (not failed).
-22. [ ] TypeScript: `typescript/tests/integration.test.ts` created with
+22. [x] TypeScript: `typescript/tests/integration.test.ts` created with
         equivalent tests. Uses `describe.skipIf()` or environment variable
         to skip when OmniFocus is unavailable.
 23. [ ] TypeScript integration tests pass when run explicitly.
