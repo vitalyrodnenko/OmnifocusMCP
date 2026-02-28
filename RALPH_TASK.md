@@ -222,7 +222,7 @@ write tools return confirmation with the affected item's current state.
         Single JXA call for efficiency. Returns `[{id, name}]`.
 31. [x] Tool `complete_task` — by `id`. Handles repeating tasks gracefully.
         Returns confirmation with task name.
-32. [ ] Tool `update_task` — by `id`. Optional: `name`, `note`, `dueDate`,
+32. [x] Tool `update_task` — by `id`. Optional: `name`, `note`, `dueDate`,
         `deferDate`, `flagged`, `tags[]`, `estimatedMinutes`. Only provided
         fields change. Returns updated task.
 33. [ ] Tool `delete_task` — drops/removes by `id`. Warns if task has

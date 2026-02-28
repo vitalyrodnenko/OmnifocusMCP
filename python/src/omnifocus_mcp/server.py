@@ -760,3 +760,88 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def update_task(
+    task_id: str,
+    name: str | None = None,
+    note: str | None = None,
+    dueDate: str | None = None,
+    deferDate: str | None = None,
+    flagged: bool | None = None,
+    tags: list[str] | None = None,
+    estimatedMinutes: int | None = None,
+) -> str:
+    """update a task by id, modifying only provided fields.
+
+    accepts optional updates for name, note, dates, flagged state, tags, and
+    estimated minutes. returns the updated task fields.
+    """
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+    if name is not None and name.strip() == "":
+        raise ValueError("name must not be empty when provided.")
+
+    updates: dict[str, Any] = {}
+    if name is not None:
+        updates["name"] = name.strip()
+    if note is not None:
+        updates["note"] = note
+    if dueDate is not None:
+        updates["dueDate"] = dueDate
+    if deferDate is not None:
+        updates["deferDate"] = deferDate
+    if flagged is not None:
+        updates["flagged"] = flagged
+    if tags is not None:
+        updates["tags"] = tags
+    if estimatedMinutes is not None:
+        updates["estimatedMinutes"] = estimatedMinutes
+
+    task_id_value = escape_for_jxa(task_id.strip())
+    updates_value = json.dumps(updates)
+
+    script = f"""
+const taskId = {task_id_value};
+const updates = {updates_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
+
+if (has("name")) task.name = updates.name;
+if (has("note")) task.note = updates.note;
+if (has("dueDate")) task.dueDate = new Date(updates.dueDate);
+if (has("deferDate")) task.deferDate = new Date(updates.deferDate);
+if (has("flagged")) task.flagged = updates.flagged;
+if (has("estimatedMinutes")) task.estimatedMinutes = updates.estimatedMinutes;
+
+if (has("tags")) {{
+  const existingTags = task.tags.slice();
+  existingTags.forEach(tag => {{
+    task.removeTag(tag);
+  }});
+  updates.tags.forEach(tagName => {{
+    const tag = document.flattenedTags.byName(tagName);
+    if (tag) task.addTag(tag);
+  }});
+}}
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  note: task.note,
+  flagged: task.flagged,
+  dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+  completed: task.completed,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  tags: task.tags.map(tag => tag.name),
+  estimatedMinutes: task.estimatedMinutes
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
