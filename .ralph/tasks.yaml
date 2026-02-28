@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772301776
-generated_at: 2026-02-28T18:03:20Z
+source_mtime: 1772301833
+generated_at: 2026-02-28T18:04:26Z
 
 tasks:
   - id: "line_39"
@@ -72,7 +72,7 @@ tasks:
     raw_marker: 9.
   - id: "line_94"
     line_number: 94
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Add `delete_tasks_batch` function to `rust/src/tools/tasks.rs`:
     indent_level: 0

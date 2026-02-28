@@ -32,8 +32,8 @@ use crate::{
         projects::{complete_project, create_project, get_project, list_projects},
         tags::{create_tag, list_tags},
         tasks::{
-            complete_task, create_task, create_tasks_batch, delete_task, get_inbox, get_task,
-            list_tasks, move_task, search_tasks, update_task, CreateTaskInput,
+            complete_task, create_task, create_tasks_batch, delete_task, delete_tasks_batch,
+            get_inbox, get_task, list_tasks, move_task, search_tasks, update_task, CreateTaskInput,
         },
     },
 };
@@ -108,6 +108,11 @@ struct UpdateTaskParams {
 struct MoveTaskParams {
     task_id: String,
     project: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct DeleteTasksBatchParams {
+    task_ids: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -318,6 +323,19 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<TaskIdParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = delete_task(self.runner.as_ref(), &params.task_id)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "delete multiple tasks by id in a single omnijs call. IMPORTANT: before calling this tool, always show the user the list of tasks to be deleted and ask for explicit confirmation. do not proceed without user approval."
+    )]
+    async fn delete_tasks_batch(
+        &self,
+        Parameters(params): Parameters<DeleteTasksBatchParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = delete_tasks_batch(self.runner.as_ref(), params.task_ids)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)

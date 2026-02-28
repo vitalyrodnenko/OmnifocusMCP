@@ -91,7 +91,7 @@ Reference:
 
 9. [x] Read `rust/src/tools/tasks.rs` to understand the existing
         `delete_task` and `create_tasks_batch` implementations.
-10. [ ] Add `delete_tasks_batch` function to `rust/src/tools/tasks.rs`:
+10. [x] Add `delete_tasks_batch` function to `rust/src/tools/tasks.rs`:
         - Function signature: `pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>) -> Result<Value>`
         - **Validation:** same rules as Python (non-empty vec, non-empty strings)
         - **JXA script:** character-identical to Python/TypeScript

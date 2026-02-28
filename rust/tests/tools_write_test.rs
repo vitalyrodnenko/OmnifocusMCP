@@ -11,8 +11,8 @@ use omnifocus_mcp::{
         projects::{complete_project, create_project},
         tags::create_tag,
         tasks::{
-            complete_task, create_task, create_tasks_batch, delete_task, move_task, update_task,
-            CreateTaskInput,
+            complete_task, create_task, create_tasks_batch, delete_task, delete_tasks_batch,
+            move_task, update_task, CreateTaskInput,
         },
     },
 };
@@ -120,6 +120,11 @@ async fn write_task_tools_happy_path() {
         .expect("delete_task should succeed");
     assert_eq!(deleted["id"], "t1");
 
+    let deleted_batch = delete_tasks_batch(&runner, vec!["t1".to_string()])
+        .await
+        .expect("delete_tasks_batch should succeed");
+    assert_eq!(deleted_batch["id"], "t1");
+
     let moved = move_task(&runner, "t1", Some("project"))
         .await
         .expect("move_task should succeed");
@@ -215,6 +220,68 @@ async fn jxa_error_propagates_from_write_tools() {
         result.err().map(|e| e.to_string()),
         Some("Task not found: missing".to_string())
     );
+}
+
+#[tokio::test]
+async fn delete_tasks_batch_handles_partial_not_found() {
+    let runner = MockRunner {
+        payload: json!({
+            "deleted_count": 1,
+            "not_found_count": 1,
+            "results": [
+                {"id": "task-1", "name": "Task 1", "deleted": true},
+                {"id": "missing-id", "deleted": false, "error": "not found"}
+            ]
+        }),
+    };
+
+    let result = delete_tasks_batch(
+        &runner,
+        vec!["task-1".to_string(), "missing-id".to_string()],
+    )
+    .await
+    .expect("delete_tasks_batch should succeed");
+    assert_eq!(result["deleted_count"], 1);
+    assert_eq!(result["not_found_count"], 1);
+    assert_eq!(result["results"][0]["deleted"], true);
+    assert_eq!(result["results"][1]["deleted"], false);
+    assert_eq!(result["results"][1]["error"], "not found");
+}
+
+#[tokio::test]
+async fn delete_tasks_batch_happy_path() {
+    let runner = MockRunner {
+        payload: json!({
+            "deleted_count": 2,
+            "not_found_count": 0,
+            "results": [
+                {"id": "task-1", "name": "Task 1", "deleted": true},
+                {"id": "task-2", "name": "Task 2", "deleted": true}
+            ]
+        }),
+    };
+
+    let result = delete_tasks_batch(&runner, vec!["task-1".to_string(), "task-2".to_string()])
+        .await
+        .expect("delete_tasks_batch should succeed");
+    assert_eq!(result["deleted_count"], 2);
+    assert_eq!(result["not_found_count"], 0);
+    assert_eq!(result["results"][0]["id"], "task-1");
+    assert_eq!(result["results"][1]["id"], "task-2");
+}
+
+#[tokio::test]
+async fn delete_tasks_batch_validation_errors() {
+    let runner = MockRunner { payload: json!({}) };
+
+    assert!(matches!(
+        delete_tasks_batch(&runner, Vec::new()).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_tasks_batch(&runner, vec!["   ".to_string()]).await,
+        Err(OmniFocusError::Validation(_))
+    ));
 }
 
 #[tokio::test]
