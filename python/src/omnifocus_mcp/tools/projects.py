@@ -270,6 +270,52 @@ return {{
 
 
 @typed_tool(mcp)
+async def set_project_status(
+    project_id_or_name: str,
+    status: Literal["active", "on_hold", "dropped"],
+) -> str:
+    """set a project's organizational status by id or name."""
+    if project_id_or_name.strip() == "":
+        raise ValueError("project_id_or_name must not be empty.")
+    if status not in ("active", "on_hold", "dropped"):
+        raise ValueError("status must be one of: active, on_hold, dropped.")
+
+    project_filter = escape_for_jxa(project_id_or_name.strip())
+    status_value = escape_for_jxa(status)
+    script = f"""
+const projectFilter = {project_filter};
+const statusValue = {status_value};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+
+let targetStatus;
+if (statusValue === "active") {{
+  targetStatus = Project.Status.Active;
+}} else if (statusValue === "on_hold") {{
+  targetStatus = Project.Status.OnHold;
+}} else if (statusValue === "dropped") {{
+  targetStatus = Project.Status.Dropped;
+}} else {{
+  throw new Error(`Invalid status: ${{statusValue}}`);
+}}
+
+project.status = targetStatus;
+
+return {{
+  id: project.id.primaryKey,
+  name: project.name,
+  status: statusValue
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def update_project(
     project_id_or_name: str,
     name: str | None = None,
