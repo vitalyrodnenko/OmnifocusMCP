@@ -530,14 +530,30 @@ describe("representative read and write tool handlers", () => {
   });
 
   test("get_task includes native taskStatus field mapping", async () => {
-    runOmniJsMock.mockResolvedValueOnce({ id: "task-9", name: "single task", taskStatus: "overdue" });
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-9",
+      name: "single task",
+      taskStatus: "overdue",
+      effectiveDueDate: null,
+      effectiveDeferDate: null,
+      effectiveFlagged: false,
+    });
     const result = await getTool("get_task")({ task_id: "task-9" });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const taskId = "task-9";');
+    expect(script).toContain("effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null,");
+    expect(script).toContain("effectiveFlagged: task.effectiveFlagged,");
     expect(script).toContain("taskStatus: (() => {");
     expect(script).toContain('if (s.includes("Overdue")) return "overdue";');
     const parsed = JSON.parse(result.content[0].text);
-    expect(parsed).toEqual({ id: "task-9", name: "single task", taskStatus: "overdue" });
+    expect(parsed).toEqual({
+      id: "task-9",
+      name: "single task",
+      taskStatus: "overdue",
+      effectiveDueDate: null,
+      effectiveDeferDate: null,
+      effectiveFlagged: false,
+    });
     expect([
       "available",
       "blocked",

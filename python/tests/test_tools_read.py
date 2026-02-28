@@ -604,6 +604,9 @@ async def test_get_task_happy_path(
         "flagged": False,
         "dueDate": None,
         "deferDate": None,
+        "effectiveDueDate": None,
+        "effectiveDeferDate": None,
+        "effectiveFlagged": False,
         "completed": False,
         "completionDate": None,
         "taskStatus": "available",
@@ -624,6 +627,9 @@ async def test_get_task_happy_path(
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert 'const taskId = "t3";' in state["calls"][0]["script"]
+    assert "effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null," in state["calls"][0]["script"]
+    assert "effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null," in state["calls"][0]["script"]
+    assert "effectiveFlagged: task.effectiveFlagged," in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Overdue")) return "overdue";' in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
