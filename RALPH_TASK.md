@@ -197,7 +197,7 @@ running mocked tests). The Docker guide must explain this clearly.
           Use the real command: `uv run --directory /absolute/path/to/python python -m omnifocus_mcp`
         - Troubleshooting section: OmniFocus not running, permission
           denied, Python version mismatch
-26. [ ] Create `docs/install-typescript.md` with:
+26. [x] Create `docs/install-typescript.md` with:
         - Prerequisites (macOS, Node.js 20+, npm)
         - Step-by-step install (`git clone`, `cd typescript`,
           `npm install`, `npm run build`)

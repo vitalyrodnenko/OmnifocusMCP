@@ -261,3 +261,9 @@ This is how Ralph maintains continuity across iterations.
 - ran Ralph test command from `RALPH_TASK.md` after the docs change: `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test` (all passing; integration suites skipped by default)
 - marked criterion 25 complete in `RALPH_TASK.md`
 - next focus: implement criterion 26 (`docs/install-typescript.md`)
+
+### 2026-02-28 10:35:00
+- completed criterion 26 by creating `docs/install-typescript.md` with prerequisites, source install/build steps, startup verification, Claude Desktop/Cursor/generic stdio config using `node /absolute/path/to/typescript/dist/index.js`, and troubleshooting guidance
+- reran the Ralph test command from `RALPH_TASK.md` after the guide change; python checks/tests and TypeScript typecheck/tests all passed
+- marked criterion 26 complete in `RALPH_TASK.md`
+- next focus: implement criterion 27 (`docs/development-docker.md` and root Docker setup)
