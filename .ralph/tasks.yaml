@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772313199
-generated_at: 2026-02-28T21:13:29Z
+source_mtime: 1772313553
+generated_at: 2026-02-28T21:19:18Z
 
 tasks:
   - id: "line_108"
@@ -107,14 +107,14 @@ tasks:
     raw_marker: 14.
   - id: "line_337"
     line_number: 337
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **`get_project_counts`** — all 3 implementations (NEW TOOL).
     indent_level: 0
     raw_marker: 15.
   - id: "line_347"
     line_number: 347
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All lint and test commands pass for Phase 4 (same as criterion 6).
     indent_level: 0
