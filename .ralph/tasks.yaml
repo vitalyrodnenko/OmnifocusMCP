@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772292042
-generated_at: 2026-02-28T15:20:57Z
+source_mtime: 1772292513
+generated_at: 2026-02-28T15:28:59Z
 
 tasks:
   - id: "line_32"
@@ -135,21 +135,21 @@ tasks:
     raw_marker: 18.
   - id: "line_156"
     line_number: 156
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `python/tests/test_integration.py` created with
     indent_level: 0
     raw_marker: 19.
   - id: "line_165"
     line_number: 165
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Python integration tests pass when run explicitly:
     indent_level: 0
     raw_marker: 20.
   - id: "line_167"
     line_number: 167
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Python integration tests skip cleanly when run normally:
     indent_level: 0

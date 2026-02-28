@@ -203,3 +203,9 @@ This is how Ralph maintains continuity across iterations.
 - ran `cd python && pytest tests/ -v`: `64 passed, 5 skipped`, confirming integration tests skip cleanly in normal runs
 - marked criterion 21 complete in `RALPH_TASK.md`
 - next focus: criterion 22 (`typescript/tests/integration.test.ts`)
+
+### 2026-02-28 09:29:00
+**Session 14 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 09:29:02
+**Session 15 started** (model: auto)
