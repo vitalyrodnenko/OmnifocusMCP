@@ -15,7 +15,8 @@ use omnifocus_mcp::{
         tags::{list_tags, search_tags},
         tasks::{
             get_inbox, get_task, get_task_counts, list_subtasks,
-            list_tasks as list_tasks_with_duration, search_tasks,
+            list_tasks as list_tasks_with_duration, list_tasks_with_planned, search_tasks,
+            search_tasks_with_planned,
         },
     },
 };
@@ -1288,6 +1289,54 @@ async fn list_tasks_date_filter_script_contains_expected_logic() {
     assert!(script.contains("if (s.includes(\"Available\")) return \"available\";"));
     assert!(script.contains("if (s.includes(\"Available\")) return \"available\";"));
     assert!(script.contains("must be a valid ISO 8601 date string."));
+}
+
+#[tokio::test]
+async fn list_tasks_script_supports_planned_date_filters() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-planned", "planned task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_planned(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-03-15T00:00:00Z"),
+        Some("2026-02-15T00:00:00Z"),
+        None,
+        None,
+        "asc",
+        5,
+    )
+    .await
+    .expect("list tasks with planned-date filters should parse");
+    assert_eq!(listed.len(), 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const plannedBeforeRaw = \"2026-03-15T00:00:00Z\";"));
+    assert!(script.contains("const plannedAfterRaw = \"2026-02-15T00:00:00Z\";"));
+    assert!(script.contains(
+        "if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;"
+    ));
+    assert!(script.contains(
+        "if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;"
+    ));
+    assert!(script.contains("plannedDate: plannedDate ? plannedDate.toISOString() : null,"));
 }
 
 #[tokio::test]
