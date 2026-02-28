@@ -84,7 +84,7 @@ Reference implementations:
          partial failure (some IDs not found), validation errors.
        - `cargo fmt --check && cargo clippy -- -D warnings && cargo test` pass.
 
-2. [ ] **`uncomplete_task`** — all 3 implementations.
+2. [x] **`uncomplete_task`** — all 3 implementations.
        - **Input:** `task_id: str` (non-empty)
        - **JXA:** find task by ID, call `task.markIncomplete()`, return
          `{ id, name, completed: task.completed }`.
