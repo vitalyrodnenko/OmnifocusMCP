@@ -182,9 +182,9 @@ impl SmokeTest {
             self.created_project_ids.push(created_id.to_string());
             created_id.to_string()
         };
-        let _ = get_project(runner, &project_id).await.map_err(|error| {
-            OmniFocusError::Validation(format!("get_project failed: {error}"))
-        })?;
+        let _ = get_project(runner, &project_id)
+            .await
+            .map_err(|error| OmniFocusError::Validation(format!("get_project failed: {error}")))?;
 
         let _ = list_tags(runner, 20)
             .await
@@ -192,9 +192,9 @@ impl SmokeTest {
         let _ = list_folders(runner, 20)
             .await
             .map_err(|error| OmniFocusError::Validation(format!("list_folders failed: {error}")))?;
-        let forecast = get_forecast(runner, 20).await.map_err(|error| {
-            OmniFocusError::Validation(format!("get_forecast failed: {error}"))
-        })?;
+        let forecast = get_forecast(runner, 20)
+            .await
+            .map_err(|error| OmniFocusError::Validation(format!("get_forecast failed: {error}")))?;
         let forecast_obj = require_object(&forecast, "get_forecast result")?;
         self.require_keys(
             forecast_obj,

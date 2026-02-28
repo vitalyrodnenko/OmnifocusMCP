@@ -396,12 +396,12 @@ if (!project) {
 }
 
 const destination = (() => {
-  if (folderName === null) return library.ending;
+  if (folderName === null) return library;
   const targetFolder = document.flattenedFolders.byName(folderName);
   if (!targetFolder) {
     throw new Error(\`Folder not found: \${folderName}\`);
   }
-  return targetFolder.ending;
+  return targetFolder;
 })();
 
 moveSections([project], destination);
@@ -409,7 +409,7 @@ moveSections([project], destination);
 return {
   id: project.id.primaryKey,
   name: project.name,
-  folderName: project.folder ? project.folder.name : null
+  folderName: folderName
 };
 `.trim();
         const result = await runOmniJs(script);

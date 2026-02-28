@@ -1220,7 +1220,7 @@ async def test_move_project_happy_path_criterion11(
     assert 'const folderName = "Work";' in script
     assert ("const destination = (() => {" in script) or ("let destination;" in script)
     assert "const destination = (() => {" in script
-    assert "return targetFolder.ending;" in script
+    assert "return targetFolder;" in script
     assert "moveSections([project], destination);" in script
 
 
@@ -1238,7 +1238,7 @@ async def test_move_project_to_top_level_happy_path_criterion11(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert "const folderName = null;" in script
-    assert "if (folderName === null) return library.ending;" in script
+    assert "if (folderName === null) return library;" in script
 
 
 @pytest.mark.asyncio

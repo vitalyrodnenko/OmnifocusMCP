@@ -471,8 +471,8 @@ describe("tool happy paths", () => {
       script.includes("const destination = (() => {") || script.includes("let destination;")
     ).toBe(true);
     expect(
-      script.includes("if (folderName === null) return library.ending;") ||
-        script.includes("destination = library.ending;")
+      script.includes("if (folderName === null) return library;") ||
+        script.includes("destination = library;")
     ).toBe(true);
     expect(script).toContain("moveSections([project], destination);");
   });
