@@ -190,7 +190,7 @@ See individual phase criteria below.
        - Update tests to verify new fields are present in response.
        - All lint/test commands pass.
 
-6. [ ] All lint and test commands pass for Phase 1:
+6. [x] All lint and test commands pass for Phase 1:
        - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
        - `cd typescript && npx tsc --noEmit && npm test`
        - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`

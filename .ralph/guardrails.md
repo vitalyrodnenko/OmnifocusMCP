@@ -120,3 +120,8 @@
 - **Instruction**: Build a task-id map before any delete calls and resolve ids from that snapshot; deleting while repeatedly scanning `document.flattenedTasks` can invalidate task objects mid-loop
 - **Added after**: smoke test failed with `Task is no longer valid` after switching to `deleteObject(task)` in `delete_tasks_batch`
 
+### Sign: Re-read Full File When Parser Errors Contradict Partial Reads
+- **Trigger**: When compiler/rustfmt reports delimiter or duplicate-type errors but chunked reads look clean
+- **Instruction**: Read the full file once to catch duplicated blocks/stray braces introduced by partial edits, then repair the canonical single-definition structure before rerunning gates
+- **Added after**: `rust/tests/tools_read_test.rs` had duplicated `CapturingRunner`/brace fragments causing alternating `unexpected closing delimiter` and `unclosed delimiter` failures during criterion 6 validation
+

@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Full API parity (19 new tools across 3 implementations)
-- Current status: Iteration 13 in progress (criteria 1-4 complete).
-- Next criterion: 5 — add `completionDate` and `hasChildren` to `list_tasks` and `search_tasks` responses
-- Remaining: criteria 5-36
+- Current status: Iteration 34 in progress (criteria 1-6 complete).
+- Next criterion: 7 — add stalled detection to `list_projects` and `get_project`
+- Remaining: criteria 7-36
 
 ## How This Works
 
@@ -273,6 +273,17 @@ Reading even two full files will blow your budget and trigger rotation.
 ### 2026-02-28 14:34:23
 **Session 17 started** (model: auto)
 
+### 2026-02-28 14:47:30
+- completed criterion 4 (`list_tasks` sorting) across python/typescript/rust
+- verified and aligned sorting parameters and jxa behavior: `sortBy`, `sortOrder`, completion-date auto-sort to `completionDate`/`desc`, and nulls-last handling
+- added/validated sorting test coverage in TypeScript and Rust representative read-tool suites (dueDate asc, name desc, auto-sort, null ordering)
+- repaired and normalized Rust `tests/tools_read_test.rs` helper call signatures after sorting-parameter parity changes
+- reran full `RALPH_TASK.md` `test_command` successfully across all implementations:
+  - python: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest -v`
+  - typescript: `npx tsc --noEmit`, `npm test`
+  - rust: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test`
+- next criterion: 5 (`completionDate` and `hasChildren` in `list_tasks` + `search_tasks`)
+
 ### 2026-02-28 14:34:45
 **Session 17 ended** - 🔄 Context rotation (token limit reached)
 
@@ -390,3 +401,25 @@ Reading even two full files will blow your budget and trigger rotation.
 
 ### 2026-02-28 14:46:33
 **Session 35 started** (model: auto)
+
+### 2026-02-28 14:48:30
+- completed criterion 6 by running full phase-1 gates end-to-end and confirming green status across python/typescript/rust
+- resolved transient structural corruption in `rust/tests/tools_read_test.rs` (duplicate `CapturingRunner`/brace noise) and restored the canonical single-definition block before rerunning gates
+- verified final commands:
+  - python: `ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - typescript: `npx tsc --noEmit && npm test`
+  - rust: `cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- updated `RALPH_TASK.md` criterion 6 to `[x]`
+- next criterion: 7 (stalled detection in `list_projects` and `get_project`)
+
+### 2026-02-28 14:47:20
+- verified criterion 5 is already implemented across python/typescript/rust (`completionDate` + `hasChildren` in both `list_tasks` and `search_tasks`) with representative tests present
+- reran full phase gate command and confirmed all checks pass:
+  - python: `ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - typescript: `npx tsc --noEmit && npm test`
+  - rust: `cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- confirmed `RALPH_TASK.md` criteria 5 and 6 are both `[x]`
+- next criterion: 7 (stalled detection for `list_projects` and `get_project`)
+
+### 2026-02-28 14:47:33
+**Session 35 ended** - 🔄 Context rotation (token limit reached)
