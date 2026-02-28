@@ -1,5 +1,5 @@
 from omnifocus_mcp.registration import typed_prompt
-from omnifocus_mcp.server import mcp
+from omnifocus_mcp.app import mcp
 from omnifocus_mcp.tools.projects import get_project, list_projects
 from omnifocus_mcp.tools.tasks import get_inbox, list_tasks
 

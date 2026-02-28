@@ -138,7 +138,7 @@ typescript/src/
         Each exports a `register(server: McpServer): void` function.
         `resources.ts`, `prompts.ts`, `types.ts` created.
 16. [x] TypeScript: `npx tsc --noEmit && npm test` passes. Zero failures.
-17. [ ] Smoke test still passes against real OmniFocus after refactor.
+17. [x] Smoke test still passes against real OmniFocus after refactor.
 
 ---
 

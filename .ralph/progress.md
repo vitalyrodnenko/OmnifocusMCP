@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 0
-- Current status: Phase 3 in progress. Python split criteria 10-13 and TypeScript split criteria 14-16 are complete with passing checks/tests.
+- Current status: Phase 4 in progress. Phase 3 criteria 10-17 are complete with passing smoke validation after refactor.
 - Previous task: v1 completed (75/75), archived at `.ralph/RALPH_TASK_v1_complete.md`.
 
 ## How This Works
@@ -20,16 +20,16 @@ This is how Ralph maintains continuity across iterations.
 |-------|--------------------------------|-----------|------|
 | 1     | Real OmniFocus Smoke Test      | 1–5       | 5/5  |
 | 2     | Fix JXA Bugs                   | 6–9       | 4/4  |
-| 3     | Split Monolith Files           | 10–17     | 7/8  |
+| 3     | Split Monolith Files           | 10–17     | 8/8  |
 | 4     | Integration Tests              | 18–24     | 0/7  |
 | 5     | Final Cleanup                  | 25–28     | 0/4  |
 
-**Total: 16 / 28 criteria complete**
+**Total: 17 / 28 criteria complete**
 
 ## Key Context
 
-- Python source: `python/src/omnifocus_mcp/` — server.py is 1,216-line monolith
-- TypeScript source: `typescript/src/` — index.ts is 4,391-line monolith
+- Python source: `python/src/omnifocus_mcp/` — modularized into `tools/`, `resources.py`, and `prompts.py` with bootstrap `server.py`
+- TypeScript source: `typescript/src/` — modularized into `tools/`, `resources.ts`, `prompts.ts`, and shared `types.ts`
 - Python tests: 64 passing (all mocked, no real OmniFocus)
 - TypeScript tests: 25 passing (all mocked)
 - JXA bridge fix: switched to `evaluateJavascript()` and added compatibility aliases for `document.flattened*`
@@ -127,3 +127,17 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 09:15:14
 **Session 7 started** (model: auto)
+
+### 2026-02-28 09:22:00
+- hit criterion 17 failure on first smoke run: circular import from `python/src/omnifocus_mcp/server.py` symbol imports when smoke script imported `tools.folders` directly
+- fixed bootstrap imports in `python/src/omnifocus_mcp/server.py` by switching from `from ... import ...` symbol imports to module-only imports for prompts/resources/tools registration side effects
+- reran `cd python && uv run python scripts/smoke_test.py` successfully (0 failures)
+- reran `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` successfully (64 passed)
+- marked criterion 17 complete in `RALPH_TASK.md`
+- next focus: begin Phase 4 criterion 18 (integration marker config and skip logic)
+
+### 2026-02-28 09:19:27
+**Session 7 ended** - Agent finished naturally (11 criteria remaining)
+
+### 2026-02-28 09:19:29
+**Session 8 started** (model: auto)

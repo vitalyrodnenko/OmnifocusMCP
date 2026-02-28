@@ -1,5 +1,5 @@
 from omnifocus_mcp.registration import typed_resource
-from omnifocus_mcp.server import mcp
+from omnifocus_mcp.app import mcp
 from omnifocus_mcp.tools.forecast import get_forecast
 from omnifocus_mcp.tools.projects import list_projects
 from omnifocus_mcp.tools.tasks import get_inbox

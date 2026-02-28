@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772291086
-generated_at: 2026-02-28T15:07:29Z
+source_mtime: 1772291930
+generated_at: 2026-02-28T15:19:26Z
 
 tasks:
   - id: "line_32"
@@ -100,28 +100,28 @@ tasks:
     raw_marker: 13.
   - id: "line_134"
     line_number: 134
-    status: pending
+    status: completed
     parallel_group: 999999
     description: TypeScript: `index.ts` refactored to < 50 lines. Creates
     indent_level: 0
     raw_marker: 14.
   - id: "line_137"
     line_number: 137
-    status: pending
+    status: completed
     parallel_group: 999999
     description: TypeScript: `tools/` directory created with separate files.
     indent_level: 0
     raw_marker: 15.
   - id: "line_140"
     line_number: 140
-    status: pending
+    status: completed
     parallel_group: 999999
     description: TypeScript: `npx tsc --noEmit && npm test` passes. Zero failures.
     indent_level: 0
     raw_marker: 16.
   - id: "line_141"
     line_number: 141
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Smoke test still passes against real OmniFocus after refactor.
     indent_level: 0

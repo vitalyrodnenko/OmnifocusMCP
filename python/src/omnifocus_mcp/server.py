@@ -1,28 +1,12 @@
-from mcp.server.fastmcp import FastMCP  # type: ignore[import-not-found]
-
+from omnifocus_mcp.app import mcp
 from omnifocus_mcp.jxa import run_omnijs  # noqa: F401
 from omnifocus_mcp.registration import typed_tool
-
-
-mcp = FastMCP("omnifocus-mcp")
-
 
 @typed_tool(mcp)
 async def ping() -> dict[str, str]:
     return {"status": "ok", "message": "pong"}
 
 
-from omnifocus_mcp.prompts import (  # noqa: E402,F401
-    daily_review,
-    inbox_processing,
-    project_planning,
-    weekly_review,
-)
-from omnifocus_mcp.resources import (  # noqa: E402,F401
-    inbox_resource,
-    projects_resource,
-    today_resource,
-)
 from omnifocus_mcp.tools.folders import list_folders  # noqa: E402,F401
 from omnifocus_mcp.tools.forecast import get_forecast  # noqa: E402,F401
 from omnifocus_mcp.tools.perspectives import list_perspectives  # noqa: E402,F401
@@ -44,4 +28,16 @@ from omnifocus_mcp.tools.tasks import (  # noqa: E402,F401
     move_task,
     search_tasks,
     update_task,
+)
+
+from omnifocus_mcp.prompts import (  # noqa: E402,F401
+    daily_review,
+    inbox_processing,
+    project_planning,
+    weekly_review,
+)
+from omnifocus_mcp.resources import (  # noqa: E402,F401
+    inbox_resource,
+    projects_resource,
+    today_resource,
 )

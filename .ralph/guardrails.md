@@ -40,3 +40,13 @@
 - **Instruction**: Verify destructive API method signatures (`drop`, etc.) against real OmniFocus and pass required arguments explicitly
 - **Added after**: `task.drop()` failed at runtime requiring non-null `allOccurrences` argument
 
+### Sign: Avoid Symbol Imports in Bootstrap Registration
+- **Trigger**: When tool modules import `mcp` from `server` and `server` imports those modules to register tools
+- **Instruction**: Use module imports (`import package.module`) in `server.py`, not `from module import symbol`, to avoid circular import failures during direct tool-module imports
+- **Added after**: smoke test direct import of `tools.folders` failed with partially initialized module error for `list_folders`
+
+### Sign: Keep Bootstrap Imports Side-Effect Only
+- **Trigger**: When modular server bootstrap imports tools/resources/prompts
+- **Instruction**: Import modules for registration side effects instead of re-exporting tool symbols from `server.py` to avoid circular imports
+- **Added after**: smoke test import path hit circular import (`partially initialized module`) between `server.py` and tool modules
+
