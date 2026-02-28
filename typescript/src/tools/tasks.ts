@@ -1016,10 +1016,10 @@ return tasks.map(task => ({
   hasChildren: task.hasChildren
 }));
 `.trim();
-  return runOmniJs(script);
+return runOmniJs(script);
 }
 
-export async function getTaskCountsData(
+async function getTaskCountsDataLegacy1(
   project: string | undefined,
   tag: string | undefined,
   tags: string[] | undefined,
@@ -1334,10 +1334,10 @@ return tasks.map(task => ({
   hasChildren: task.hasChildren
 }));
 `.trim();
-  return runOmniJs(script);
+return runOmniJs(script);
 }
 
-export async function getTaskCountsData(
+async function getTaskCountsDataLegacy2(
   project: string | undefined,
   tag: string | undefined,
   tags: string[] | undefined,
@@ -1668,10 +1668,10 @@ return tasks.map(task => ({
   hasChildren: task.hasChildren
 }));
 `.trim();
-  return runOmniJs(script);
+return runOmniJs(script);
 }
 
-export async function getTaskCountsData(
+async function getTaskCountsDataLegacy3(
   project: string | undefined,
   tag: string | undefined,
   tags: string[] | undefined,
@@ -1792,7 +1792,7 @@ return counts;
   return runOmniJs(script);
 }
 
-export async function getTaskCountsData(
+async function getTaskCountsDataLegacy2(
   project: string | undefined,
   tag: string | undefined,
   tags: string[] | undefined,

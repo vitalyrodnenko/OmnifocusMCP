@@ -109,6 +109,49 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("hasChildren: task.hasChildren");
   });
 
+  test("get_task_counts builds aggregate counter script", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      total: 12,
+      available: 5,
+      completed: 3,
+      overdue: 2,
+      dueSoon: 4,
+      flagged: 6,
+      deferred: 4,
+    });
+    const result = await getTool("get_task_counts")({
+      project: "Proj",
+      tag: "urgent",
+      tags: ["home", "urgent"],
+      tagFilterMode: "all",
+      flagged: true,
+      dueBefore: "2026-03-10T00:00:00Z",
+      dueAfter: "2026-03-01T00:00:00Z",
+      deferBefore: "2026-03-08T00:00:00Z",
+      deferAfter: "2026-02-25T00:00:00Z",
+      completedBefore: "2026-03-09T00:00:00Z",
+      completedAfter: "2026-02-20T00:00:00Z",
+      maxEstimatedMinutes: 30,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const projectFilter = "Proj";');
+    expect(script).toContain('const tagNames = ["urgent","home"];');
+    expect(script).toContain('const tagFilterMode = "all";');
+    expect(script).toContain("const counts = {");
+    expect(script).toContain("counts.total += 1;");
+    expect(script).toContain("if (task.completed) {");
+    expect(script).toContain("if (task.deferDate !== null && task.deferDate > now) counts.deferred += 1;");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      total: 12,
+      available: 5,
+      completed: 3,
+      overdue: 2,
+      dueSoon: 4,
+      flagged: 6,
+      deferred: 4,
+    });
+  });
+
   test("list_tasks supports tags with any/all mode and tag+tags merge", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-merge", name: "merged" }]);
     await getTool("list_tasks")({
@@ -467,6 +510,44 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain(
       "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
     );
+  });
+
+  test("get_task_counts includes aggregate counters and filter logic", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      total: 4,
+      available: 2,
+      completed: 1,
+      overdue: 1,
+      dueSoon: 1,
+      flagged: 2,
+      deferred: 1,
+    });
+    const result = await getTool("get_task_counts")({
+      project: "Errands",
+      tag: "Home",
+      tags: ["Deep", "Home"],
+      tagFilterMode: "all",
+      flagged: true,
+      dueBefore: "2026-03-10T00:00:00Z",
+      completedAfter: "2026-03-01T00:00:00Z",
+      maxEstimatedMinutes: 30,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const projectFilter = "Errands";');
+    expect(script).toContain('const tagNames = ["Home","Deep"];');
+    expect(script).toContain('const tagFilterMode = "all";');
+    expect(script).toContain("const counts = {");
+    expect(script).toContain("counts.dueSoon += 1;");
+    expect(script).toContain("counts.deferred += 1;");
+    expect(parseToolResult(result)).toEqual({
+      total: 4,
+      available: 2,
+      completed: 1,
+      overdue: 1,
+      dueSoon: 1,
+      flagged: 2,
+      deferred: 1,
+    });
   });
 
   test("list_tags includes totalTaskCount and default sorting envelope", async () => {

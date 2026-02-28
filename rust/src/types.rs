@@ -61,6 +61,18 @@ pub struct FolderResult {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TaskCountsResult {
+    pub total: i32,
+    pub available: i32,
+    pub completed: i32,
+    pub overdue: i32,
+    #[serde(rename = "dueSoon")]
+    pub due_soon: i32,
+    pub flagged: i32,
+    pub deferred: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ForecastDay {
     pub date: String,
     pub task_count: i32,
