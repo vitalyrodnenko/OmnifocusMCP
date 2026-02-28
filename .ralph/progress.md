@@ -2176,3 +2176,21 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 13:36:37
 **Session 22 started** (model: auto)
+
+### 2026-02-28 13:40:00
+- completed criterion 24 by expanding `rust/examples/smoke_test.rs` to exercise all required Phase 5 tool flows:
+  - task flows: `uncomplete_task`, `create_subtask`, `list_subtasks`, `set_task_repetition` (set + clear), `append_to_note`, and `delete_tasks_batch`
+  - project flows: `uncomplete_project`, `update_project`, `set_project_status`, `delete_project`, and `move_project`
+  - tag/folder flows: create/update/get/delete checks for both tags and folders
+  - search flows: `search_projects` and `search_tags` against known created names
+- added smoke cleanup tracking for folders in `SmokeTest` (`created_folder_ids`) and integrated folder cleanup in `cleanup()`
+- ran rust quality gates after changes:
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 24 complete in `RALPH_TASK.md`
+- next focus: criterion 25 (`cd rust && cargo run --example smoke_test` against real OmniFocus; if unavailable/permission denied, emit `<ralph>GUTTER</ralph>`)
+
+### 2026-02-28 13:36:51
+**Session 22 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 13:36:53
+**Session 23 started** (model: auto)

@@ -419,6 +419,172 @@ See individual phase criteria below.
 
 ---
 
+## Phase 8 — Native OmniFocus Properties and Effective Values
+
+OmniFocus computes "effective" values for dates and flags that inherit
+from parent tasks and projects. It also has a native `taskStatus` enum
+that accounts for defer dates, sequential project ordering, and
+completion state. Exposing these gives the LLM the same view of task
+availability that OmniFocus shows in its UI.
+
+### Success Criteria
+
+23. [ ] **Add `taskStatus` to all task response objects** — all 3
+        implementations.
+        - New response field on every task object returned by
+          `list_tasks`, `search_tasks`, `get_inbox`, `get_forecast`,
+          `list_subtasks`, and `get_task`:
+          `taskStatus: (() => { const s = String(task.taskStatus); if (s.includes("Available")) return "available"; if (s.includes("Blocked")) return "blocked"; if (s.includes("Next")) return "next"; if (s.includes("DueSoon")) return "due_soon"; if (s.includes("Overdue")) return "overdue"; if (s.includes("Completed")) return "completed"; if (s.includes("Dropped")) return "dropped"; return "unknown"; })()`
+        - This is the **native** OmniFocus computed status. It differs
+          from our `status` filter param (which is user-facing). The
+          native status accounts for sequential project blocking,
+          defer dates, and on-hold tags — things our simple filters
+          cannot replicate.
+        - Add tests verifying taskStatus field is present and is one
+          of the expected enum values.
+        - All lint/test commands pass.
+
+24. [ ] **Add effective dates and flags to `get_task` response** — all 3
+        implementations.
+        - New response fields on `get_task` only (not on list tools,
+          to avoid performance overhead on bulk queries):
+          `effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null`
+          `effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null`
+          `effectiveFlagged: task.effectiveFlagged`
+        - These show the *inherited* values. A task inside a project
+          with a due date will show the project's due date in
+          `effectiveDueDate` even if the task's own `dueDate` is null.
+        - Add tests verifying effective fields are present.
+        - All lint/test commands pass.
+
+25. [ ] **Add `modified` timestamp to `get_task` and `get_project`** —
+        all 3 implementations.
+        - New response field: `modified: task.modified ? task.modified.toISOString() : null`
+        - Added to `get_task` and `get_project` responses only (not
+          list tools — too expensive for bulk).
+        - Enables "what did I change recently?" queries.
+        - Add tests verifying modified field is present.
+        - All lint/test commands pass.
+
+26. [ ] **Add `plannedDate` support** — all 3 implementations.
+        - New response field on `get_task`:
+          `plannedDate: task.plannedDate ? task.plannedDate.toISOString() : null`
+          `effectivePlannedDate: task.effectivePlannedDate ? task.effectivePlannedDate.toISOString() : null`
+        - New response field on `list_tasks` and `search_tasks`:
+          `plannedDate: task.plannedDate ? task.plannedDate.toISOString() : null`
+        - New optional filter params on `list_tasks` and `search_tasks`:
+          `plannedBefore: str | null` (ISO 8601),
+          `plannedAfter: str | null` (ISO 8601).
+        - **JXA logic:** same date range pattern as other date filters.
+          `plannedDate` is available in OmniFocus 4.7+ — wrap access
+          in a try/catch so older databases don't error. If the property
+          doesn't exist, return null and skip filtering.
+        - Add tests for plannedDate field and filter params.
+        - All lint/test commands pass.
+
+27. [ ] All lint and test commands pass for Phase 8 (same as criterion 6).
+
+---
+
+## Phase 9 — Notifications
+
+OmniFocus supports date-based and due-relative notifications (reminders)
+on tasks. These are the "remind me" alerts. Exposing them lets the LLM
+set reminders without the user opening OmniFocus.
+
+### Success Criteria
+
+28. [ ] **`list_notifications`** — all 3 implementations (NEW TOOL).
+        - **Input:** `task_id: str` (required, non-empty)
+        - **JXA:** find task by ID. Return `task.notifications.map(n => ({
+          id: n.id.primaryKey,
+          kind: n.initialFireDate ? "absolute" : "relative",
+          absoluteFireDate: n.initialFireDate ? n.initialFireDate.toISOString() : null,
+          relativeFireOffset: n.initialFireDate ? null : n.relativeFireOffset,
+          nextFireDate: n.nextFireDate ? n.nextFireDate.toISOString() : null,
+          isSnoozed: n.isSnoozed
+          }))`.
+        - **Error:** throw if task not found.
+        - Implement and test in all 3 implementations.
+
+29. [ ] **`add_notification`** — all 3 implementations (NEW TOOL).
+        - **Input:** `task_id: str` (required), plus ONE of:
+          `absoluteDate: str` (ISO 8601 — fire at this exact time), OR
+          `relativeOffset: number` (seconds before due date — negative
+          means before, e.g. -3600 = 1 hour before due).
+        - **Validation:** exactly one of `absoluteDate` or
+          `relativeOffset` must be provided. If `relativeOffset` is
+          used, the task must have an effectiveDueDate (error if not).
+        - **JXA:**
+          - Absolute: `task.addNotification(new Date(absoluteDate))`
+          - Relative: `task.addNotification(relativeOffset)`
+        - Return the created notification summary (same shape as
+          list_notifications items).
+        - Implement and test in all 3 implementations.
+
+30. [ ] **`remove_notification`** — all 3 implementations (NEW TOOL).
+        - **Input:** `task_id: str` (required), `notification_id: str`
+          (required)
+        - **JXA:** find task by ID. Find notification by ID in
+          `task.notifications`. Call `task.removeNotification(notif)`.
+          Return `{ taskId, notificationId, removed: true }`.
+        - **Error:** throw if task or notification not found.
+        - Implement and test in all 3 implementations.
+
+31. [ ] All lint and test commands pass for Phase 9 (same as criterion 6).
+
+---
+
+## Phase 10 — Duplicate Task
+
+### Success Criteria
+
+32. [ ] **`duplicate_task`** — all 3 implementations (NEW TOOL).
+        - **Input:** `task_id: str` (required, non-empty),
+          `includeChildren: bool = true` (whether to clone subtasks)
+        - **JXA:** find task by ID. Determine the insertion location
+          (same parent container — containing project or inbox).
+          Call `duplicateTasks([task], insertionLocation)`. The
+          returned array contains the new cloned task. Return the
+          new task's standard summary (id, name, note, flagged,
+          dueDate, deferDate, tags, etc.).
+        - If `includeChildren` is false, create a new task manually
+          with the same properties but without children. If true,
+          `duplicateTasks()` clones the full subtree by default.
+        - **Tool description:** "duplicate a task with all its
+          properties. if the task has subtasks, they are cloned too
+          by default."
+        - Implement and test in all 3 implementations.
+
+33. [ ] All lint and test commands pass for Phase 10 (same as criterion 6).
+
+---
+
+## Phase 11 — Final Parity Verification and Documentation
+
+### Success Criteria
+
+34. [ ] **Verify all new fields and tools across all 3 implementations:**
+        - taskStatus field present on all task response objects
+        - effective dates on get_task
+        - modified on get_task and get_project
+        - plannedDate on list_tasks, search_tasks, get_task
+        - Notification tools registered and working
+        - duplicate_task registered and working
+        - Character-identical JXA scripts
+
+35. [ ] **Update top-level `README.md`:**
+        - Add native taskStatus field to feature list
+        - Add effective dates to feature list
+        - Add notifications support section
+        - Add duplicate_task to tool table
+        - Add plannedDate to filtering documentation
+        - Update total tool count
+
+36. [ ] **Run full test suites — zero failures** (same as criterion 20).
+
+---
+
 ## Ralph Instructions
 
 1. Work on the next incomplete criterion (marked `[ ]`)
