@@ -671,8 +671,8 @@ describe("tool happy paths", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const folderFilter = "folder-1";');
-    expect(script).toContain("const projectCount = document.flattenedProjects.filter");
-    expect(script).toContain("const subfolderCount = document.flattenedFolders.filter");
+    expect(script).toContain("const projectCount = folder.projects.length;");
+    expect(script).toContain("const subfolderCount = folder.folders.length;");
     expect(script).toContain("deleteObject(folder);");
     expect(script).toContain("projectCount: projectCount");
     expect(script).toContain("subfolderCount: subfolderCount");

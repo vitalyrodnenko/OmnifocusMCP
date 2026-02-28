@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772305885
-generated_at: 2026-02-28T19:12:00Z
+source_mtime: 1772306321
+generated_at: 2026-02-28T19:19:12Z
 
 tasks:
   - id: "line_71"
@@ -128,14 +128,14 @@ tasks:
     raw_marker: 17.
   - id: "line_258"
     line_number: 258
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **`delete_folder`** — all 3 implementations.
     indent_level: 0
     raw_marker: 18.
   - id: "line_268"
     line_number: 268
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All lint and test commands pass for Phase 3 (same as criterion 6).
     indent_level: 0

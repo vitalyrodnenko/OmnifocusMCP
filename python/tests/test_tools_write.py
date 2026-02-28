@@ -560,6 +560,7 @@ async def test_delete_folder_happy_path_criterion18(
     assert "const projectCount = folder.projects.length;" in script
     assert "const subfolderCount = folder.folders.length;" in script
     assert "deleteObject(folder);" in script
+    assert "projectCount: projectCount" in script
     assert "subfolderCount: subfolderCount" in script
 
 

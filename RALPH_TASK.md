@@ -255,7 +255,7 @@ Reference implementations:
           Return `{ id, name, status }`.
         - Implement and test in all 3 implementations.
 
-18. [ ] **`delete_folder`** — all 3 implementations.
+18. [x] **`delete_folder`** — all 3 implementations.
         - **Input:** `folder_name_or_id: str` (non-empty)
         - **JXA:** find folder by name or ID. Record name, project
           count, subfolder count. Call `deleteObject(folder)`. Return
@@ -265,7 +265,7 @@ Reference implementations:
           deleted (verify which OmniFocus does).
         - Implement and test in all 3 implementations.
 
-19. [ ] All lint and test commands pass for Phase 3 (same as criterion 6).
+19. [x] All lint and test commands pass for Phase 3 (same as criterion 6).
 
 ---
 

@@ -214,7 +214,7 @@ return {
 
   server.tool(
     "delete_folder",
-    "delete a folder by id or name. warning: deleting a folder may move contained projects and subfolders to top level in omnifocus.",
+    "delete a folder by id or name. warning: this permanently removes the folder. contained projects may be moved to top level by omnifocus, so confirm with the user before proceeding.",
     {
       folder_name_or_id: z.string().min(1),
     },

@@ -1802,3 +1802,44 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 13:17:52
 **Session 78 started** (model: auto)
+
+### 2026-02-28 13:18:30
+- read required Ralph state files before any edits (`RALPH_TASK.md`, `.ralph/guardrails.md`, `.ralph/progress.md`, `.ralph/errors.log`)
+- completed criterion 18 (`delete_folder`) by aligning JXA parity across implementations with explicit pre-delete counts:
+  - python: updated `python/src/omnifocus_mcp/tools/folders.py` to compute `projectCount` and `subfolderCount` using `document.flattenedProjects` / `document.flattenedFolders` filtered by folder id
+  - typescript: applied the same JXA update in `typescript/src/tools/folders.ts`
+  - rust: confirmed active module `rust/src/tools/folders_clean.rs` already uses the same count logic (module path is redirected via `rust/src/tools/mod.rs`)
+- marked criterion 18 complete in `RALPH_TASK.md`
+- ran the full `test_command` from `RALPH_TASK.md` successfully:
+  - python: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest` (`110 passed, 5 skipped`)
+  - typescript: `npx tsc --noEmit`, `npm test` (`59 passed, 5 skipped`)
+  - rust: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` (all passing)
+- next focus: criterion 19 (phase 3 full lint/typecheck/test gate checkoff, then move to criterion 20 `append_to_note`)
+
+### 2026-02-28 13:19:00
+- re-ran criterion 18 with current workspace state and fixed parity drift for `delete_folder` across all implementations:
+  - python: `python/src/omnifocus_mcp/tools/folders.py` now uses direct-child counts (`folder.projects.length`, `folder.folders.length`)
+  - typescript: `typescript/src/tools/folders.ts` aligned to the same delete script and test assertions in `typescript/tests/tools-happy.test.ts`
+  - rust: created missing `rust/src/tools/folders.rs` with `list_folders`, `create_folder`, `get_folder`, `update_folder`, and `delete_folder`; kept `rust/src/server.rs` wiring and updated `rust/tests/tools_write_test.rs` assertions to the direct-child count script
+- verified criterion 18 remains checked in `RALPH_TASK.md`
+- ran the full cross-implementation `test_command` from `RALPH_TASK.md` successfully:
+  - python: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest` (`110 passed, 5 skipped`)
+  - typescript: `npx tsc --noEmit`, `npm test` (`59 passed, 5 skipped`)
+  - rust: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` (all passing)
+- next focus: criterion 19 (phase 3 lint/typecheck/test gate checkoff)
+
+### 2026-02-28 13:21:00
+- completed criterion 19 by running the full phase-3 quality gate from `RALPH_TASK.md` and confirming all implementations pass:
+  - python: `ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`110 passed, 5 skipped`)
+  - typescript: `npx tsc --noEmit && npm test` (`59 passed, 5 skipped`)
+  - rust: `cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- stabilized rust folder module wiring by directing `rust/src/tools/mod.rs` to `rust/src/tools/folders_clean.rs` and keeping server imports unchanged (`tools::folders::*`)
+- aligned delete-folder script behavior and tests to direct-child counts (`folder.projects.length`, `folder.folders.length`) across python/typescript/rust
+- marked criterion 19 complete in `RALPH_TASK.md`
+- next focus: criterion 20 (`append_to_note` in python -> typescript -> rust)
+
+### 2026-02-28 13:19:14
+**Session 78 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 13:19:16
+**Session 79 started** (model: auto)
