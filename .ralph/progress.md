@@ -400,3 +400,10 @@ This is how Ralph maintains continuity across iterations.
 - ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - marked criterion 19 complete in `RALPH_TASK.md`
 - next focus: criterion 20 (`rust/tests/tools_read_test.rs`)
+
+### 2026-02-28 11:08:46
+- completed criterion 20 by adding `rust/tests/tools_read_test.rs` with mocked `JxaRunner` coverage for all read tools
+- added happy-path tests, empty-result handling, malformed payload parse-error checks (`OmniFocusError::JsonParse`), and validation error assertions for invalid limits/ids/queries
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 20 complete in `RALPH_TASK.md`
+- next focus: criterion 21 (`rust/tests/tools_write_test.rs`)

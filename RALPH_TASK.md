@@ -191,7 +191,7 @@ Use the trait-based approach: tool functions accept `&dyn JxaRunner`
         - `get_forecast(limit: i32 = 100)` — param is `limit`, NOT `days`
 19. [x] Create `rust/src/tools/perspectives.rs`:
         - `list_perspectives(limit: i32 = 100)`
-20. [ ] Create `rust/tests/tools_read_test.rs` with mocked `JxaRunner`:
+20. [x] Create `rust/tests/tools_read_test.rs` with mocked `JxaRunner`:
         - Happy path for each read tool (canned JSON → typed result)
         - Empty results return empty vec
         - Malformed JSON from JXA produces `JsonParse` error
