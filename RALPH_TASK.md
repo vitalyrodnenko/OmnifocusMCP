@@ -36,7 +36,7 @@ Reference:
 
 ### Success Criteria
 
-1. [ ] Read `python/src/omnifocus_mcp/tools/tasks.py` to understand the
+1. [x] Read `python/src/omnifocus_mcp/tools/tasks.py` to understand the
        existing `delete_task` and `create_tasks_batch` implementations.
 2. [ ] Add `delete_tasks_batch` tool to `python/src/omnifocus_mcp/tools/tasks.py`:
        - **Input:** `task_ids: list[str]` — array of task IDs to delete.
