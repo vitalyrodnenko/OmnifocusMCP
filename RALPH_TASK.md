@@ -237,7 +237,7 @@ Reference implementations:
           Return `{ id, name }`.
         - Implement and test in all 3 implementations.
 
-16. [ ] **`get_folder`** — all 3 implementations.
+16. [x] **`get_folder`** — all 3 implementations.
         - **Input:** `folder_name_or_id: str` (non-empty)
         - **JXA:** find folder by name or ID. Return
           `{ id, name, status, parentName,
