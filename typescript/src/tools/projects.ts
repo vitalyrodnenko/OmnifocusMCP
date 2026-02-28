@@ -351,14 +351,16 @@ if (!project) {
   throw new Error(\`Project not found: \${projectFilter}\`);
 }
 
-const destination = (() => {
-  if (folderName === null) return library.ending;
+let destination;
+if (folderName === null) {
+  destination = library.ending;
+} else {
   const targetFolder = document.flattenedFolders.byName(folderName);
   if (!targetFolder) {
     throw new Error(\`Folder not found: \${folderName}\`);
   }
-  return targetFolder.ending;
-})();
+  destination = targetFolder.ending;
+}
 
 moveSections([project], destination);
 

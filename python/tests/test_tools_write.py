@@ -1,15 +1,5 @@
-import json
-from collections.abc import Callable
-import importlib
-import sys
-import types
-from typing import Any
-
-import pytest
-
-
 @pytest.fixture
-def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
+def server_module_duplicate(monkeypatch: pytest.MonkeyPatch) -> Any:
     class FakeFastMCP:
         def __init__(self, name: str):
             self.name = name
@@ -36,7 +26,7 @@ def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
 
 
 @pytest.fixture
-def mock_server_run_omnijs(
+def mock_server_run_omnijs_duplicate(
     server_module: Any,
     monkeypatch: pytest.MonkeyPatch,
 ) -> Callable[[Any], dict[str, Any]]:
@@ -64,7 +54,9 @@ def mock_server_run_omnijs(
 
 
 @pytest.mark.asyncio
-async def test_create_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_create_task_happy_path_duplicate(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {"id": "nt1", "name": "Buy groceries"}
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -483,7 +475,9 @@ async def test_create_task_happy_path(mock_server_run_omnijs: Callable[[Any], di
 
 
 @pytest.mark.asyncio
-async def test_create_tasks_batch_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_create_tasks_batch_happy_path_duplicate(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = [{"id": "t2", "name": "one"}, {"id": "t3", "name": "two"}]
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -525,7 +519,9 @@ async def test_create_tasks_batch_uses_single_omnijs_call_for_multiple_tasks(
 
 
 @pytest.mark.asyncio
-async def test_complete_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_complete_task_happy_path_duplicate(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {"id": "t4", "name": "Done", "completed": True}
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -616,7 +612,9 @@ async def test_set_task_repetition_none_schedule_type_happy_path(
 
 
 @pytest.mark.asyncio
-async def test_update_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_update_task_happy_path_duplicate(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {
         "id": "t5",
         "name": "Updated",
@@ -679,7 +677,9 @@ async def test_update_task_only_includes_provided_fields_in_updates_payload(
 
 
 @pytest.mark.asyncio
-async def test_delete_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_delete_task_happy_path_duplicate(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {"id": "t6", "name": "Drop me", "deleted": True, "warning": None}
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -694,7 +694,9 @@ async def test_delete_task_happy_path(mock_server_run_omnijs: Callable[[Any], di
 
 
 @pytest.mark.asyncio
-async def test_move_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_move_task_happy_path_duplicate(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {"id": "t7", "name": "Moved", "projectName": "Work", "inInbox": False}
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -710,7 +712,9 @@ async def test_move_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict
 
 
 @pytest.mark.asyncio
-async def test_create_project_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_create_project_happy_path_duplicate(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {"id": "p1"}
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -733,7 +737,9 @@ async def test_create_project_happy_path(mock_server_run_omnijs: Callable[[Any],
 
 
 @pytest.mark.asyncio
-async def test_complete_project_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_complete_project_happy_path_duplicate(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {"id": "p2", "name": "Launch", "completed": True}
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -748,7 +754,7 @@ async def test_complete_project_happy_path(mock_server_run_omnijs: Callable[[Any
 
 
 @pytest.mark.asyncio
-async def test_uncomplete_project_happy_path_criterion7(
+async def test_uncomplete_project_happy_path_criterion7_duplicate(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
     payload = {"id": "p2", "name": "Launch", "status": "active"}
@@ -767,7 +773,9 @@ async def test_uncomplete_project_happy_path_criterion7(
 
 
 @pytest.mark.asyncio
-async def test_create_tag_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_create_tag_happy_path_duplicate(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {"id": "tag1"}
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
