@@ -30,6 +30,7 @@ from omnifocus_mcp.tools.tasks import (  # noqa: E402,F401
     list_tasks,
     move_task,
     search_tasks,
+    set_task_repetition,
     uncomplete_task,
     update_task,
 )
