@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772301939
-generated_at: 2026-02-28T18:05:50Z
+source_mtime: 1772302052
+generated_at: 2026-02-28T18:08:00Z
 
 tasks:
   - id: "line_39"
@@ -107,28 +107,28 @@ tasks:
     raw_marker: 14.
   - id: "line_116"
     line_number: 116
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Run the smoke test against real OmniFocus — zero failures.
     indent_level: 0
     raw_marker: 15.
   - id: "line_118"
     line_number: 118
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Verify all three implementations produce identical tool names
     indent_level: 0
     raw_marker: 16.
   - id: "line_128"
     line_number: 128
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Update `README.md` tool count and tool list table to include
     indent_level: 0
     raw_marker: 17.
   - id: "line_130"
     line_number: 130
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Update `rust/README.md` if it has a separate tool listing.
     indent_level: 0

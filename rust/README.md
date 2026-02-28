@@ -5,7 +5,7 @@ compiled binary (`omnifocus-mcp`) distributable via Homebrew.
 
 ## Features
 
-- 19 tools, 3 resources, 4 prompts — full parity with Python and TypeScript
+- 20 tools, 3 resources, 4 prompts — full parity with Python and TypeScript
 - Single binary, zero runtime dependencies
 - ~5 MB release build
 - Homebrew-installable (`brew install omnifocus-mcp`)
@@ -48,7 +48,7 @@ rust/
     types.rs             — TaskResult, ProjectResult, TagResult, etc.
     tools/
       mod.rs             — re-exports
-      tasks.rs           — 10 task tools (get_inbox, list_tasks, create_task, etc.)
+      tasks.rs           — 11 task tools (get_inbox, list_tasks, create_task, delete_tasks_batch, etc.)
       projects.rs        — 4 project tools
       tags.rs            — 2 tag tools
       folders.rs         — list_folders

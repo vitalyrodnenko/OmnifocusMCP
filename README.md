@@ -36,7 +36,7 @@ OmniFocus MCP is a Model Context Protocol server for OmniFocus automation on mac
 
 ## Features
 
-### tools (19)
+### tools (20)
 
 | Type | Name | Description |
 | --- | --- | --- |
@@ -49,6 +49,7 @@ OmniFocus MCP is a Model Context Protocol server for OmniFocus automation on mac
 | tool | `complete_task` | Mark a task complete by id. |
 | tool | `update_task` | Apply partial updates to an existing task by id. |
 | tool | `delete_task` | Delete a task by id and return deletion status. |
+| tool | `delete_tasks_batch` | Delete multiple tasks in a single OmniJS call (confirm with the user first). |
 | tool | `move_task` | Move a task into a target project or back to inbox. |
 | tool | `list_projects` | List projects with optional folder and status filters. |
 | tool | `get_project` | Return full details for a project by id or exact name. |

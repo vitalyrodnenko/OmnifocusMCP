@@ -113,9 +113,9 @@ Reference:
 14. [x] Add `delete_tasks_batch` to the Rust smoke test
         (`rust/examples/smoke_test.rs`): create 3 test tasks, batch
         delete them, verify all deleted.
-15. [ ] Run the smoke test against real OmniFocus — zero failures.
+15. [x] Run the smoke test against real OmniFocus — zero failures.
         Fix any bugs discovered.
-16. [ ] Verify all three implementations produce identical tool names
+16. [x] Verify all three implementations produce identical tool names
         and matching response shapes. Manually compare a sample call
         or add a note confirming parity.
 
@@ -125,9 +125,9 @@ Reference:
 
 ### Success Criteria
 
-17. [ ] Update `README.md` tool count and tool list table to include
+17. [x] Update `README.md` tool count and tool list table to include
         `delete_tasks_batch`.
-18. [ ] Update `rust/README.md` if it has a separate tool listing.
+18. [x] Update `rust/README.md` if it has a separate tool listing.
 
 ---
 
