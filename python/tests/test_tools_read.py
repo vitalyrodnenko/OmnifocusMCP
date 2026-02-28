@@ -22,7 +22,9 @@ def _patch_run_omnijs(
         "omnifocus_mcp.tools.forecast",
         "omnifocus_mcp.tools.perspectives",
     ):
-        monkeypatch.setattr(importlib.import_module(module_name), "run_omnijs", fake_run_omnijs)
+        monkeypatch.setattr(
+            importlib.import_module(module_name), "run_omnijs", fake_run_omnijs
+        )
 
 
 @pytest.fixture
@@ -73,7 +75,9 @@ def mock_server_run_omnijs(
 
 
 @pytest.mark.asyncio
-async def test_get_inbox_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_get_inbox_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = [
         {
             "id": "t1",
@@ -97,7 +101,10 @@ async def test_get_inbox_happy_path(mock_server_run_omnijs: Callable[[Any], dict
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert ".slice(0, 5)" in state["calls"][0]["script"]
-    assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
+    assert (
+        "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
+        in state["calls"][0]["script"]
+    )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
 
 
@@ -233,7 +240,9 @@ async def test_project_planning_prompt_renders_expected_sections(
 
 
 @pytest.mark.asyncio
-async def test_list_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_list_tasks_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = [
         {
             "id": "t2",
@@ -254,12 +263,17 @@ async def test_list_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dic
     state = configured["state"]
     server = configured["server"]
 
-    result = await server.list_tasks(project="Proj", tag="urgent", flagged=True, status="due_soon", limit=7)
+    result = await server.list_tasks(
+        project="Proj", tag="urgent", flagged=True, status="due_soon", limit=7
+    )
 
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert 'const statusFilter = "due_soon";' in state["calls"][0]["script"]
-    assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
+    assert (
+        "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
+        in state["calls"][0]["script"]
+    )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
     assert ".slice(0, 7)" in state["calls"][0]["script"]
 
@@ -289,9 +303,18 @@ async def test_list_tasks_date_filters_are_included_in_script(
     script = state["calls"][0]["script"]
     assert 'const dueBeforeRaw = "2026-03-10T00:00:00Z";' in script
     assert 'const completedAfterRaw = "2026-02-20T00:00:00Z";' in script
-    assert 'throw new Error(`${fieldName} must be a valid ISO 8601 date string.`);' in script
-    assert "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;" in script
-    assert "if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;" in script
+    assert (
+        "throw new Error(`${fieldName} must be a valid ISO 8601 date string.`);"
+        in script
+    )
+    assert (
+        "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
+        in script
+    )
+    assert (
+        "if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;"
+        in script
+    )
     assert ".slice(0, 9)" in script
 
 
@@ -303,7 +326,9 @@ async def test_list_tasks_completed_date_filter_auto_includes_completed_logic(
     state = configured["state"]
     server = configured["server"]
 
-    await server.list_tasks(status="available", completedAfter="2026-03-01T00:00:00Z", limit=5)
+    await server.list_tasks(
+        status="available", completedAfter="2026-03-01T00:00:00Z", limit=5
+    )
 
     script = state["calls"][0]["script"]
     assert "else if (task.completed) {" in script
@@ -490,7 +515,10 @@ async def test_list_tasks_duration_filter_excludes_null_estimated_minutes_in_scr
     await server.list_tasks(maxEstimatedMinutes=30, limit=5)
 
     script = state["calls"][0]["script"]
-    assert "task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes" in script
+    assert (
+        "task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes"
+        in script
+    )
 
 
 @pytest.mark.asyncio
@@ -526,7 +554,7 @@ async def test_get_task_counts_includes_filters_and_aggregate_counters_in_script
     assert 'const projectFilter = "Errands";' in script
     assert 'const tagNames = ["Home", "Deep"];' in script
     assert 'const tagFilterMode = "all";' in script
-    assert 'const flaggedFilter = true;' in script
+    assert "const flaggedFilter = true;" in script
     assert 'const dueBeforeRaw = "2026-03-10T00:00:00Z";' in script
     assert "const counts = {" in script
     assert "counts.dueSoon += 1;" in script
@@ -535,7 +563,9 @@ async def test_get_task_counts_includes_filters_and_aggregate_counters_in_script
 
 
 @pytest.mark.asyncio
-async def test_get_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_get_task_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {
         "id": "t3",
         "name": "Task 3",
@@ -565,7 +595,9 @@ async def test_get_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[
 
 
 @pytest.mark.asyncio
-async def test_get_task_counts_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_get_task_counts_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {
         "total": 6,
         "available": 3,
@@ -579,7 +611,9 @@ async def test_get_task_counts_happy_path(mock_server_run_omnijs: Callable[[Any]
     state = configured["state"]
     server = configured["server"]
 
-    result = await server.get_task_counts(project="Errands", tags=["Home"], flagged=True)
+    result = await server.get_task_counts(
+        project="Errands", tags=["Home"], flagged=True
+    )
 
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
@@ -604,7 +638,9 @@ async def test_get_task_counts_validation_errors(server_module: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_subtasks_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_list_subtasks_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = [
         {
             "id": "st1",
@@ -632,7 +668,9 @@ async def test_list_subtasks_happy_path(mock_server_run_omnijs: Callable[[Any], 
 
 
 @pytest.mark.asyncio
-async def test_search_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_search_tasks_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = [
         {
             "id": "t4",
@@ -658,7 +696,10 @@ async def test_search_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], d
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert 'const queryFilter = "milk".toLowerCase();' in state["calls"][0]["script"]
-    assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
+    assert (
+        "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
+        in state["calls"][0]["script"]
+    )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
 
 
@@ -674,7 +715,10 @@ async def test_search_tasks_with_project_filter_uses_combined_filters(
     script = state["calls"][0]["script"]
     assert 'const projectFilter = "Errands";' in script
     assert "if (projectFilter !== null) {" in script
-    assert "if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;" in script
+    assert (
+        "if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;"
+        in script
+    )
 
 
 @pytest.mark.asyncio
@@ -685,12 +729,17 @@ async def test_search_tasks_with_completed_after_auto_includes_completed_and_aut
     state = configured["state"]
     server = configured["server"]
 
-    await server.search_tasks(query="shape", completedAfter="2026-03-01T00:00:00Z", limit=5)
+    await server.search_tasks(
+        query="shape", completedAfter="2026-03-01T00:00:00Z", limit=5
+    )
     script = state["calls"][0]["script"]
     assert 'const statusFilter = "all";' in script
     assert 'const sortBy = "completionDate";' in script
     assert 'const sortOrder = "desc";' in script
-    assert "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;" in script
+    assert (
+        "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
+        in script
+    )
 
 
 @pytest.mark.asyncio
@@ -701,7 +750,9 @@ async def test_search_tasks_with_status_filter_and_sorting(
     state = configured["state"]
     server = configured["server"]
 
-    await server.search_tasks(query="shape", status="overdue", sortBy="name", sortOrder="desc", limit=5)
+    await server.search_tasks(
+        query="shape", status="overdue", sortBy="name", sortOrder="desc", limit=5
+    )
     script = state["calls"][0]["script"]
     assert 'const statusFilter = "overdue";' in script
     assert 'const sortBy = "name";' in script
@@ -722,7 +773,9 @@ async def test_search_tasks_validation_errors(server_module: Any) -> None:
 
 
 @pytest.mark.asyncio
-async def test_list_projects_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_list_projects_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = [
         {
             "id": "p1",
@@ -753,8 +806,11 @@ async def test_list_projects_happy_path(mock_server_run_omnijs: Callable[[Any], 
     script = state["calls"][0]["script"]
     assert 'const statusFilter = "active";' in script
     assert "const nextTask = project.nextTask;" in script
-    assert "const isStalled = normalizeProjectStatus(project) === \"active\"" in script
-    assert "completionDate: project.completionDate ? project.completionDate.toISOString() : null," in script
+    assert 'const isStalled = normalizeProjectStatus(project) === "active"' in script
+    assert (
+        "completionDate: project.completionDate ? project.completionDate.toISOString() : null,"
+        in script
+    )
     assert "nextTaskId: nextTask ? nextTask.id.primaryKey : null," in script
 
 
@@ -762,7 +818,9 @@ async def test_list_projects_happy_path(mock_server_run_omnijs: Callable[[Any], 
 async def test_list_projects_completion_filters_and_auto_sort_script(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
-    configured = mock_server_run_omnijs([{"id": "p-completed", "name": "Completed Project"}])
+    configured = mock_server_run_omnijs(
+        [{"id": "p-completed", "name": "Completed Project"}]
+    )
     state = configured["state"]
     server = configured["server"]
 
@@ -782,11 +840,15 @@ async def test_list_projects_completion_filters_and_auto_sort_script(
 async def test_list_projects_stalled_only_and_sorting_script(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
-    configured = mock_server_run_omnijs([{"id": "p-stalled", "name": "Stalled Project"}])
+    configured = mock_server_run_omnijs(
+        [{"id": "p-stalled", "name": "Stalled Project"}]
+    )
     state = configured["state"]
     server = configured["server"]
 
-    await server.list_projects(stalledOnly=True, sortBy="taskCount", sortOrder="desc", limit=5)
+    await server.list_projects(
+        stalledOnly=True, sortBy="taskCount", sortOrder="desc", limit=5
+    )
 
     script = state["calls"][0]["script"]
     assert 'const statusFilter = "active";' in script
@@ -801,7 +863,12 @@ async def test_search_projects_happy_path_criterion21(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
     payload = [
-        {"id": "p8", "name": "Personal Admin", "status": "active", "folderName": "Personal"},
+        {
+            "id": "p8",
+            "name": "Personal Admin",
+            "status": "active",
+            "folderName": "Personal",
+        },
     ]
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -818,7 +885,9 @@ async def test_search_projects_happy_path_criterion21(
 
 
 @pytest.mark.asyncio
-async def test_get_project_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_get_project_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {
         "id": "p2",
         "name": "Project Two",
@@ -850,9 +919,15 @@ async def test_get_project_happy_path(mock_server_run_omnijs: Callable[[Any], di
     script = state["calls"][0]["script"]
     assert 'const projectFilter = "p2";' in script
     assert "const nextTask = project.nextTask;" in script
-    assert "const isStalled = normalizeProjectStatus(project) === \"active\"" in script
-    assert "completedTaskCount: allProjectTasks.filter(task => task.completed).length," in script
-    assert "availableTaskCount: allProjectTasks.filter(task => !task.completed && (task.deferDate === null || task.deferDate <= new Date())).length," in script
+    assert 'const isStalled = normalizeProjectStatus(project) === "active"' in script
+    assert (
+        "completedTaskCount: allProjectTasks.filter(task => task.completed).length,"
+        in script
+    )
+    assert (
+        "availableTaskCount: allProjectTasks.filter(task => !task.completed && (task.deferDate === null || task.deferDate <= new Date())).length,"
+        in script
+    )
 
 
 @pytest.mark.asyncio
@@ -877,7 +952,9 @@ async def test_search_tags_happy_path_criterion22(
 
 
 @pytest.mark.asyncio
-async def test_list_tags_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_list_tags_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = [
         {
             "id": "tag1",
@@ -907,24 +984,48 @@ async def test_list_tags_status_filter_and_sorting_script(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
     configured = mock_server_run_omnijs(
-        [{"id": "tag2", "name": "home", "parent": None, "availableTaskCount": 2, "totalTaskCount": 3, "status": "active"}]
+        [
+            {
+                "id": "tag2",
+                "name": "home",
+                "parent": None,
+                "availableTaskCount": 2,
+                "totalTaskCount": 3,
+                "status": "active",
+            }
+        ]
     )
     state = configured["state"]
     server = configured["server"]
 
-    await server.list_tags(statusFilter="active", sortBy="totalTaskCount", sortOrder="desc", limit=7)
+    await server.list_tags(
+        statusFilter="active", sortBy="totalTaskCount", sortOrder="desc", limit=7
+    )
     script = state["calls"][0]["script"]
     assert 'const statusFilter = "active";' in script
     assert 'const sortBy = "totalTaskCount";' in script
     assert 'const sortOrder = "desc";' in script
-    assert "statusFilter === \"all\" || normalizeTagStatus(tag) === statusFilter" in script
+    assert (
+        'statusFilter === "all" || normalizeTagStatus(tag) === statusFilter' in script
+    )
     assert "return sortedTags.slice(0, 7);" in script
 
 
 @pytest.mark.asyncio
-async def test_list_tags_name_sort_script(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_list_tags_name_sort_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     configured = mock_server_run_omnijs(
-        [{"id": "tag3", "name": "alpha", "parent": None, "availableTaskCount": 1, "totalTaskCount": 1, "status": "active"}]
+        [
+            {
+                "id": "tag3",
+                "name": "alpha",
+                "parent": None,
+                "availableTaskCount": 1,
+                "totalTaskCount": 1,
+                "status": "active",
+            }
+        ]
     )
     state = configured["state"]
     server = configured["server"]
@@ -937,7 +1038,9 @@ async def test_list_tags_name_sort_script(mock_server_run_omnijs: Callable[[Any]
 
 
 @pytest.mark.asyncio
-async def test_list_folders_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_list_folders_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = [{"id": "f1", "name": "Work", "parentName": None, "projectCount": 2}]
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -977,7 +1080,9 @@ async def test_get_folder_happy_path_criterion16(
 
 
 @pytest.mark.asyncio
-async def test_get_forecast_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_get_forecast_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = {
         "overdue": [{"id": "t5", "name": "Overdue"}],
         "dueToday": [{"id": "t6", "name": "Today"}],
@@ -996,7 +1101,9 @@ async def test_get_forecast_happy_path(mock_server_run_omnijs: Callable[[Any], d
 
 
 @pytest.mark.asyncio
-async def test_list_perspectives_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+async def test_list_perspectives_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
     payload = [{"id": "persp1", "name": "Inbox"}]
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -1011,7 +1118,9 @@ async def test_list_perspectives_happy_path(mock_server_run_omnijs: Callable[[An
 
 
 @pytest.mark.asyncio
-async def test_get_task_not_found_error(server_module: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_get_task_not_found_error(
+    server_module: Any, monkeypatch: pytest.MonkeyPatch
+) -> None:
     async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
         raise RuntimeError("Task not found: missing-id")
 
@@ -1030,7 +1139,9 @@ async def test_list_tasks_invalid_date_error_bubbles_up(
 
     _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
 
-    with pytest.raises(RuntimeError, match="dueBefore must be a valid ISO 8601 date string."):
+    with pytest.raises(
+        RuntimeError, match="dueBefore must be a valid ISO 8601 date string."
+    ):
         await server_module.list_tasks(dueBefore="bad-date")
 
 
@@ -1043,7 +1154,9 @@ async def test_get_task_counts_invalid_date_error_bubbles_up(
 
     _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
 
-    with pytest.raises(RuntimeError, match="dueBefore must be a valid ISO 8601 date string."):
+    with pytest.raises(
+        RuntimeError, match="dueBefore must be a valid ISO 8601 date string."
+    ):
         await server_module.get_task_counts(dueBefore="bad-date")
 
 
@@ -1078,7 +1191,9 @@ async def test_list_projects_invalid_sort_validation_error(server_module: Any) -
 
 
 @pytest.mark.asyncio
-async def test_list_tags_invalid_status_filter_validation_error(server_module: Any) -> None:
+async def test_list_tags_invalid_status_filter_validation_error(
+    server_module: Any,
+) -> None:
     with pytest.raises(ValueError, match="statusFilter must be one of"):
         await server_module.list_tags(statusFilter="invalid")  # type: ignore[arg-type]
 
@@ -1090,7 +1205,9 @@ async def test_list_tags_invalid_sort_validation_error(server_module: Any) -> No
 
 
 @pytest.mark.asyncio
-async def test_search_projects_validation_errors_criterion21(server_module: Any) -> None:
+async def test_search_projects_validation_errors_criterion21(
+    server_module: Any,
+) -> None:
     with pytest.raises(ValueError, match="query must not be empty."):
         await server_module.search_projects("   ")
     with pytest.raises(ValueError, match="limit must be greater than 0."):
@@ -1106,7 +1223,9 @@ async def test_search_tags_validation_errors_criterion22(server_module: Any) -> 
 
 
 @pytest.mark.asyncio
-async def test_get_folder_empty_identifier_validation_error_criterion16(server_module: Any) -> None:
+async def test_get_folder_empty_identifier_validation_error_criterion16(
+    server_module: Any,
+) -> None:
     with pytest.raises(ValueError, match="folder_name_or_id must not be empty."):
         await server_module.get_folder("   ")
 
@@ -1253,4 +1372,6 @@ async def test_server_handles_rapid_sequential_tool_calls(
         responses.append(await server_module.list_tasks(limit=1, status="all"))
 
     assert len(calls) == 100
-    assert all(json.loads(response) == [{"id": "t1", "name": "Task"}] for response in responses)
+    assert all(
+        json.loads(response) == [{"id": "t1", "name": "Task"}] for response in responses
+    )
