@@ -9,6 +9,7 @@ async def ping() -> dict[str, str]:
 
 
 import omnifocus_mcp.tools.folders as folders_tools  # noqa: E402  # type: ignore
+import omnifocus_mcp.tools.tags as tags_tools  # noqa: E402  # type: ignore
 from omnifocus_mcp.tools.forecast import get_forecast  # noqa: E402,F401
 from omnifocus_mcp.tools.perspectives import list_perspectives  # noqa: E402,F401
 from omnifocus_mcp.tools.projects import (  # noqa: E402,F401
@@ -22,13 +23,6 @@ from omnifocus_mcp.tools.projects import (  # noqa: E402,F401
     set_project_status,
     update_project,
     uncomplete_project,
-)
-from omnifocus_mcp.tools.tags import (  # noqa: E402,F401
-    create_tag,
-    delete_tag,
-    list_tags,
-    search_tags,
-    update_tag,
 )
 from omnifocus_mcp.tools.tasks import (  # noqa: E402,F401
     append_to_note,
@@ -65,3 +59,8 @@ delete_folder = folders_tools.delete_folder
 get_folder = folders_tools.get_folder
 list_folders = folders_tools.list_folders
 update_folder = folders_tools.update_folder
+create_tag = tags_tools.create_tag
+delete_tag = tags_tools.delete_tag
+list_tags = tags_tools.list_tags
+search_tags = tags_tools.search_tags
+update_tag = tags_tools.update_tag
