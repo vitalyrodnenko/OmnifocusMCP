@@ -485,7 +485,34 @@ async fn list_tasks_date_filter_script_contains_expected_logic() {
         "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
     ));
     assert!(script.contains("statusMatches = includeCompletedForDateFilter;"));
+    assert!(script.contains(
+        "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
+    ));
+    assert!(script.contains("hasChildren: task.hasChildren"));
     assert!(script.contains("must be a valid ISO 8601 date string."));
+}
+
+#[tokio::test]
+async fn search_tasks_script_includes_completion_and_children_fields() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-search-shape", "search shape task")]),
+        last_script: last_script.clone(),
+    };
+
+    let searched = search_tasks(&runner, "shape", 2)
+        .await
+        .expect("search should parse");
+    assert_eq!(searched.len(), 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(
+        "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
+    ));
+    assert!(script.contains("hasChildren: task.hasChildren"));
 }
 
 #[tokio::test]
@@ -504,8 +531,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
-        None,
-        None,
         None,
         None,
         None,
@@ -537,8 +562,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
         5,
     )
     .await
@@ -559,8 +582,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "all",
         None,
         "available",
-        None,
-        None,
         None,
         None,
         None,
@@ -591,8 +612,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
         5,
     )
     .await
@@ -612,8 +631,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
-        None,
-        None,
         None,
         None,
         None,
@@ -980,7 +997,6 @@ async fn list_tasks_invalid_date_error_bubbles_up() {
         None,
         None,
         None,
-        None,
         5,
     )
     .await
@@ -1014,8 +1030,6 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         None,
         None,
         None,
-        None,
-        None,
         5,
     )
     .await
@@ -1042,9 +1056,6 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
         5,
     )
     .await
@@ -1066,9 +1077,6 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         "any",
         None,
         "available",
-        None,
-        None,
-        None,
         None,
         None,
         None,
@@ -1102,7 +1110,6 @@ async fn list_tasks_tags_filter_modes_and_merging_are_in_script() {
         "all",
         Some(true),
         "available",
-        None,
         None,
         None,
         None,
