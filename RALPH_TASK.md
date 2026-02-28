@@ -289,10 +289,10 @@ patterns as `python/tests/test_integration.py`.
           complete → delete. Cleanup in Drop impl or explicit teardown.
         - `test_search_finds_created_task` — create, search, assert found
         - `test_project_lifecycle` — create → get → complete
-34. [ ] Integration tests pass: `cargo test --features integration`
+34. [x] Integration tests pass: `cargo test --features integration`
         (with OmniFocus running).
-35. [ ] Integration tests are excluded from normal `cargo test`.
-36. [ ] No test data leaks — all `[TEST-MCP]` items cleaned up by
+35. [x] Integration tests are excluded from normal `cargo test`.
+36. [x] No test data leaks — all `[TEST-MCP]` items cleaned up by
         teardown even if assertions panic (use `Drop` or explicit
         cleanup at start of each test).
 

@@ -607,6 +607,12 @@ This is how Ralph maintains continuity across iterations.
 - reran rust validation command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing, integration tests excluded by default)
 - next focus: criterion 34 (`cd rust && cargo test --features integration`)
 
+### 2026-02-28 12:38:00
+- completed criterion 34 by running `cd rust && cargo test --features integration` with OmniFocus available (`5 passed` integration tests)
+- completed criterion 35 by running `cd rust && cargo test` and verifying `tests/integration_test.rs` reports `running 0 tests` by default
+- completed criterion 36 using prefix-based cleanup at test boundaries in `rust/tests/integration_test.rs` so `[TEST-MCP]` artifacts are removed between runs
+- next focus: criterion 37 (`cd rust && cargo build --release` plus `--version` verification)
+
 ### 2026-02-28 11:31:21
 **Session 18 ended** - 🔄 Context rotation (token limit reached)
 
