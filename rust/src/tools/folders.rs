@@ -96,32 +96,21 @@ if (!folder) {{
   throw new Error(`Folder not found: ${{folderFilter}}`);
 }}
 
-const normalizeFolderStatus = (item) => {{
-  const rawStatus = String(item.status || "").toLowerCase();
-  if (rawStatus.includes("dropped")) return "dropped";
-  return "active";
-}};
-
-const normalizeProjectStatus = (item) => {{
-  const rawStatus = String(item.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
-    return "on_hold";
-  }}
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
-  return "active";
+const normalizeStatus = (value) => {{
+  const raw = String(value || "").split(".").pop() || "";
+  return raw.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 }};
 
 return {{
   id: folder.id.primaryKey,
   name: folder.name,
-  status: normalizeFolderStatus(folder),
+  status: normalizeStatus(folder.status),
   parentName: folder.parent ? folder.parent.name : null,
   projects: folder.projects.map(project => {{
     return {{
       id: project.id.primaryKey,
       name: project.name,
-      status: normalizeProjectStatus(project)
+      status: normalizeStatus(project.status)
     }};
   }}),
   subfolders: folder.folders.map(subfolder => {{
@@ -130,6 +119,169 @@ return {{
       name: subfolder.name
     }};
   }})
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn update_folder<R: JxaRunner>(
+    runner: &R,
+    folder_name_or_id: &str,
+    name: Option<&str>,
+    status: Option<&str>,
+) -> Result<Value> {
+    let folder_filter = folder_name_or_id.trim();
+    let new_name_value = name.map(str::trim);
+
+    if folder_filter.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "folder_name_or_id must not be empty.".to_string(),
+        ));
+    }
+    if matches!(new_name_value, Some("")) {
+        return Err(OmniFocusError::Validation(
+            "name must not be empty when provided.".to_string(),
+        ));
+    }
+    if let Some(status_value) = status {
+        if status_value != "active" && status_value != "dropped" {
+            return Err(OmniFocusError::Validation(
+                "status must be one of: active, dropped.".to_string(),
+            ));
+        }
+    }
+    if new_name_value.is_none() && status.is_none() {
+        return Err(OmniFocusError::Validation(
+            "at least one field must be provided: name or status.".to_string(),
+        ));
+    }
+
+    let escaped_folder_filter = escape_for_jxa(folder_filter);
+    let escaped_name = new_name_value
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let escaped_status = status
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let script = format!(
+        r#"const folderFilter = {escaped_folder_filter};
+const newName = {escaped_name};
+const statusValue = {escaped_status};
+
+const folder = document.flattenedFolders.find(item => {{
+  return item.id.primaryKey === folderFilter || item.name === folderFilter;
+}});
+if (!folder) {{
+  throw new Error(`Folder not found: ${{folderFilter}}`);
+}}
+
+if (newName !== null) {{
+  folder.name = newName;
+}}
+
+if (statusValue !== null) {{
+  let targetStatus;
+  if (statusValue === "active") {{
+    targetStatus = Folder.Status.Active;
+  }} else if (statusValue === "dropped") {{
+    targetStatus = Folder.Status.Dropped;
+  }} else {{
+    throw new Error(`Invalid status: ${{statusValue}}`);
+  }}
+  folder.status = targetStatus;
+}}
+
+const normalizeFolderStatus = (item) => {{
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+return {{
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeFolderStatus(folder)
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn update_folder<R: JxaRunner>(
+    runner: &R,
+    folder_name_or_id: &str,
+    name: Option<&str>,
+    status: Option<&str>,
+) -> Result<Value> {
+    if folder_name_or_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "folder_name_or_id must not be empty.".to_string(),
+        ));
+    }
+    if let Some(value) = name {
+        if value.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "name must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if let Some(value) = status {
+        if !matches!(value, "active" | "dropped") {
+            return Err(OmniFocusError::Validation(
+                "status must be one of: active, dropped.".to_string(),
+            ));
+        }
+    }
+    if name.is_none() && status.is_none() {
+        return Err(OmniFocusError::Validation(
+            "at least one field must be provided: name or status.".to_string(),
+        ));
+    }
+
+    let folder_filter = escape_for_jxa(folder_name_or_id.trim());
+    let new_name = name
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let status_value = status
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let script = format!(
+        r#"const folderFilter = {folder_filter};
+const newName = {new_name};
+const statusValue = {status_value};
+
+const folder = document.flattenedFolders.find(item => {{
+  return item.id.primaryKey === folderFilter || item.name === folderFilter;
+}});
+if (!folder) {{
+  throw new Error(`Folder not found: ${{folderFilter}}`);
+}}
+
+if (newName !== null) {{
+  folder.name = newName;
+}}
+
+if (statusValue !== null) {{
+  let targetStatus;
+  if (statusValue === "active") {{
+    targetStatus = Folder.Status.Active;
+  }} else if (statusValue === "dropped") {{
+    targetStatus = Folder.Status.Dropped;
+  }} else {{
+    throw new Error(`Invalid status: ${{statusValue}}`);
+  }}
+  folder.status = targetStatus;
+}}
+
+const normalizeFolderStatus = (item) => {{
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+return {{
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeFolderStatus(folder)
 }};"#
     );
     runner.run_omnijs(&script).await
