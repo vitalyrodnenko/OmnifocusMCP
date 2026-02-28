@@ -162,7 +162,7 @@ default and only run when explicitly requested.
           using `[TEST-MCP]` prefix. Cleanup in fixture teardown.
         - `test_search_finds_created_task` — create task, search, assert found
         - `test_project_lifecycle` — create → get → complete
-20. [ ] Python integration tests pass when run explicitly:
+20. [x] Python integration tests pass when run explicitly:
         `cd python && pytest tests/ -v -m integration` (with OmniFocus running).
 21. [ ] Python integration tests skip cleanly when run normally:
         `cd python && pytest tests/ -v` shows them as skipped (not failed).
