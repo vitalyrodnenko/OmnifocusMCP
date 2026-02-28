@@ -172,6 +172,40 @@ return {{
 
     runner.run_omnijs(&script).await
 }
+
+pub async fn delete_tag<R: JxaRunner>(runner: &R, tag_name_or_id: &str) -> Result<Value> {
+    if tag_name_or_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "tag_name_or_id must not be empty.".to_string(),
+        ));
+    }
+
+    let tag_filter = escape_for_jxa(tag_name_or_id.trim());
+    let script = format!(
+        r#"const tagFilter = {tag_filter};
+const tag = document.flattenedTags.find(
+  t => t.id.primaryKey === tagFilter || t.name === tagFilter
+);
+if (!tag) {{
+  throw new Error(`Tag not found: ${{tagFilter}}`);
+}}
+
+const tagId = tag.id.primaryKey;
+const tagName = tag.name;
+const taskCount = tag.tasks.length;
+
+deleteObject(tag);
+
+return {{
+  id: tagId,
+  name: tagName,
+  deleted: true,
+  taskCount: taskCount
+}};"#
+    );
+
+    runner.run_omnijs(&script).await
+}
 use serde_json::Value;
 
 use crate::{
@@ -331,6 +365,40 @@ return {{
   id: tag.id.primaryKey,
   name: tag.name,
   status: normalizeTagStatus(tag)
+}};"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
+pub async fn delete_tag<R: JxaRunner>(runner: &R, tag_name_or_id: &str) -> Result<Value> {
+    if tag_name_or_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "tag_name_or_id must not be empty.".to_string(),
+        ));
+    }
+
+    let tag_filter = escape_for_jxa(tag_name_or_id.trim());
+    let script = format!(
+        r#"const tagFilter = {tag_filter};
+const tag = document.flattenedTags.find(
+  t => t.id.primaryKey === tagFilter || t.name === tagFilter
+);
+if (!tag) {{
+  throw new Error(`Tag not found: ${{tagFilter}}`);
+}}
+
+const tagId = tag.id.primaryKey;
+const tagName = tag.name;
+const taskCount = tag.tasks.length;
+
+deleteObject(tag);
+
+return {{
+  id: tagId,
+  name: tagName,
+  deleted: true,
+  taskCount: taskCount
 }};"#
     );
 
