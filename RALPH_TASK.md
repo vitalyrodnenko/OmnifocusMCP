@@ -73,15 +73,15 @@ Reference:
 
 5. [x] Read `typescript/src/tools/tasks.ts` to understand the existing
        `delete_task` and `create_tasks_batch` implementations.
-6. [ ] Add `delete_tasks_batch` tool to `typescript/src/tools/tasks.ts`:
+6. [x] Add `delete_tasks_batch` tool to `typescript/src/tools/tasks.ts`:
        - **Tool name:** `delete_tasks_batch` (must match Python exactly)
        - **Input schema:** `{ task_ids: z.array(z.string().min(1)).min(1) }`
        - **Tool description:** identical approval language as Python
        - **JXA script:** character-identical to the Python version
        - **Response shape:** identical to Python
-7. [ ] Add tests in `typescript/tests/tools-tasks.test.ts` (or
+7. [x] Add tests in `typescript/tests/tools-tasks.test.ts` (or
        equivalent test file) matching the Python test cases.
-8. [ ] `cd typescript && npx tsc --noEmit && npm run lint && npm test` all pass.
+8. [x] `cd typescript && npx tsc --noEmit && npm run lint && npm test` all pass.
 
 ---
 

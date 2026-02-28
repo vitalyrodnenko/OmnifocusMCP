@@ -560,7 +560,7 @@ return {{
 async def delete_tasks_batch(task_ids: list[str]) -> str:
     """delete multiple tasks by id in a single omnijs call.
 
-    important: before calling this tool, always show the user the list of tasks
+    IMPORTANT: before calling this tool, always show the user the list of tasks
     to be deleted and ask for explicit confirmation. do not proceed without user
     approval.
     """

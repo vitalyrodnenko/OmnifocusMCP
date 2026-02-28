@@ -271,6 +271,60 @@ return { id: taskId, name: taskName, deleted: true };
   });
 
   server.tool(
+    "delete_tasks_batch",
+    "delete multiple tasks by id in a single omnijs call. IMPORTANT: before calling this tool, always show the user the list of tasks to be deleted and ask for explicit confirmation. do not proceed without user approval.",
+    { task_ids: z.array(z.string().min(1)).min(1) },
+    async ({ task_ids }) => {
+      try {
+        if (task_ids.length === 0) {
+          throw new Error("task_ids must contain at least one task id.");
+        }
+        const normalizedTaskIds = task_ids.map((taskId) => {
+          const normalizedTaskId = taskId.trim();
+          if (normalizedTaskId === "") {
+            throw new Error("each task id must be a non-empty string.");
+          }
+          return normalizedTaskId;
+        });
+        const taskIdsValue = `[${normalizedTaskIds.map((taskId) => JSON.stringify(taskId)).join(", ")}]`;
+        const script = `
+const taskIds = ${taskIdsValue};
+const results = taskIds.map(taskId => {
+  const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+  if (!task) {
+    return {
+      id: taskId,
+      deleted: false,
+      error: "not found"
+    };
+  }
+
+  const taskName = task.name;
+  task.drop(false);
+  return {
+    id: taskId,
+    name: taskName,
+    deleted: true
+  };
+});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const notFoundCount = results.length - deletedCount;
+
+return {
+  deleted_count: deletedCount,
+  not_found_count: notFoundCount,
+  results: results
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "move_task",
     "move a task to a different project or to inbox.",
     { task_id: z.string().min(1), project: z.string().min(1).optional() },

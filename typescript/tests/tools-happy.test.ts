@@ -104,6 +104,74 @@ describe("tool happy paths", () => {
     expect(script).toContain("const updates = {\"name\":\"Updated task\",\"flagged\":true};");
   });
 
+  test("delete_tasks_batch returns batch deletion summary payload", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      deleted_count: 2,
+      not_found_count: 0,
+      results: [
+        { id: "t1", name: "Task One", deleted: true },
+        { id: "t2", name: "Task Two", deleted: true },
+      ],
+    });
+    const handler = registeredTools.get("delete_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ task_ids: ["t1", "t2"] });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      deleted_count: 2,
+      not_found_count: 0,
+      results: [
+        { id: "t1", name: "Task One", deleted: true },
+        { id: "t2", name: "Task Two", deleted: true },
+      ],
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const taskIds = ["t1", "t2"];');
+    expect(script).toContain("task.drop(false);");
+    expect(script).toContain("deleted_count");
+  });
+
+  test("delete_tasks_batch supports partial not-found results", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      deleted_count: 1,
+      not_found_count: 1,
+      results: [
+        { id: "t1", name: "Task One", deleted: true },
+        { id: "missing", deleted: false, error: "not found" },
+      ],
+    });
+    const handler = registeredTools.get("delete_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ task_ids: ["t1", "missing"] });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      deleted_count: 1,
+      not_found_count: 1,
+      results: [
+        { id: "t1", name: "Task One", deleted: true },
+        { id: "missing", deleted: false, error: "not found" },
+      ],
+    });
+  });
+
+  test("delete_tasks_batch returns error for empty task_ids array", async () => {
+    const handler = registeredTools.get("delete_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ task_ids: [] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "task_ids must contain at least one task id.",
+    });
+  });
+
+  test("delete_tasks_batch returns error for empty trimmed task id", async () => {
+    const handler = registeredTools.get("delete_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({ task_ids: ["t1", "   "] });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "each task id must be a non-empty string.",
+    });
+  });
+
   test("complete_project marks project complete and returns confirmation", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "p1", name: "Project 1", completed: true });
     const handler = registeredTools.get("complete_project");

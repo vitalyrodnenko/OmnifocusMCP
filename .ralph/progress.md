@@ -734,3 +734,13 @@ This is how Ralph maintains continuity across iterations.
 - ran required phase command successfully: `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`68 passed, 5 skipped`)
 - marked criteria 1-4 complete in `RALPH_TASK.md`
 - next focus: phase 2 criteria 5-8 for TypeScript parity
+
+### 2026-02-28 14:45:00
+- completed phase 2 criteria 5-8 for `delete_tasks_batch` in TypeScript
+- added `delete_tasks_batch` registration in `typescript/src/tools/tasks.ts` with schema `{ task_ids: z.array(z.string().min(1)).min(1) }`, required confirmation language, trimmed-id validation, and Python-parity response shape (`deleted_count`, `not_found_count`, `results`)
+- matched Python batch-delete OmniJS body in TypeScript (single-call lookup/delete flow using `task.drop(false)` and per-id result objects)
+- added TypeScript tests in `typescript/tests/tools-happy.test.ts` for happy path, partial failure, empty-array validation, and empty-id validation
+- updated `typescript/tests/docs.test.ts` assertion to the current top-level README switching heading
+- ran required phase command successfully: `cd typescript && npx tsc --noEmit && npm run lint && npm test` (`29 passed, 5 skipped`)
+- marked criteria 5-8 complete in `RALPH_TASK.md`
+- next focus: phase 3 criteria 9-13 for Rust parity
