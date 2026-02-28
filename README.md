@@ -38,9 +38,9 @@ This project is not affiliated with, endorsed by, or associated with The Omni Gr
 
 ## Features
 
-### tools (40)
+### tools (44)
 
-API parity is complete across Python, TypeScript, and Rust for all tool names, input schemas, and response shapes, expanding the surface from the original 20 tools to the current 40.
+API parity is complete across Python, TypeScript, and Rust for all tool names, input schemas, and response shapes, expanding the surface from the original 20 tools to the current 44.
 
 | Type | Name | Description |
 | --- | --- | --- |
@@ -55,6 +55,10 @@ API parity is complete across Python, TypeScript, and Rust for all tool names, i
 | tool | `uncomplete_task` | Reopen a completed task by id. |
 | tool | `create_subtask` | Create a child task under an existing parent task. |
 | tool | `list_subtasks` | List direct children of a task with standard task summaries. |
+| tool | `list_notifications` | List active notifications on a task by id. |
+| tool | `add_notification` | Add one notification to a task by id using absolute date or due-relative offset. |
+| tool | `remove_notification` | Remove one notification from a task by notification id. |
+| tool | `duplicate_task` | Duplicate a task with all properties, optionally including subtasks. |
 | tool | `set_task_repetition` | Set or clear a task repetition rule (`RRULE`) and schedule type. |
 | tool | `update_task` | Apply partial updates to an existing task by id. |
 | tool | `delete_task` | Delete a task by id and return deletion status. |
@@ -85,6 +89,12 @@ API parity is complete across Python, TypeScript, and Rust for all tool names, i
 | tool | `get_forecast` | Return forecast sections for overdue, due today, flagged, deferred, and due-this-week work plus counts. |
 | tool | `list_perspectives` | List available built-in and custom perspectives. |
 
+### native OmniFocus properties
+
+- `taskStatus` is exposed on all task summary surfaces (`get_inbox`, `list_tasks`, `search_tasks`, `list_subtasks`, `get_task`, `get_forecast`) to reflect OmniFocus-native availability logic.
+- `effectiveDueDate`, `effectiveDeferDate`, `effectiveFlagged`, and `effectivePlannedDate` are exposed on `get_task` for inherited scheduling/flag state.
+- `modified` timestamps are exposed on both `get_task` and `get_project` for change-tracking workflows.
+
 ### resources (3)
 
 | Type | Name | Description |
@@ -106,7 +116,7 @@ API parity is complete across Python, TypeScript, and Rust for all tool names, i
 
 ### `list_tasks` filters and sorting
 
-- date filters: `dueBefore`, `dueAfter`, `deferBefore`, `deferAfter`, `completedBefore`, `completedAfter`
+- date filters: `dueBefore`, `dueAfter`, `deferBefore`, `deferAfter`, `completedBefore`, `completedAfter`, `plannedBefore`, `plannedAfter`
 - tag filters: `tag` (single alias), `tags` (multi-tag), `tagFilterMode` (`any`/`all`)
 - effort filter: `maxEstimatedMinutes`
 - sorting: `sortBy` (`dueDate`, `deferDate`, `name`, `completionDate`, `estimatedMinutes`, `project`, `flagged`) and `sortOrder` (`asc`/`desc`)
@@ -122,6 +132,11 @@ API parity is complete across Python, TypeScript, and Rust for all tool names, i
 - `get_task_counts` summarizes task totals (`total`, `available`, `completed`, `overdue`, `dueSoon`, `flagged`, `deferred`) for the same filter set used by `list_tasks`
 - `get_project_counts` summarizes project totals (`total`, `active`, `onHold`, `completed`, `dropped`, `stalled`) with optional folder filtering
 - these tools are optimized for "how many" questions and avoid returning full task/project lists
+
+## Notifications and Duplication
+
+- `list_notifications`, `add_notification`, and `remove_notification` provide full reminder lifecycle support for task alerts.
+- `duplicate_task` clones task metadata and can either preserve subtasks (`includeChildren=true`) or create a flat copy (`includeChildren=false`).
 
 ## Example LLM Queries
 

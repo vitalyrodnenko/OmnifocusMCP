@@ -6,9 +6,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: phases 1-10 complete and phase 11 queued (33/36 criteria done).
-- Next criterion: **34** — final parity verification across all 3 implementations
-- Remaining: criteria 34-36 (3 criteria in Phase 11)
+- Current status: criterion 34 complete and documentation updates pending (34/36 criteria done).
+- Next criterion: **35** — update top-level `README.md` for final Phase 11 docs
+- Remaining: criteria 35-36 (2 criteria in Phase 11)
 
 ## Phase Overview
 
@@ -24,28 +24,19 @@
 | 8     | Native Properties & Effective Vals | 23–27    | 5/5  |
 | 9     | Notifications                      | 28–31    | 4/4  |
 | 10    | Duplicate Task                     | 32–33    | 2/2  |
-| 11    | Final Parity & Docs                | 34–36    | 0/3  |
+| 11    | Final Parity & Docs                | 34–36    | 1/3  |
 
-**Total: 33 / 36 criteria complete**
+**Total: 34 / 36 criteria complete**
 
 ## Key Context
 
 - Python tools: `python/src/omnifocus_mcp/tools/*.py`
 - TypeScript tools: `typescript/src/tools/*.ts`
 - Rust tools: `rust/src/tools/*.rs`
-- Criteria 23-33 complete: taskStatus/effective fields/modified/plannedDate, notifications, and duplicate_task with gate passing
-- Next: criterion 34 (final parity verification)
+- Criteria 23-34 complete: parity verified for taskStatus/effective fields/modified/plannedDate, notification tools, and duplicate_task
+- Next: criterion 35 (README Phase 11 updates)
 
 ## Session History (keep only last 3 substantive entries)
-
-### 2026-02-28 16:23
-- completed criterion 32 by stabilizing `duplicate_task` and keeping one canonical active implementation per language
-- resolved duplicate-definition regressions introduced during iteration and reran focused duplicate_task checks
-- focused verification run:
-  - `cd python && pytest tests/test_tools_write.py -k duplicate_task -v`
-  - `cd typescript && npm test -- tools-representative.test.ts -t duplicate_task`
-  - `cd rust && cargo test --test tools_write_test duplicate_task`
-- next: criterion 33 (phase 10 full gate)
 
 ### 2026-02-28 16:24
 - completed criterion 33 by running the full cross-language gate end-to-end
@@ -58,3 +49,9 @@
 - reconciled state tracking drift by re-running the full gate and marking criterion 31 complete in `RALPH_TASK.md`
 - aligned `duplicate_task` script shape across Python, TypeScript, and Rust plus representative assertions
 - next: criterion 34 (verify parity of all new fields/tools)
+
+### 2026-02-28 16:27
+- completed criterion 34 parity verification with targeted cross-language symbol checks using `rg`
+- verified registration and presence of `list_notifications`, `add_notification`, `remove_notification`, and `duplicate_task` across Python/TypeScript/Rust
+- verified `taskStatus`, effective date/flag fields, `modified`, and `plannedDate` surfaces are present in all required read endpoints
+- next: criterion 35 (final README updates)

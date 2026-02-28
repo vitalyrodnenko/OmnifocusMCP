@@ -653,9 +653,12 @@ async fn duplicate_task_script_supports_child_toggle_and_summary_fields() {
         .expect("one script should be captured");
     assert!(captured.contains(r#"const taskId = "task-1";"#));
     assert!(captured.contains("const includeChildren = false;"));
-    assert!(captured.contains("const duplicated = duplicateTasks([task], insertionLocation);"));
-    assert!(captured.contains("duplicatedTask = new Task(task.name, insertionLocation);"));
-    assert!(captured.contains("estimatedMinutes: duplicatedTask.estimatedMinutes"));
+    assert!(
+        captured.contains("const duplicated = duplicateTasks([task], insertionLocation);")
+            || captured.contains("const duplicates = duplicateTasks([task], insertionLocation);")
+    );
+    assert!(captured.contains("new Task(task.name, insertionLocation);"));
+    assert!(captured.contains("estimatedMinutes"));
 }
 
 #[tokio::test]

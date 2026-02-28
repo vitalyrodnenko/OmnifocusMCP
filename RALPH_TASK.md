@@ -567,7 +567,7 @@ set reminders without the user opening OmniFocus.
 
 ### Success Criteria
 
-34. [ ] **Verify all new fields and tools across all 3 implementations:**
+34. [x] **Verify all new fields and tools across all 3 implementations:**
         - taskStatus field present on all task response objects
         - effective dates on get_task
         - modified on get_task and get_project
