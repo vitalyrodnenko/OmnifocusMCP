@@ -8,7 +8,7 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
-        projects::{complete_project, create_project, uncomplete_project},
+        projects::{complete_project, create_project, uncomplete_project, update_project},
         tags::create_tag,
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
@@ -186,6 +186,23 @@ async fn write_project_and_tag_tools_happy_path() {
         .expect("uncomplete_project should succeed");
     assert_eq!(uncompleted_project["id"], "p1");
 
+    let updated_project = update_project(
+        &runner,
+        "p1",
+        Some("Updated Project"),
+        Some("updated note"),
+        Some("2026-03-07T10:00:00Z"),
+        Some("2026-03-01T10:00:00Z"),
+        Some(true),
+        Some(vec!["work".to_string(), "focus".to_string()]),
+        Some(false),
+        Some(true),
+        Some("2 weeks"),
+    )
+    .await
+    .expect("update_project should succeed");
+    assert_eq!(updated_project["id"], "p1");
+
     let created_tag = create_tag(&runner, "home", Some("parent"))
         .await
         .expect("create_tag should succeed");
@@ -241,6 +258,40 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         uncomplete_project(&runner, "   ").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_project(
+            &runner,
+            "   ",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None
+        )
+        .await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_project(
+            &runner,
+            "project",
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(vec!["ok".to_string(), "   ".to_string()]),
+            None,
+            None,
+            None
+        )
+        .await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -459,6 +510,46 @@ async fn uncomplete_project_script_marks_incomplete_and_checks_completed_state()
         .expect("one script should be captured");
     assert!(captured.contains("if (!project.completed) {"));
     assert!(captured.contains("project.markIncomplete();"));
+}
+
+#[tokio::test]
+async fn update_project_script_applies_partial_fields_and_tag_replacement() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "p3", "name": "Updated Project", "status": "active"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = update_project(
+        &runner,
+        "p3",
+        Some("Updated Project"),
+        Some("updated note"),
+        Some("2026-03-07T10:00:00Z"),
+        Some("2026-03-01T10:00:00Z"),
+        Some(true),
+        Some(vec!["work".to_string(), "focus".to_string()]),
+        Some(false),
+        Some(true),
+        Some("2 weeks"),
+    )
+    .await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const projectFilter = \"p3\";"));
+    assert!(captured.contains("\"completedByChildren\":true"));
+    assert!(captured.contains(
+        "project.reviewInterval = parseReviewInterval(updates.reviewInterval);"
+    ));
+    assert!(captured.contains("existingTags.forEach"));
+    assert!(captured.contains("project.addTag(tag);"));
 }
 
 #[tokio::test]

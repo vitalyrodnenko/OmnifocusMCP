@@ -31,6 +31,7 @@ use crate::{
         perspectives::list_perspectives,
         projects::{
             complete_project, create_project, get_project, list_projects, uncomplete_project,
+            update_project,
         },
         tags::{create_tag, list_tags},
         tasks::{
@@ -163,9 +164,29 @@ struct CreateProjectParams {
     name: String,
     folder: Option<String>,
     note: Option<String>,
+    #[serde(rename = "dueDate")]
     due_date: Option<String>,
+    #[serde(rename = "deferDate")]
     defer_date: Option<String>,
     sequential: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct UpdateProjectParams {
+    project_id_or_name: String,
+    name: Option<String>,
+    note: Option<String>,
+    #[serde(rename = "dueDate")]
+    due_date: Option<String>,
+    #[serde(rename = "deferDate")]
+    defer_date: Option<String>,
+    flagged: Option<bool>,
+    tags: Option<Vec<String>>,
+    sequential: Option<bool>,
+    #[serde(rename = "completedByChildren")]
+    completed_by_children: Option<bool>,
+    #[serde(rename = "reviewInterval")]
+    review_interval: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -515,6 +536,29 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = uncomplete_project(self.runner.as_ref(), &params.project_id_or_name)
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "update a project by id or name, modifying only provided fields.")]
+    async fn update_project(
+        &self,
+        Parameters(params): Parameters<UpdateProjectParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = update_project(
+            self.runner.as_ref(),
+            &params.project_id_or_name,
+            params.name.as_deref(),
+            params.note.as_deref(),
+            params.due_date.as_deref(),
+            params.defer_date.as_deref(),
+            params.flagged,
+            params.tags,
+            params.sequential,
+            params.completed_by_children,
+            params.review_interval.as_deref(),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
