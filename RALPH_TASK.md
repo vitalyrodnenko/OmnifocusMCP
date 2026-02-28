@@ -334,7 +334,7 @@ See individual phase criteria below.
           faster than list_tasks for answering 'how many' questions."
         - Implement and test in all 3 implementations.
 
-15. [ ] **`get_project_counts`** — all 3 implementations (NEW TOOL).
+15. [x] **`get_project_counts`** — all 3 implementations (NEW TOOL).
         - **Input:** `folder: str | null` (optional folder filter)
         - **Response:** `{ total, active, onHold, completed, dropped,
           stalled }` where each is a count of projects in that state.
