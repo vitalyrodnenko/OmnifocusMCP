@@ -444,7 +444,7 @@ if (ruleString === null) {
   const scheduleType = (() => {
     if (scheduleTypeInput === "regularly") return Task.RepetitionScheduleType.Regularly;
     if (scheduleTypeInput === "from_completion") return Task.RepetitionScheduleType.FromCompletion;
-    if (scheduleTypeInput === "none") return null;
+    if (scheduleTypeInput === "none") return Task.RepetitionScheduleType.None;
     throw new Error(\`Invalid schedule_type: \${scheduleTypeInput}\`);
   })();
   task.repetitionRule = new Task.RepetitionRule(ruleString, null, scheduleType, null, false);

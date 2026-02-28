@@ -662,7 +662,7 @@ pub async fn set_task_repetition<R: JxaRunner>(
 
     let task_id_value = escape_for_jxa(task_id.trim());
     let rule_string_value = rule_string
-        .map(escape_for_jxa)
+        .map(|value| escape_for_jxa(value.trim()))
         .unwrap_or_else(|| "null".to_string());
     let schedule_type_value = escape_for_jxa(schedule_type);
     let script = format!(
@@ -680,7 +680,7 @@ if (ruleString === null) {{
   const scheduleType = (() => {{
     if (scheduleTypeInput === "regularly") return Task.RepetitionScheduleType.Regularly;
     if (scheduleTypeInput === "from_completion") return Task.RepetitionScheduleType.FromCompletion;
-    if (scheduleTypeInput === "none") return null;
+    if (scheduleTypeInput === "none") return Task.RepetitionScheduleType.None;
     throw new Error(`Invalid schedule_type: ${{scheduleTypeInput}}`);
   }})();
   task.repetitionRule = new Task.RepetitionRule(ruleString, null, scheduleType, null, false);

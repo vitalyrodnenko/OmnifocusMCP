@@ -12,7 +12,8 @@ use omnifocus_mcp::{
         tags::create_tag,
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, move_task, uncomplete_task, update_task, CreateTaskInput,
+            delete_tasks_batch, move_task, set_task_repetition, uncomplete_task, update_task,
+            CreateTaskInput,
         },
     },
 };
@@ -120,6 +121,11 @@ async fn write_task_tools_happy_path() {
         .expect("uncomplete_task should succeed");
     assert_eq!(uncompleted["id"], "t1");
 
+    let repeated = set_task_repetition(&runner, "t1", Some("FREQ=WEEKLY"), "regularly")
+        .await
+        .expect("set_task_repetition should succeed");
+    assert_eq!(repeated["id"], "t1");
+
     let updated = update_task(
         &runner,
         "t1",
@@ -195,6 +201,14 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         create_subtask(&runner, "name", "   ", None, None, None, None, None, None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        set_task_repetition(&runner, "   ", Some("FREQ=DAILY"), "regularly").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        set_task_repetition(&runner, "task-id", Some("FREQ=DAILY"), "invalid").await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -414,4 +428,37 @@ async fn uncomplete_task_script_marks_incomplete_and_checks_completed_state() {
         .expect("one script should be captured");
     assert!(captured.contains("if (!task.completed) {"));
     assert!(captured.contains("task.markIncomplete();"));
+}
+
+#[tokio::test]
+async fn set_task_repetition_script_sets_and_clears_rules() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "t3", "name": "Recurring", "repetitionRule": "FREQ=WEEKLY"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let set_result = set_task_repetition(&runner, "t3", Some("FREQ=WEEKLY"), "regularly").await;
+    assert!(set_result.is_ok());
+
+    let clear_result = set_task_repetition(&runner, "t3", None, "regularly").await;
+    assert!(clear_result.is_ok());
+
+    let captured = scripts.lock().expect("scripts lock should succeed");
+    let set_script = captured
+        .first()
+        .cloned()
+        .expect("set_task_repetition set script should be captured");
+    let clear_script = captured
+        .get(1)
+        .cloned()
+        .expect("set_task_repetition clear script should be captured");
+
+    assert!(set_script.contains("const scheduleTypeInput = \"regularly\";"));
+    assert!(set_script.contains(
+        "task.repetitionRule = new Task.RepetitionRule(ruleString, null, scheduleType, null, false);"
+    ));
+    assert!(clear_script.contains("const ruleString = null;"));
+    assert!(clear_script.contains("task.repetitionRule = null;"));
 }
