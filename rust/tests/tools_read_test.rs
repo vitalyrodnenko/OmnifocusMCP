@@ -137,6 +137,16 @@ async fn read_task_tools_happy_path() {
         .expect("inbox should parse");
     assert_eq!(inbox.len(), 1);
     assert_eq!(inbox[0].id, "t1");
+    assert!([
+        "available",
+        "blocked",
+        "next",
+        "due_soon",
+        "overdue",
+        "completed",
+        "dropped",
+    ]
+    .contains(&inbox[0].task_status.as_str()));
 
     let list_runner = MockRunner {
         payload: json!([task_value("t2", "listed task")]),
@@ -161,6 +171,16 @@ async fn read_task_tools_happy_path() {
     .expect("tasks should parse");
     assert_eq!(listed.len(), 1);
     assert_eq!(listed[0].name, "listed task");
+    assert!([
+        "available",
+        "blocked",
+        "next",
+        "due_soon",
+        "overdue",
+        "completed",
+        "dropped",
+    ]
+    .contains(&listed[0].task_status.as_str()));
 
     let get_runner = MockRunner {
         payload: json!({"id": "t3", "name": "single task"}),
@@ -176,6 +196,16 @@ async fn read_task_tools_happy_path() {
         .expect("subtasks should parse");
     assert_eq!(subtasks.len(), 1);
     assert_eq!(subtasks[0].id, "st1");
+    assert!([
+        "available",
+        "blocked",
+        "next",
+        "due_soon",
+        "overdue",
+        "completed",
+        "dropped",
+    ]
+    .contains(&subtasks[0].task_status.as_str()));
 
     let search_runner = MockRunner {
         payload: json!([task_value("t4", "searched task")]),
@@ -204,6 +234,16 @@ async fn read_task_tools_happy_path() {
     .expect("search should parse");
     assert_eq!(searched.len(), 1);
     assert_eq!(searched[0].name, "searched task");
+    assert!([
+        "available",
+        "blocked",
+        "next",
+        "due_soon",
+        "overdue",
+        "completed",
+        "dropped",
+    ]
+    .contains(&searched[0].task_status.as_str()));
 }
 
 #[tokio::test]

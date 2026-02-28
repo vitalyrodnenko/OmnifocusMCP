@@ -35,6 +35,17 @@ const toTaskSummary = (task) => {
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
     completionDate: task.completionDate ? task.completionDate.toISOString() : null,
+    taskStatus: (() => {
+      const s = String(task.taskStatus);
+      if (s.includes("Available")) return "available";
+      if (s.includes("Blocked")) return "blocked";
+      if (s.includes("Next")) return "next";
+      if (s.includes("DueSoon")) return "due_soon";
+      if (s.includes("Overdue")) return "overdue";
+      if (s.includes("Completed")) return "completed";
+      if (s.includes("Dropped")) return "dropped";
+      return "unknown";
+    })(),
     projectName: task.containingProject ? task.containingProject.name : null,
     tags: task.tags.map(tag => tag.name),
     estimatedMinutes: task.estimatedMinutes,

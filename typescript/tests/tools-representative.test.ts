@@ -529,6 +529,26 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "sub-1", name: "child" }]);
   });
 
+  test("get_task includes native taskStatus field mapping", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "task-9", name: "single task", taskStatus: "overdue" });
+    const result = await getTool("get_task")({ task_id: "task-9" });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const taskId = "task-9";');
+    expect(script).toContain("taskStatus: (() => {");
+    expect(script).toContain('if (s.includes("Overdue")) return "overdue";');
+    const parsed = JSON.parse(result.content[0].text);
+    expect(parsed).toEqual({ id: "task-9", name: "single task", taskStatus: "overdue" });
+    expect([
+      "available",
+      "blocked",
+      "next",
+      "due_soon",
+      "overdue",
+      "completed",
+      "dropped",
+    ]).toContain(parsed.taskStatus);
+  });
+
   test("search_tasks mapper includes completionDate and hasChildren", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "search-shape", name: "shape" }]);
     await getTool("search_tasks")({ query: "shape", limit: 2 });

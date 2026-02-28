@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 complete.
-- Next criterion: **23** — add `taskStatus` to all task response objects across all 3 implementations
-- Remaining: criteria 23-36 (14 criteria across Phases 8-11)
+- Current status: Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 complete. Phase 8 is in progress.
+- Next criterion: **24** — add `effectiveDueDate`, `effectiveDeferDate`, and `effectiveFlagged` to `get_task` across all 3 implementations
+- Remaining: criteria 24-36 (13 criteria across Phases 8-11)
 
 ## How This Works
 
@@ -26,12 +26,12 @@ This is how Ralph maintains continuity across iterations.
 | 5     | Enhanced get_forecast              | 17–18    | 2/2  |
 | 6     | Tests and Parity Verification      | 19–20    | 2/2  |
 | 7     | Documentation                      | 21–22    | 2/2  |
-| 8     | Native Properties & Effective Vals | 23–27    | 0/5  |
+| 8     | Native Properties & Effective Vals | 23–27    | 1/5  |
 | 9     | Notifications                      | 28–31    | 0/4  |
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 22 / 36 criteria complete**
+**Total: 23 / 36 criteria complete**
 
 ## Key Context
 
@@ -585,3 +585,13 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 15:28:36
 **Session 59 started** (model: auto)
+
+### 2026-02-28 15:30:40
+- completed criterion 23 (`taskStatus` on all task response objects) across python/typescript/rust
+- fixed a TypeScript parity gap in `list_tasks` mapper by adding the missing `taskStatus` normalization block in `typescript/src/tools/tasks.ts`
+- revalidated with focused gates:
+  - python: `ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/test_tools_read.py -k "get_inbox_happy_path or list_tasks_happy_path or get_task_happy_path or list_subtasks_happy_path or search_tasks_happy_path or get_forecast_happy_path" -v`
+  - typescript: `npx tsc --noEmit && npm test -- tests/tools-representative.test.ts -t "list_tasks mapper includes completionDate and hasChildren|search_tasks mapper includes completionDate and hasChildren|get_inbox generates script with limit and parses response|get_forecast includes deferred"`
+  - rust: `cargo fmt --check && cargo clippy -- -D warnings && cargo test get_inbox_script_includes_completion_and_children_fields -- --nocapture && cargo test list_tasks_date_filter_script_contains_expected_logic -- --nocapture && cargo test search_tasks_script_includes_completion_and_children_fields -- --nocapture && cargo test get_forecast_script_includes_deferred_due_this_week_counts_and_enriched_fields_variant -- --nocapture`
+- marked criterion 23 complete in `RALPH_TASK.md`
+- next: criterion 24 (`effectiveDueDate`, `effectiveDeferDate`, `effectiveFlagged` on `get_task` across all 3 implementations)

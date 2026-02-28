@@ -432,7 +432,7 @@ availability that OmniFocus shows in its UI.
 
 ### Success Criteria
 
-23. [ ] **Add `taskStatus` to all task response objects** — all 3
+23. [x] **Add `taskStatus` to all task response objects** — all 3
         implementations.
         - New response field on every task object returned by
           `list_tasks`, `search_tasks`, `get_inbox`, `get_forecast`,

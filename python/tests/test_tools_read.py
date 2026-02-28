@@ -119,7 +119,6 @@ async def test_get_inbox_happy_path(
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Dropped")) return "dropped";' in state["calls"][0]["script"]
-    assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Available")) return "available";' in state["calls"][0]["script"]
 
 
