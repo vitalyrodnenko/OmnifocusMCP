@@ -395,3 +395,9 @@ This is how Ralph maintains continuity across iterations.
   - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 4 criterion 38 (write-tool happy-path tests)
+
+### 2026-02-27 23:05:31
+**Session 6 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:05:33
+**Session 7 started** (model: auto)
