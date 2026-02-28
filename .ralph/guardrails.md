@@ -90,3 +90,8 @@
 - **Instruction**: Run `rg` for the target tool symbol in Python/TypeScript/Rust sources and tests, then remove duplicate definitions/registrations before validation
 - **Added after**: full gate failed due repeated `set_project_status` definitions in Python and inconsistent duplicate handler variants in TypeScript
 
+### Sign: Scan Adjacent Folder Tool Symbols Before Running Full Gate
+- **Trigger**: Before running the global `test_command` after finishing one folder criterion
+- **Instruction**: Run `rg` for both current and next folder tool symbols (`update_folder`, `delete_folder`) in Python/TypeScript/Rust tool modules to catch duplicate in-progress definitions before lint
+- **Added after**: full gate failed at Python lint with `F811` because `delete_folder` was defined twice while `update_folder` criterion work was being validated
+
