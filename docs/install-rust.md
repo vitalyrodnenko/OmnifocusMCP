@@ -10,7 +10,7 @@
 ## method 1: homebrew (recommended)
 
 ```bash
-brew tap user/omnifocus-mcp
+brew tap vitalyrodnenko/omnifocus-mcp
 brew install omnifocus-mcp
 ```
 
@@ -23,7 +23,7 @@ omnifocus-mcp --version
 ## method 2: build from source
 
 ```bash
-git clone https://github.com/user/OmnifocusMCP.git
+git clone https://github.com/vitalyrodnenko/OmnifocusMCP.git
 cd OmnifocusMCP/rust
 cargo build --release
 cp target/release/omnifocus-mcp /usr/local/bin/

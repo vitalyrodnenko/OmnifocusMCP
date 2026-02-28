@@ -1,26 +1,26 @@
 # homebrew formula template for omnifocus-mcp
 #
 # usage:
-# 1. create a tap repo (e.g. github.com/<user>/homebrew-omnifocus-mcp)
+# 1. create a tap repo (e.g. github.com/vitalyrodnenko/homebrew-omnifocus-mcp)
 # 2. copy this file into Formula/omnifocus-mcp.rb in that tap
 # 3. replace version, urls, and sha256 values from a rust-v* release
-# 4. run: brew tap <user>/omnifocus-mcp && brew install omnifocus-mcp
+# 4. run: brew tap vitalyrodnenko/omnifocus-mcp && brew install omnifocus-mcp
 
 class OmnifocusMcp < Formula
   desc "Model Context Protocol server for OmniFocus"
-  homepage "https://github.com/<user>/OmnifocusMCP"
+  homepage "https://github.com/vitalyrodnenko/OmnifocusMCP"
   version "0.1.0"
   license "MIT"
 
   depends_on :macos
 
   on_arm do
-    url "https://github.com/<user>/OmnifocusMCP/releases/download/rust-v0.1.0/omnifocus-mcp-0.1.0-aarch64-apple-darwin.tar.gz"
+    url "https://github.com/vitalyrodnenko/OmnifocusMCP/releases/download/rust-v0.1.0/omnifocus-mcp-0.1.0-aarch64-apple-darwin.tar.gz"
     sha256 "REPLACE_WITH_ARM64_SHA256"
   end
 
   on_intel do
-    url "https://github.com/<user>/OmnifocusMCP/releases/download/rust-v0.1.0/omnifocus-mcp-0.1.0-x86_64-apple-darwin.tar.gz"
+    url "https://github.com/vitalyrodnenko/OmnifocusMCP/releases/download/rust-v0.1.0/omnifocus-mcp-0.1.0-x86_64-apple-darwin.tar.gz"
     sha256 "REPLACE_WITH_INTEL_SHA256"
   end
 

@@ -23,7 +23,7 @@ compiled binary (`omnifocus-mcp`) distributable via Homebrew.
 ### Homebrew (recommended)
 
 ```bash
-brew tap <user>/omnifocus-mcp
+brew tap vitalyrodnenko/omnifocus-mcp
 brew install omnifocus-mcp
 omnifocus-mcp --version
 ```

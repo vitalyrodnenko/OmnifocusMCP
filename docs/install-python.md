@@ -15,7 +15,7 @@ This guide installs and runs the Python OmniFocus MCP server from source.
 1. clone the repository:
 
 ```bash
-git clone https://github.com/<your-org>/OmnifocusMCP.git
+git clone https://github.com/vitalyrodnenko/OmnifocusMCP.git
 cd OmnifocusMCP/python
 ```
 

@@ -78,7 +78,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
 
 ### Success Criteria
 
-7. [ ] Replace every occurrence of `<your-org>`, `<user>`, and bare
+7. [x] Replace every occurrence of `<your-org>`, `<user>`, and bare
        `user/` (in GitHub URLs) with `vitalyrodnenko` across:
        - `README.md`
        - `docs/install-python.md`
