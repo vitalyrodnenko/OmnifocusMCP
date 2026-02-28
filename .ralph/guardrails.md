@@ -75,3 +75,8 @@
 - **Instruction**: Run `rg` for the target function name first to avoid duplicate definitions, then patch the existing implementation or wiring gaps instead of adding a second copy
 - **Added after**: Python lint failed with `F811` because `uncomplete_task` was accidentally added twice in `tools/tasks.py`
 
+### Sign: Align Mock-Handler Tests With Runtime Validation Paths
+- **Trigger**: When testing tool handlers through mocked server registration without schema execution
+- **Instruction**: Add explicit runtime validation in handlers for constrained fields that tests can pass as raw values, and assert against the handler error message rather than schema-only errors
+- **Added after**: TypeScript `set_project_status` happy/invalid tests failed because mock tool invocation bypassed zod schema enforcement
+

@@ -270,6 +270,41 @@ return {{
 
 
 @typed_tool(mcp)
+async def delete_project(project_id_or_name: str) -> str:
+    """delete a project by id or name. IMPORTANT: this permanently removes the project and all its tasks from the database. before calling, show the user the project name and task count, and ask for explicit confirmation."""
+    if project_id_or_name.strip() == "":
+        raise ValueError("project_id_or_name must not be empty.")
+
+    project_filter = escape_for_jxa(project_id_or_name.strip())
+    script = f"""
+const projectFilter = {project_filter};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+
+const projectId = project.id.primaryKey;
+const projectName = project.name;
+const taskCount = document.flattenedTasks.filter(task => {{
+  return task.containingProject && task.containingProject.id.primaryKey === projectId;
+}}).length;
+
+deleteObject(project);
+
+return {{
+  id: projectId,
+  name: projectName,
+  deleted: true,
+  taskCount: taskCount
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def set_project_status(
     project_id_or_name: str,
     status: Literal["active", "on_hold", "dropped"],

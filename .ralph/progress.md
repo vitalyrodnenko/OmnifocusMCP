@@ -1155,6 +1155,15 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-28 12:40:54
 **Session 10 started** (model: auto)
 
+### 2026-02-28 15:05:00
+- read required Ralph state files before implementing criterion work
+- verified criterion 9 (`set_project_status`) wiring exists across Python, TypeScript, and Rust, then normalized implementation details for parity:
+  - Python: finalized `set_project_status` tool implementation in `python/src/omnifocus_mcp/tools/projects.py` and confirmed export via `python/src/omnifocus_mcp/server.py`
+  - TypeScript: removed duplicate `set_project_status` registration in `typescript/src/tools/projects.ts` and kept one canonical handler
+  - Rust: aligned `set_project_status` script logic in `rust/src/tools/projects.rs` and confirmed server wiring/params in `rust/src/server.rs`
+- confirmed criterion 9 remains marked complete in `RALPH_TASK.md`
+- next focus: criterion 10 (`delete_project`) in Python -> TypeScript -> Rust order
+
 ### 2026-02-28 12:41:21
 **Session 10 ended** - 🔄 Context rotation (token limit reached)
 
@@ -1207,3 +1216,25 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:43:35
 **Session 15 started** (model: auto)
+
+### 2026-02-28 12:44:00
+- implemented `set_project_status` across all implementations with matching id-or-name lookup, status mapping (`active`/`on_hold`/`dropped`), and return shape (`id`, `name`, `status`):
+  - Python: added `set_project_status` in `python/src/omnifocus_mcp/tools/projects.py` and exported via `python/src/omnifocus_mcp/server.py`
+  - TypeScript: added `set_project_status` registration in `typescript/src/tools/projects.ts` with explicit runtime validation and matching OmniJS script behavior
+  - Rust: added `set_project_status` in `rust/src/tools/projects.rs` and wired server params/handler in `rust/src/server.rs`
+- added criterion-9 test coverage in:
+  - `python/tests/test_tools_write.py` (happy path + invalid status validation)
+  - `typescript/tests/tools-happy.test.ts` (happy path + invalid status error)
+  - `rust/tests/tools_write_test.rs` (happy path, validation assertions, and script-content assertions)
+- full quality gates passed:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`81 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`40 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- added guardrail sign about mocked handler tests bypassing schema validation
+- next focus: criterion 10 (`delete_project` in Python -> TypeScript -> Rust)
+
+### 2026-02-28 12:44:06
+**Session 15 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:44:08
+**Session 16 started** (model: auto)
