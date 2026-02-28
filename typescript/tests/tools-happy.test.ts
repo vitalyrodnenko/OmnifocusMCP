@@ -311,6 +311,39 @@ describe("tool happy paths", () => {
     expect(script).toContain('status: "active"');
   });
 
+  test("delete_project deletes project and returns deletion summary", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "p5",
+      name: "Project Five",
+      deleted: true,
+      taskCount: 3,
+    });
+    const handler = registeredTools.get("delete_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "p5" });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "p5",
+      name: "Project Five",
+      deleted: true,
+      taskCount: 3,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const projectFilter = "p5";');
+    expect(script).toContain("const taskCount = document.flattenedTasks.filter");
+    expect(script).toContain("deleteObject(project);");
+    expect(script).toContain("taskCount: taskCount");
+  });
+
+  test("delete_project returns error for empty project id or name", async () => {
+    const handler = registeredTools.get("delete_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "project_id_or_name must not be empty.",
+    });
+  });
+
   test("set_project_status sets organizational project status", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "p4", name: "Project Four", status: "on_hold" });
     const handler = registeredTools.get("set_project_status");

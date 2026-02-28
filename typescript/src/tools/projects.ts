@@ -87,7 +87,11 @@ return projects.map(project => {
     { project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name") },
     async ({ project_id_or_name }) => {
       try {
-        const projectFilter = escapeForJxa(project_id_or_name.trim());
+        const normalizedProjectFilter = project_id_or_name.trim();
+        if (normalizedProjectFilter === "") {
+          throw new Error("project_id_or_name must not be empty.");
+        }
+        const projectFilter = escapeForJxa(normalizedProjectFilter);
         const script = `
 const projectFilter = ${projectFilter};
 const project = document.flattenedProjects.find(item => {
@@ -282,45 +286,6 @@ return {
           throw new Error("project_id_or_name must not be empty.");
         }
         const projectFilter = escapeForJxa(normalizedProjectFilter);
-        const script = `
-const projectFilter = ${projectFilter};
-const project = document.flattenedProjects.find(item => {
-  return item.id.primaryKey === projectFilter || item.name === projectFilter;
-});
-if (!project) {
-  throw new Error(\`Project not found: \${projectFilter}\`);
-}
-
-const projectId = project.id.primaryKey;
-const projectName = project.name;
-const taskCount = document.flattenedTasks.filter(task => {
-  return task.containingProject && task.containingProject.id.primaryKey === projectId;
-}).length;
-
-deleteObject(project);
-
-return {
-  id: projectId,
-  name: projectName,
-  deleted: true,
-  taskCount: taskCount
-};
-`.trim();
-        const result = await runOmniJs(script);
-        return textResult(result);
-      } catch (error: unknown) {
-        return errorResult(normalizeError(error));
-      }
-    }
-  );
-
-  server.tool(
-    "delete_project",
-    "delete a project by id or name. IMPORTANT: this permanently removes the project and all its tasks from the database. before calling, show the user the project name and task count, and ask for explicit confirmation.",
-    { project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name") },
-    async ({ project_id_or_name }) => {
-      try {
-        const projectFilter = escapeForJxa(project_id_or_name.trim());
         const script = `
 const projectFilter = ${projectFilter};
 const project = document.flattenedProjects.find(item => {

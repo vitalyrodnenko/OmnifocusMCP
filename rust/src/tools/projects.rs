@@ -331,6 +331,42 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn delete_project<R: JxaRunner>(runner: &R, project_id_or_name: &str) -> Result<Value> {
+    if project_id_or_name.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "project_id_or_name must not be empty.".to_string(),
+        ));
+    }
+
+    let project_filter = escape_for_jxa(project_id_or_name.trim());
+    let script = format!(
+        r#"const projectFilter = {project_filter};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+
+const projectId = project.id.primaryKey;
+const projectName = project.name;
+const taskCount = document.flattenedTasks.filter(task => {{
+  return task.containingProject && task.containingProject.id.primaryKey === projectId;
+}}).length;
+
+deleteObject(project);
+
+return {{
+  id: projectId,
+  name: projectName,
+  deleted: true,
+  taskCount: taskCount
+}};"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
 pub async fn set_project_status<R: JxaRunner>(
     runner: &R,
     project_id_or_name: &str,
