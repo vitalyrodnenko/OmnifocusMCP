@@ -348,47 +348,6 @@ return {{
 
 
 @typed_tool(mcp)
-async def move_project(project_id_or_name: str, folder: str | None = None) -> str:
-    """move a project by id or name into a folder or to top level."""
-    if project_id_or_name.strip() == "":
-        raise ValueError("project_id_or_name must not be empty.")
-    if folder is not None and folder.strip() == "":
-        raise ValueError("folder must not be empty when provided.")
-
-    project_filter = escape_for_jxa(project_id_or_name.strip())
-    folder_name = "null" if folder is None else escape_for_jxa(folder.strip())
-    script = f"""
-const projectFilter = {project_filter};
-const folderName = {folder_name};
-const project = document.flattenedProjects.find(item => {{
-  return item.id.primaryKey === projectFilter || item.name === projectFilter;
-}});
-if (!project) {{
-  throw new Error(`Project not found: ${{projectFilter}}`);
-}}
-
-const destination = (() => {{
-  if (folderName === null) return library.ending;
-  const targetFolder = document.flattenedFolders.byName(folderName);
-  if (!targetFolder) {{
-    throw new Error(`Folder not found: ${{folderName}}`);
-  }}
-  return targetFolder.ending;
-}})();
-
-moveSections([project], destination);
-
-return {{
-  id: project.id.primaryKey,
-  name: project.name,
-  folderName: project.folder ? project.folder.name : null
-}};
-""".strip()
-    result = await run_omnijs(script)
-    return json.dumps(result)
-
-
-@typed_tool(mcp)
 async def set_project_status(
     project_id_or_name: str,
     status: Literal["active", "on_hold", "dropped"],
