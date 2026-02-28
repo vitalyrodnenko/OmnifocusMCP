@@ -1945,3 +1945,21 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 13:24:14
 **Session 96 started** (model: auto)
+
+### 2026-02-28 13:25:00
+- completed criterion 20 (`append_to_note`) with parity across all 3 implementations:
+  - python: confirmed canonical implementation in `python/src/omnifocus_mcp/tools/tasks.py` and validated existing criterion tests in `python/tests/test_tools_write.py`
+  - typescript: deduplicated repeated `append_to_note` tool registrations in `typescript/src/tools/tasks.ts`, kept one canonical handler matching python JXA and validation/messages
+  - rust: restored single canonical `append_to_note` implementation in `rust/src/tools/tasks.rs` and aligned script assertions in `rust/tests/tools_write_test.rs`
+- marked criterion 20 complete in `RALPH_TASK.md`
+- validation runs:
+  - `cd python && pytest tests/test_tools_write.py -k "append_to_note" -v` (`2 passed`)
+  - `cd typescript && npm test -- --run tests/tools-happy.test.ts -t "append_to_note"` (`6 passed`)
+  - `cd rust && cargo test append_to_note --test tools_write_test` (`1 passed`)
+- next focus: criterion 21 (`search_projects` in python -> typescript -> rust)
+
+### 2026-02-28 13:24:39
+**Session 96 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 13:24:41
+**Session 97 started** (model: auto)
