@@ -186,7 +186,7 @@ running mocked tests). The Docker guide must explain this clearly.
 
 ### Success Criteria
 
-25. [ ] Create `docs/install-python.md` with:
+25. [x] Create `docs/install-python.md` with:
         - Prerequisites (macOS, Python 3.11+, `uv`)
         - Step-by-step install from source (`git clone`, `cd python`,
           `uv sync`)

@@ -255,3 +255,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 10:30:58
 **Session 1 started** (model: auto)
+
+### 2026-02-28 10:34:00
+- completed criterion 25 by creating `docs/install-python.md` with prerequisites, source install, startup verification, Claude Desktop/Cursor/generic stdio config using `uv run --directory ... python -m omnifocus_mcp`, and troubleshooting guidance
+- ran Ralph test command from `RALPH_TASK.md` after the docs change: `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test` (all passing; integration suites skipped by default)
+- marked criterion 25 complete in `RALPH_TASK.md`
+- next focus: implement criterion 26 (`docs/install-typescript.md`)
