@@ -609,6 +609,7 @@ async def test_get_task_happy_path(
         "effectiveFlagged": False,
         "completed": False,
         "completionDate": None,
+        "modified": None,
         "taskStatus": "available",
         "projectName": "Proj",
         "tags": [],
@@ -630,6 +631,7 @@ async def test_get_task_happy_path(
     assert "effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null," in state["calls"][0]["script"]
     assert "effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null," in state["calls"][0]["script"]
     assert "effectiveFlagged: task.effectiveFlagged," in state["calls"][0]["script"]
+    assert "modified: task.modified ? task.modified.toISOString() : null," in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Overdue")) return "overdue";' in state["calls"][0]["script"]
     assert 'if (s.includes("Completed")) return "completed";' in state["calls"][0]["script"]
@@ -985,6 +987,7 @@ async def test_get_project_happy_path(
         "deferDate": None,
         "dueDate": None,
         "completionDate": None,
+        "modified": None,
         "note": "",
         "sequential": True,
         "isStalled": False,
@@ -1013,6 +1016,7 @@ async def test_get_project_happy_path(
         "availableTaskCount: allProjectTasks.filter(task => !task.completed && (task.deferDate === null || task.deferDate <= new Date())).length,"
         in script
     )
+    assert "modified: project.modified ? project.modified.toISOString() : null," in script
 
 
 @pytest.mark.asyncio

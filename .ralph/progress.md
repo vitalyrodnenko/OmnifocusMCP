@@ -669,3 +669,21 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 15:31:40
 **Session 63 started** (model: auto)
+
+### 2026-02-28 15:32:50
+- implemented and verified criterion 23 task-status coverage across read-side task shapes in python/typescript/rust:
+  - updated task mappers in `get_inbox`, `list_tasks`, `get_task`, `search_tasks`, `list_subtasks`, and `get_forecast`
+  - normalized native OmniFocus `task.taskStatus` to enum values: `available`, `blocked`, `next`, `due_soon`, `overdue`, `completed`, `dropped`, fallback `unknown`
+- aligned representative tests to assert `taskStatus` script mapping and payload presence on task responses
+- reran full required gate successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- confirmed criterion 23 remains checked in `RALPH_TASK.md`
+- next: criterion 24 (`effectiveDueDate`, `effectiveDeferDate`, `effectiveFlagged` on `get_task`)
+
+### 2026-02-28 15:32:12
+**Session 63 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 15:32:14
+**Session 64 started** (model: auto)

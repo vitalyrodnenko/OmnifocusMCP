@@ -346,6 +346,7 @@ return {{
   deferDate: project.deferDate ? project.deferDate.toISOString() : null,
   dueDate: project.dueDate ? project.dueDate.toISOString() : null,
   completionDate: project.completionDate ? project.completionDate.toISOString() : null,
+  modified: project.modified ? project.modified.toISOString() : null,
   note: project.note,
   sequential: project.sequential,
   isStalled: isStalled,
