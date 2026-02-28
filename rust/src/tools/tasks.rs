@@ -452,8 +452,6 @@ return subtasks.map(subtask => {{
 }
 
 #[allow(clippy::too_many_arguments)]
-#[allow(clippy::too_many_arguments)]
-#[allow(clippy::too_many_arguments)]
 pub async fn search_tasks<R: JxaRunner>(
     runner: &R,
     query: &str,

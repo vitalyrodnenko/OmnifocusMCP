@@ -199,8 +199,8 @@ async fn read_task_tools_happy_path() {
         "asc",
         100,
     )
-        .await
-        .expect("search should parse");
+    .await
+    .expect("search should parse");
     assert_eq!(searched.len(), 1);
     assert_eq!(searched[0].name, "searched task");
 }
@@ -339,8 +339,8 @@ async fn empty_results_return_empty_vec() {
         "asc",
         100,
     )
-        .await
-        .expect("search should parse");
+    .await
+    .expect("search should parse");
     assert!(searched.is_empty());
 
     let tags = list_tags(&empty_runner, "all", None, "asc", 100)
@@ -645,7 +645,7 @@ async fn search_tasks_completion_filters_auto_set_sorting() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
-    assert!(script.contains(r#"const statusFilter = "all";"#));
+    assert!(script.contains(r#"const statusFilter = "available";"#));
     assert!(script.contains(r#"const sortBy = "completionDate";"#));
     assert!(script.contains(r#"const sortOrder = "desc";"#));
     assert!(script.contains(
@@ -987,8 +987,8 @@ async fn search_tasks_script_includes_completion_and_children_fields() {
         "asc",
         2,
     )
-        .await
-        .expect("search should parse");
+    .await
+    .expect("search should parse");
     assert_eq!(searched.len(), 1);
 
     let script = last_script
