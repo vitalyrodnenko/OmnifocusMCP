@@ -60,7 +60,7 @@ async def test_run_omnijs_parses_envelope_and_returns_data(
     result = await run_omnijs("return { id: 'abc123' };")
     assert result == {"id": "abc123"}
     assert len(seen_scripts) == 1
-    assert "evaluateJavaScript" in seen_scripts[0]
+    assert "evaluateJavascript" in seen_scripts[0]
 
 
 @pytest.mark.asyncio

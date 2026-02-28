@@ -112,6 +112,26 @@ async def run_omnijs(
     wrapped_omnijs = f"""
 (function() {{
   try {{
+    if (typeof document === "object" && document) {{
+      if (typeof document.flattenedTasks === "undefined" && typeof flattenedTasks !== "undefined") {{
+        document.flattenedTasks = flattenedTasks;
+      }}
+      if (
+        typeof document.flattenedProjects === "undefined"
+        && typeof flattenedProjects !== "undefined"
+      ) {{
+        document.flattenedProjects = flattenedProjects;
+      }}
+      if (typeof document.flattenedTags === "undefined" && typeof flattenedTags !== "undefined") {{
+        document.flattenedTags = flattenedTags;
+      }}
+      if (
+        typeof document.flattenedFolders === "undefined"
+        && typeof flattenedFolders !== "undefined"
+      ) {{
+        document.flattenedFolders = flattenedFolders;
+      }}
+    }}
     const __data = (function() {{
 {script}
     }})();
@@ -124,7 +144,7 @@ async def run_omnijs(
 
     outer_jxa = f"""
 const app = Application('OmniFocus');
-const result = app.evaluateJavaScript({escape_for_jxa(wrapped_omnijs)});
+const result = app.evaluateJavascript({escape_for_jxa(wrapped_omnijs)});
 result;
 """.strip()
 

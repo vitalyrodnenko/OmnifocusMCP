@@ -153,6 +153,26 @@ export async function runOmniJs(
   const wrappedOmniJs = `
 (function() {
   try {
+    if (typeof document === "object" && document) {
+      if (typeof document.flattenedTasks === "undefined" && typeof flattenedTasks !== "undefined") {
+        document.flattenedTasks = flattenedTasks;
+      }
+      if (
+        typeof document.flattenedProjects === "undefined" &&
+        typeof flattenedProjects !== "undefined"
+      ) {
+        document.flattenedProjects = flattenedProjects;
+      }
+      if (typeof document.flattenedTags === "undefined" && typeof flattenedTags !== "undefined") {
+        document.flattenedTags = flattenedTags;
+      }
+      if (
+        typeof document.flattenedFolders === "undefined" &&
+        typeof flattenedFolders !== "undefined"
+      ) {
+        document.flattenedFolders = flattenedFolders;
+      }
+    }
     const __data = (function() {
 ${script}
     })();
@@ -165,7 +185,7 @@ ${script}
 
   const outerJxa = `
 const app = Application('OmniFocus');
-const result = app.evaluateJavaScript(${escapeForJxa(wrappedOmniJs)});
+const result = app.evaluateJavascript(${escapeForJxa(wrappedOmniJs)});
 result;
 `.trim();
 
