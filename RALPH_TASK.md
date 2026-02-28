@@ -229,7 +229,7 @@ write tools return confirmation with the affected item's current state.
         children. Returns confirmation.
 34. [x] Tool `move_task` — moves task to a different project (by name) or
         back to inbox. Returns confirmation.
-35. [ ] Tool `create_project` — required `name`, optional `folder` (name),
+35. [x] Tool `create_project` — required `name`, optional `folder` (name),
         `note`, `dueDate`, `deferDate`, `sequential` (bool). Returns `{id}`.
 36. [ ] Tool `complete_project` — by `id` or `name`. Returns confirmation.
 37. [ ] Tool `create_tag` — required `name`, optional `parent` (tag name

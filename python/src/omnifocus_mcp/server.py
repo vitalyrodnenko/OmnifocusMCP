@@ -925,3 +925,59 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def create_project(
+    name: str,
+    folder: str | None = None,
+    note: str | None = None,
+    dueDate: str | None = None,
+    deferDate: str | None = None,
+    sequential: bool | None = None,
+) -> str:
+    """create a new project with optional folder and metadata.
+
+    accepts required name and optional folder, note, dates, and sequential
+    setting. returns the created project id.
+    """
+    if name.strip() == "":
+        raise ValueError("name must not be empty.")
+    if folder is not None and folder.strip() == "":
+        raise ValueError("folder must not be empty when provided.")
+
+    project_name = escape_for_jxa(name.strip())
+    folder_name = "null" if folder is None else escape_for_jxa(folder.strip())
+    note_value = "null" if note is None else escape_for_jxa(note)
+    due_date_value = "null" if dueDate is None else escape_for_jxa(dueDate)
+    defer_date_value = "null" if deferDate is None else escape_for_jxa(deferDate)
+    sequential_value = "null" if sequential is None else ("true" if sequential else "false")
+
+    script = f"""
+const projectName = {project_name};
+const folderName = {folder_name};
+const noteValue = {note_value};
+const dueDateValue = {due_date_value};
+const deferDateValue = {defer_date_value};
+const sequentialValue = {sequential_value};
+
+const project = (() => {{
+  if (folderName === null) return new Project(projectName);
+  const targetFolder = document.flattenedFolders.byName(folderName);
+  if (!targetFolder) {{
+    throw new Error(`Folder not found: ${{folderName}}`);
+  }}
+  return new Project(projectName, targetFolder.ending);
+}})();
+
+if (noteValue !== null) project.note = noteValue;
+if (dueDateValue !== null) project.dueDate = new Date(dueDateValue);
+if (deferDateValue !== null) project.deferDate = new Date(deferDateValue);
+if (sequentialValue !== null) project.sequential = sequentialValue;
+
+return {{
+  id: project.id.primaryKey
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
