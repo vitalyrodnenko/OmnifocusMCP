@@ -1433,6 +1433,46 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn remove_notification<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    notification_id: &str,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    if notification_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "notification_id must not be empty.".to_string(),
+        ));
+    }
+
+    let task_id_filter = escape_for_jxa(task_id.trim());
+    let notification_id_filter = escape_for_jxa(notification_id.trim());
+    let script = format!(
+        r#"const taskId = {task_id_filter};
+const notificationId = {notification_id_filter};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+const notification = task.notifications.find(item => item.id.primaryKey === notificationId);
+if (!notification) {{
+  throw new Error(`Notification not found: ${{notificationId}}`);
+}}
+task.removeNotification(notification);
+return {{
+  taskId: task.id.primaryKey,
+  notificationId: notification.id.primaryKey,
+  removed: true
+}};"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn search_tasks_with_planned<R: JxaRunner>(
     runner: &R,

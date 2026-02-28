@@ -1330,28 +1330,39 @@ async def add_notification(
         raise ValueError("absoluteDate must not be empty when provided.")
 
     task_id_filter = escape_for_jxa(task_id.strip())
-    absolute_date_filter = (
+    absolute_date_raw = (
         "null" if absoluteDate is None else escape_for_jxa(absoluteDate.strip())
     )
-    relative_offset_filter = (
-        "null" if relativeOffset is None else repr(float(relativeOffset))
-    )
+    relative_offset_value = "null" if relativeOffset is None else str(relativeOffset)
     script = f"""
 const taskId = {task_id_filter};
-const absoluteDateValue = {absolute_date_filter};
-const relativeOffsetValue = {relative_offset_filter};
+const absoluteDateRaw = {absolute_date_raw};
+const relativeOffset = {relative_offset_value};
+const absoluteDate = (() => {{
+  if (absoluteDateRaw === null) return null;
+  const parsed = new Date(absoluteDateRaw);
+  if (Number.isNaN(parsed.getTime())) {{
+    throw new Error("absoluteDate must be a valid ISO 8601 date string.");
+  }}
+  return parsed;
+}})();
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
-if (relativeOffsetValue !== null && !task.effectiveDueDate) {{
-  throw new Error(`Task ${{taskId}} must have an effective due date when using relativeOffset.`);
-}}
-const notification = absoluteDateValue !== null
-  ? task.addNotification(new Date(absoluteDateValue))
-  : task.addNotification(relativeOffsetValue);
+const created = (() => {{
+  if (absoluteDate !== null) {{
+    return task.addNotification(absoluteDate);
+  }}
+  const effectiveDueDate = task.effectiveDueDate;
+  if (effectiveDueDate === null) {{
+    throw new Error("relativeOffset requires a task with an effective due date.");
+  }}
+  return task.addNotification(relativeOffset);
+}})();
+const notification = created || task.notifications[task.notifications.length - 1];
 if (!notification) {{
-  throw new Error("Failed to create notification.");
+  throw new Error(`Failed to create notification for task: ${{taskId}}`);
 }}
 return {{
   id: notification.id.primaryKey,

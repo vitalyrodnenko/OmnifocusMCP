@@ -42,6 +42,7 @@ use crate::{
             add_notification, complete_task, create_subtask, create_task, create_tasks_batch,
             delete_task, delete_tasks_batch, get_inbox, get_task, get_task_counts,
             list_notifications, list_subtasks, list_tasks_with_planned, move_task,
+            remove_notification,
             search_tasks_with_planned, set_task_repetition, uncomplete_task, update_task,
             CreateTaskInput,
         },
@@ -134,6 +135,12 @@ struct AddNotificationParams {
     absolute_date: Option<String>,
     #[serde(rename = "relativeOffset")]
     relative_offset: Option<f64>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct RemoveNotificationParams {
+    task_id: String,
+    notification_id: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -557,6 +564,21 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             &params.task_id,
             params.absolute_date.as_deref(),
             params.relative_offset,
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "remove one notification from a task by id.")]
+    async fn remove_notification(
+        &self,
+        Parameters(params): Parameters<RemoveNotificationParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = remove_notification(
+            self.runner.as_ref(),
+            &params.task_id,
+            &params.notification_id,
         )
         .await
         .map_err(to_mcp_error)?;

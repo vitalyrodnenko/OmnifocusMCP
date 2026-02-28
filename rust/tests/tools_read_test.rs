@@ -14,9 +14,9 @@ use omnifocus_mcp::{
         projects::{get_project, get_project_counts, list_projects, search_projects},
         tags::{list_tags, search_tags},
         tasks::{
-            add_notification, get_inbox, get_task, get_task_counts, list_notifications, list_subtasks,
-            list_tasks as list_tasks_with_duration, list_tasks_with_planned, search_tasks,
-            search_tasks_with_planned,
+            add_notification, get_inbox, get_task, get_task_counts, list_notifications,
+            list_subtasks, list_tasks as list_tasks_with_duration, list_tasks_with_planned,
+            remove_notification, search_tasks, search_tasks_with_planned,
         },
     },
 };
@@ -538,6 +538,14 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
+        remove_notification(&runner, "   ", "n1").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        remove_notification(&runner, "t3", "   ").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
         search_tasks(
             &runner,
             "   ",
@@ -915,6 +923,36 @@ async fn add_notification_script_handles_absolute_and_relative_modes() {
     assert!(relative_script_text.contains(
         "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,"
     ));
+}
+
+#[tokio::test]
+async fn remove_notification_script_removes_notification_by_id() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!({
+            "taskId": "t3",
+            "notificationId": "n1",
+            "removed": true
+        }),
+        last_script: last_script.clone(),
+    };
+
+    let result = remove_notification(&runner, "t3", "n1")
+        .await
+        .expect("remove_notification should parse");
+    assert!(result.is_object());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const taskId = "t3";"#));
+    assert!(script.contains(r#"const notificationId = "n1";"#));
+    assert!(script.contains(
+        "const notification = task.notifications.find(item => item.id.primaryKey === notificationId);"
+    ));
+    assert!(script.contains("task.removeNotification(notification);"));
+    assert!(script.contains("removed: true"));
 }
 
 #[tokio::test]

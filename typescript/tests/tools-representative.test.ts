@@ -642,6 +642,50 @@ describe("representative read and write tool handlers", () => {
     });
   });
 
+  test("remove_notification removes a notification by id", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      taskId: "task-9",
+      notificationId: "notif-1",
+      removed: true,
+    });
+    const result = await getTool("remove_notification")({
+      task_id: "task-9",
+      notification_id: "notif-1",
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const taskId = "task-9";');
+    expect(script).toContain('const notificationId = "notif-1";');
+    expect(script).toContain(
+      "const notification = task.notifications.find(item => item.id.primaryKey === notificationId);"
+    );
+    expect(script).toContain("task.removeNotification(notification);");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      taskId: "task-9",
+      notificationId: "notif-1",
+      removed: true,
+    });
+  });
+
+  test("remove_notification validates required ids", async () => {
+    const missingTaskId = await getTool("remove_notification")({
+      task_id: "   ",
+      notification_id: "notif-1",
+    });
+    expect(missingTaskId.isError).toBe(true);
+    expect(JSON.parse(missingTaskId.content[0].text)).toEqual({
+      error: "task_id must not be empty.",
+    });
+
+    const missingNotificationId = await getTool("remove_notification")({
+      task_id: "task-9",
+      notification_id: "   ",
+    });
+    expect(missingNotificationId.isError).toBe(true);
+    expect(JSON.parse(missingNotificationId.content[0].text)).toEqual({
+      error: "notification_id must not be empty.",
+    });
+  });
+
   test("get_task includes native taskStatus field mapping", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       id: "task-9",

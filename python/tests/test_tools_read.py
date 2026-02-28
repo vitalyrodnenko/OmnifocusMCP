@@ -785,11 +785,10 @@ async def test_add_notification_absolute_happy_path(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert 'const taskId = "t3";' in script
-    assert 'const absoluteDate = "2026-03-03T10:30:00Z";' in script
-    assert "const relativeOffset = null;" in script
-    assert "const parsedAbsoluteDate = new Date(absoluteDate);" in script
-    assert "notification = task.addNotification(parsedAbsoluteDate);" in script
-    assert "if (task.effectiveDueDate === null) {" in script
+    assert 'const absoluteDateValue = "2026-03-03T10:30:00Z";' in script
+    assert "const relativeOffsetValue = null;" in script
+    assert "task.addNotification(new Date(absoluteDateValue))" in script
+    assert "if (relativeOffsetValue !== null && !task.effectiveDueDate) {" in script
 
 
 @pytest.mark.asyncio
@@ -812,9 +811,9 @@ async def test_add_notification_relative_happy_path(
 
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
-    assert "const absoluteDate = null;" in script
-    assert "const relativeOffset = -3600;" in script
-    assert "notification = task.addNotification(relativeOffset);" in script
+    assert "const absoluteDateValue = null;" in script
+    assert "const relativeOffsetValue = -3600;" in script
+    assert "task.addNotification(relativeOffsetValue)" in script
     assert "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset," in script
 
 
