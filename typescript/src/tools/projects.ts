@@ -270,6 +270,56 @@ return {
   );
 
   server.tool(
+    "set_project_status",
+    "set a project's organizational status by id or name.",
+    {
+      project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name"),
+      status: z
+        .enum(["active", "on_hold", "dropped"])
+        .describe("target project status: active, on_hold, or dropped"),
+    },
+    async ({ project_id_or_name, status }) => {
+      try {
+        const projectFilter = escapeForJxa(project_id_or_name.trim());
+        const statusValue = escapeForJxa(status);
+        const script = `
+const projectFilter = ${projectFilter};
+const statusValue = ${statusValue};
+const project = document.flattenedProjects.find(item => {
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+});
+if (!project) {
+  throw new Error(\`Project not found: \${projectFilter}\`);
+}
+
+let targetStatus;
+if (statusValue === "active") {
+  targetStatus = Project.Status.Active;
+} else if (statusValue === "on_hold") {
+  targetStatus = Project.Status.OnHold;
+} else if (statusValue === "dropped") {
+  targetStatus = Project.Status.Dropped;
+} else {
+  throw new Error(\`Invalid status: \${statusValue}\`);
+}
+
+project.status = targetStatus;
+
+return {
+  id: project.id.primaryKey,
+  name: project.name,
+  status: statusValue
+};
+`.trim();
+        const result = await runOmniJs(script);
+        return textResult(result);
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "update_project",
     "update a project by id or name, modifying only provided fields.",
     {
@@ -390,6 +440,53 @@ return {
 `.trim();
         const result = await runOmniJs(script);
         return textResult(result);
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
+    "set_project_status",
+    "set a project's organizational status by id or name.",
+    {
+      project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name"),
+      status: z.enum(["active", "on_hold", "dropped"]).describe("target project status"),
+    },
+    async ({ project_id_or_name, status }) => {
+      try {
+        const normalizedProjectFilter = project_id_or_name.trim();
+        if (normalizedProjectFilter === "") {
+          throw new Error("project_id_or_name must not be empty.");
+        }
+        const projectFilter = escapeForJxa(normalizedProjectFilter);
+        const statusValue = escapeForJxa(status);
+        const script = `
+const projectFilter = ${projectFilter};
+const statusInput = ${statusValue};
+const project = document.flattenedProjects.find(item => {
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+});
+if (!project) {
+  throw new Error(\`Project not found: \${projectFilter}\`);
+}
+
+const statusValue = (() => {
+  if (statusInput === "active") return Project.Status.Active;
+  if (statusInput === "on_hold") return Project.Status.OnHold;
+  if (statusInput === "dropped") return Project.Status.Dropped;
+  throw new Error(\`Invalid status: \${statusInput}\`);
+})();
+
+project.status = statusValue;
+
+return {
+  id: project.id.primaryKey,
+  name: project.name,
+  status: statusInput
+};
+`.trim();
+        return textResult(await runOmniJs(script));
       } catch (error: unknown) {
         return errorResult(normalizeError(error));
       }

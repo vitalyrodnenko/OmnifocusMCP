@@ -26,7 +26,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
 1. [x] Create `LICENSE` file at the repository root with the MIT license.
        Copyright line: `Copyright (c) 2025-2026 Vitaly Rodnenko`.
 
-2. [ ] Add a disclaimer block near the top of `README.md` (after the
+2. [x] Add a disclaimer block near the top of `README.md` (after the
        title/description, before any other section):
        "This project is not affiliated with, endorsed by, or associated
        with The Omni Group or OmniFocus. OmniFocus is a trademark of

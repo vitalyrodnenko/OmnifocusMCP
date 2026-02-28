@@ -446,3 +446,95 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def set_project_status(
+    project_id_or_name: str,
+    status: Literal["active", "on_hold", "dropped"],
+) -> str:
+    """set a project's organizational status by id or name.
+
+    accepts one of: active, on_hold, dropped. this does not complete or
+    uncomplete the project.
+    """
+    if project_id_or_name.strip() == "":
+        raise ValueError("project_id_or_name must not be empty.")
+    if status not in ("active", "on_hold", "dropped"):
+        raise ValueError("status must be one of: active, on_hold, dropped.")
+
+    project_filter = escape_for_jxa(project_id_or_name.strip())
+    status_value = escape_for_jxa(status)
+    script = f"""
+const projectFilter = {project_filter};
+const statusValue = {status_value};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+const statusMap = {{
+  active: Project.Status.Active,
+  on_hold: Project.Status.OnHold,
+  dropped: Project.Status.Dropped
+}};
+const targetStatus = statusMap[statusValue];
+if (!targetStatus) {{
+  throw new Error(`Invalid status: ${{statusValue}}`);
+}}
+project.status = targetStatus;
+return {{
+  id: project.id.primaryKey,
+  name: project.name,
+  status: statusValue
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def set_project_status(
+    project_id_or_name: str,
+    status: Literal["active", "on_hold", "dropped"],
+) -> str:
+    """set a project's organizational status by id or name.
+
+    this sets active, on_hold, or dropped status and is distinct from
+    completion tools.
+    """
+    if project_id_or_name.strip() == "":
+        raise ValueError("project_id_or_name must not be empty.")
+    if status not in ("active", "on_hold", "dropped"):
+        raise ValueError("status must be one of: active, on_hold, dropped.")
+
+    project_filter = escape_for_jxa(project_id_or_name.strip())
+    status_value = escape_for_jxa(status)
+    script = f"""
+const projectFilter = {project_filter};
+const statusInput = {status_value};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+
+const statusValue = (() => {{
+  if (statusInput === "active") return Project.Status.Active;
+  if (statusInput === "on_hold") return Project.Status.OnHold;
+  if (statusInput === "dropped") return Project.Status.Dropped;
+  throw new Error(`Invalid status: ${{statusInput}}`);
+}})();
+
+project.status = statusValue;
+
+return {{
+  id: project.id.primaryKey,
+  name: project.name,
+  status: statusInput
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

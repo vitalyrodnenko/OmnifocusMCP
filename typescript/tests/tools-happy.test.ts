@@ -311,6 +311,23 @@ describe("tool happy paths", () => {
     expect(script).toContain('status: "active"');
   });
 
+  test("set_project_status sets organizational project status", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "p4", name: "Project Four", status: "on_hold" });
+    const handler = registeredTools.get("set_project_status");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "p4", status: "on_hold" });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "p4",
+      name: "Project Four",
+      status: "on_hold",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const projectFilter = "p4";');
+    expect(script).toContain('const statusValue = "on_hold";');
+    expect(script).toContain("Project.Status.OnHold");
+    expect(script).toContain("project.status = targetStatus;");
+  });
+
   test("update_project updates provided fields and returns project summary", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       id: "p3",
@@ -364,5 +381,16 @@ describe("tool happy paths", () => {
     expect(script).toContain("project.reviewInterval = parseReviewInterval(updates.reviewInterval);");
     expect(script).toContain("existingTags.forEach");
     expect(script).toContain("project.addTag(tag);");
+  });
+
+  test("set_project_status returns error for unsupported status value", async () => {
+    const handler = registeredTools.get("set_project_status");
+    expect(handler).toBeDefined();
+    const result = await handler!({ project_id_or_name: "p4", status: "completed" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error:
+        'Invalid enum value. Expected \'active\' | \'on_hold\' | \'dropped\', received \'completed\'',
+    });
   });
 });

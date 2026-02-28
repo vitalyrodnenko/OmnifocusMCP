@@ -380,6 +380,25 @@ async def test_update_project_happy_path_criterion8(
 
 
 @pytest.mark.asyncio
+async def test_set_project_status_happy_path_criterion9(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "p3", "name": "Updated Project", "status": "on_hold"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.set_project_status(project_id_or_name="p3", status="on_hold")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "p3";' in script
+    assert 'const statusInput = "on_hold";' in script
+    assert "Project.Status.OnHold" in script
+    assert "project.status = statusValue;" in script
+
+
+@pytest.mark.asyncio
 async def test_create_tag_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {"id": "tag1"}
     configured = mock_server_run_omnijs(payload)
@@ -934,5 +953,29 @@ async def test_delete_tasks_batch_empty_string_validation_error(server_module: A
     with pytest.raises(ValueError, match="each task id must be a non-empty string."):
         await server_module.delete_tasks_batch(["task-1", "   "])
 
+
+@pytest.mark.asyncio
+async def test_set_project_status_happy_path_criterion9(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "p4", "name": "Project Four", "status": "on_hold"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.set_project_status(project_id_or_name="p4", status="on_hold")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "p4";' in script
+    assert 'const statusValue = "on_hold";' in script
+    assert "Project.Status.OnHold" in script
+    assert "project.status = targetStatus;" in script
+
+
+@pytest.mark.asyncio
+async def test_set_project_status_validation_error_criterion9(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="status must be one of: active, on_hold, dropped."):
+        await server_module.set_project_status(project_id_or_name="p4", status="completed")
 
 
