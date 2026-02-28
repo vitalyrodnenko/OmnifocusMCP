@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 complete.
-- Next criterion: **19** — verify parameter/response/JXA parity across all 3 implementations
-- Remaining: criteria 19-36 (18 criteria across Phases 6-11)
+- Current status: Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 complete.
+- Next criterion: **21** — update top-level `README.md` with advanced filtering and aggregate counts docs
+- Remaining: criteria 21-36 (16 criteria across Phases 7-11)
 
 ## How This Works
 
@@ -24,14 +24,14 @@ This is how Ralph maintains continuity across iterations.
 | 3     | Enhanced get_inbox/list_tags/search| 10–13    | 4/4  |
 | 4     | Aggregate Count Tools              | 14–16    | 3/3  |
 | 5     | Enhanced get_forecast              | 17–18    | 2/2  |
-| 6     | Tests and Parity Verification      | 19–20    | 0/2  |
+| 6     | Tests and Parity Verification      | 19–20    | 2/2  |
 | 7     | Documentation                      | 21–22    | 0/2  |
 | 8     | Native Properties & Effective Vals | 23–27    | 0/5  |
 | 9     | Notifications                      | 28–31    | 0/4  |
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 18 / 36 criteria complete**
+**Total: 20 / 36 criteria complete**
 
 ## Key Context
 
@@ -491,3 +491,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 15:22:45
 **Session 52 started** (model: auto)
+
+### 2026-02-28 15:23:36
+**Session 52 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 15:23:38
+**Session 53 started** (model: auto)

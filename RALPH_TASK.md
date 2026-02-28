@@ -384,7 +384,7 @@ See individual phase criteria below.
 
 ### Success Criteria
 
-19. [ ] **Verify parameter parity across all 3 implementations:**
+19. [x] **Verify parameter parity across all 3 implementations:**
         - For every enhanced tool (list_tasks, list_projects,
           get_project, get_inbox, list_tags, search_tasks,
           get_forecast) and new tool (get_task_counts,
@@ -396,7 +396,7 @@ See individual phase criteria below.
         - Document any unavoidable differences (e.g., type system
           syntax) and confirm they produce identical behavior.
 
-20. [ ] **Run full test suites for all 3 implementations — zero failures:**
+20. [x] **Run full test suites for all 3 implementations — zero failures:**
         - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
         - `cd typescript && npx tsc --noEmit && npm test`
         - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
