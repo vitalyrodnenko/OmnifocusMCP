@@ -41,7 +41,8 @@ use crate::{
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
             delete_tasks_batch, get_inbox, get_task, get_task_counts, list_subtasks, list_tasks,
-            move_task, search_tasks, set_task_repetition, uncomplete_task, update_task,
+            list_tasks_with_planned, move_task, search_tasks, search_tasks_with_planned,
+            set_task_repetition, uncomplete_task, update_task,
             CreateTaskInput,
         },
         utility::append_to_note as append_to_note_tool,
@@ -76,6 +77,10 @@ struct ListTasksParams {
     completed_after: Option<String>,
     #[serde(rename = "maxEstimatedMinutes")]
     max_estimated_minutes: Option<i32>,
+    #[serde(rename = "plannedBefore")]
+    planned_before: Option<String>,
+    #[serde(rename = "plannedAfter")]
+    planned_after: Option<String>,
     #[serde(rename = "sortBy")]
     sort_by: Option<String>,
     #[serde(rename = "sortOrder")]
@@ -142,6 +147,10 @@ struct SearchTasksParams {
     completed_after: Option<String>,
     #[serde(rename = "maxEstimatedMinutes")]
     max_estimated_minutes: Option<i32>,
+    #[serde(rename = "plannedBefore")]
+    planned_before: Option<String>,
+    #[serde(rename = "plannedAfter")]
+    planned_after: Option<String>,
     #[serde(rename = "sortBy")]
     sort_by: Option<String>,
     #[serde(rename = "sortOrder")]
@@ -429,11 +438,13 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             completed_before,
             completed_after,
             max_estimated_minutes,
+            planned_before,
+            planned_after,
             sort_by,
             sort_order,
             limit,
         } = params;
-        let result = list_tasks(
+        let result = list_tasks_with_planned(
             self.runner.as_ref(),
             project.as_deref(),
             tag.as_deref(),
@@ -447,6 +458,8 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             defer_after.as_deref(),
             completed_before.as_deref(),
             completed_after.as_deref(),
+            planned_before.as_deref(),
+            planned_after.as_deref(),
             max_estimated_minutes,
             sort_by.as_deref(),
             sort_order.as_deref().unwrap_or("asc"),
@@ -515,7 +528,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<SearchTasksParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = search_tasks(
+        let result = search_tasks_with_planned(
             self.runner.as_ref(),
             &params.query,
             params.project.as_deref(),
@@ -530,6 +543,8 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.defer_after.as_deref(),
             params.completed_before.as_deref(),
             params.completed_after.as_deref(),
+            params.planned_before.as_deref(),
+            params.planned_after.as_deref(),
             params.max_estimated_minutes,
             params.sort_by.as_deref(),
             params.sort_order.as_deref().unwrap_or("asc"),

@@ -328,12 +328,16 @@ async def test_list_tasks_date_filters_are_included_in_script(
         deferAfter="2026-02-25T00:00:00Z",
         completedBefore="2026-03-09T00:00:00Z",
         completedAfter="2026-02-20T00:00:00Z",
+        plannedBefore="2026-03-15T00:00:00Z",
+        plannedAfter="2026-02-15T00:00:00Z",
         limit=9,
     )
 
     script = state["calls"][0]["script"]
     assert 'const dueBeforeRaw = "2026-03-10T00:00:00Z";' in script
     assert 'const completedAfterRaw = "2026-02-20T00:00:00Z";' in script
+    assert 'const plannedBeforeRaw = "2026-03-15T00:00:00Z";' in script
+    assert 'const plannedAfterRaw = "2026-02-15T00:00:00Z";' in script
     assert (
         "throw new Error(`${fieldName} must be a valid ISO 8601 date string.`);"
         in script
@@ -610,6 +614,8 @@ async def test_get_task_happy_path(
         "completed": False,
         "completionDate": None,
         "modified": None,
+        "plannedDate": None,
+        "effectivePlannedDate": None,
         "taskStatus": "available",
         "projectName": "Proj",
         "tags": [],
@@ -632,6 +638,8 @@ async def test_get_task_happy_path(
     assert "effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null," in state["calls"][0]["script"]
     assert "effectiveFlagged: task.effectiveFlagged," in state["calls"][0]["script"]
     assert "modified: task.modified ? task.modified.toISOString() : null," in state["calls"][0]["script"]
+    assert "plannedDate: plannedDate ? plannedDate.toISOString() : null," in state["calls"][0]["script"]
+    assert "effectivePlannedDate: effectivePlannedDate ? effectivePlannedDate.toISOString() : null," in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Overdue")) return "overdue";' in state["calls"][0]["script"]
     assert 'if (s.includes("Completed")) return "completed";' in state["calls"][0]["script"]
@@ -785,12 +793,18 @@ async def test_search_tasks_with_completed_after_auto_includes_completed_and_aut
     server = configured["server"]
 
     await server.search_tasks(
-        query="shape", completedAfter="2026-03-01T00:00:00Z", limit=5
+        query="shape",
+        completedAfter="2026-03-01T00:00:00Z",
+        plannedBefore="2026-03-10T00:00:00Z",
+        plannedAfter="2026-02-20T00:00:00Z",
+        limit=5,
     )
     script = state["calls"][0]["script"]
     assert 'const statusFilter = "all";' in script
     assert 'const sortBy = "completionDate";' in script
     assert 'const sortOrder = "desc";' in script
+    assert 'const plannedBeforeRaw = "2026-03-10T00:00:00Z";' in script
+    assert 'const plannedAfterRaw = "2026-02-20T00:00:00Z";' in script
     assert (
         "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
         in script

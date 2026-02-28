@@ -620,7 +620,7 @@ return counts;"#
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn list_tasks<R: JxaRunner>(
+pub async fn list_tasks_with_planned<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
     tag: Option<&str>,
@@ -959,6 +959,52 @@ return tasks.map(task => {{
 }
 
 #[allow(clippy::too_many_arguments)]
+pub async fn list_tasks<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    planned_before: Option<&str>,
+    planned_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+    sort_by: Option<&str>,
+    sort_order: &str,
+    limit: i32,
+) -> Result<Vec<TaskResult>> {
+    list_tasks_with_planned(
+        runner,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        status,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
+        None,
+        max_estimated_minutes,
+        sort_by,
+        sort_order,
+        limit,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
 pub async fn get_task_counts_duplicate<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
@@ -1061,6 +1107,12 @@ pub async fn get_task_counts_duplicate<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let planned_before_filter = planned_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_after_filter = planned_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
@@ -1075,6 +1127,8 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
+const plannedBeforeRaw = {planned_before_filter};
+const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
@@ -1279,7 +1333,7 @@ return subtasks.map(subtask => {{
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_tasks<R: JxaRunner>(
+pub async fn search_tasks_with_planned<R: JxaRunner>(
     runner: &R,
     query: &str,
     project: Option<&str>,
@@ -1638,6 +1692,52 @@ return tasks.map(task => {{
 
     let value = runner.run_omnijs(&script).await?;
     parse_task_list(value)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn search_tasks<R: JxaRunner>(
+    runner: &R,
+    query: &str,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+    sort_by: Option<&str>,
+    sort_order: &str,
+    limit: i32,
+) -> Result<Vec<TaskResult>> {
+    search_tasks_with_planned(
+        runner,
+        query,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        status,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
+        None,
+        max_estimated_minutes,
+        sort_by,
+        sort_order,
+        limit,
+    )
+    .await
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

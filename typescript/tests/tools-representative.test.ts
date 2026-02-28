@@ -306,11 +306,15 @@ describe("representative read and write tool handlers", () => {
       deferAfter: "2026-02-25T00:00:00Z",
       completedBefore: "2026-03-09T00:00:00Z",
       completedAfter: "2026-02-20T00:00:00Z",
+      plannedBefore: "2026-03-15T00:00:00Z",
+      plannedAfter: "2026-02-15T00:00:00Z",
       limit: 9,
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const dueBeforeRaw = "2026-03-10T00:00:00Z";');
     expect(script).toContain('const completedAfterRaw = "2026-02-20T00:00:00Z";');
+    expect(script).toContain('const plannedBeforeRaw = "2026-03-15T00:00:00Z";');
+    expect(script).toContain('const plannedAfterRaw = "2026-02-15T00:00:00Z";');
     expect(script).toContain("const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;");
     expect(script).toContain("statusMatches = includeCompletedForDateFilter;");
     expect(script).toContain("task.completionDate !== null && task.completionDate > completedAfter");
@@ -538,6 +542,8 @@ describe("representative read and write tool handlers", () => {
       effectiveDeferDate: null,
       effectiveFlagged: false,
       modified: null,
+      plannedDate: null,
+      effectivePlannedDate: null,
     });
     const result = await getTool("get_task")({ task_id: "task-9" });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
@@ -546,6 +552,8 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null,");
     expect(script).toContain("effectiveFlagged: task.effectiveFlagged,");
     expect(script).toContain("modified: task.modified ? task.modified.toISOString() : null,");
+    expect(script).toContain("plannedDate: (() => {");
+    expect(script).toContain("effectivePlannedDate: (() => {");
     expect(script).toContain("taskStatus: (() => {");
     expect(script).toContain('if (s.includes("Overdue")) return "overdue";');
     const parsed = JSON.parse(result.content[0].text);
@@ -557,6 +565,8 @@ describe("representative read and write tool handlers", () => {
       effectiveDeferDate: null,
       effectiveFlagged: false,
       modified: null,
+      plannedDate: null,
+      effectivePlannedDate: null,
     });
     expect([
       "available",
@@ -602,11 +612,15 @@ describe("representative read and write tool handlers", () => {
     await getTool("search_tasks")({
       query: "shape",
       completedAfter: "2026-03-01T00:00:00Z",
+      plannedBefore: "2026-03-10T00:00:00Z",
+      plannedAfter: "2026-02-20T00:00:00Z",
       limit: 5,
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const sortBy = "completionDate";');
     expect(script).toContain('const sortOrder = "desc";');
+    expect(script).toContain('const plannedBeforeRaw = "2026-03-10T00:00:00Z";');
+    expect(script).toContain('const plannedAfterRaw = "2026-02-20T00:00:00Z";');
     expect(script).toContain(
       "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
     );
