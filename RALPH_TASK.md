@@ -52,7 +52,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
 
 ### Success Criteria
 
-5. [ ] Add the following entries to `.gitignore`:
+5. [x] Add the following entries to `.gitignore`:
        ```
        # internal automation state
        .ralph/

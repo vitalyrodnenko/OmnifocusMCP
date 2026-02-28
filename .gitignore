@@ -5,6 +5,12 @@
 .ralph/activity.log
 .ralph/errors.log
 
+# internal automation state
+.ralph/
+
+# IDE-specific config
+.cursor/
+
 # Python artifacts
 node_modules/
 dist/
