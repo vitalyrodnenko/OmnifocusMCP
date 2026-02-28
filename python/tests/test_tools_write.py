@@ -378,26 +378,6 @@ async def test_update_project_happy_path_criterion8(
     assert "existingTags.forEach" in script
     assert "project.addTag(tag);" in script
 
-
-@pytest.mark.asyncio
-async def test_set_project_status_happy_path_criterion9(
-    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
-) -> None:
-    payload = {"id": "p3", "name": "Updated Project", "status": "on_hold"}
-    configured = mock_server_run_omnijs(payload)
-    state = configured["state"]
-    server = configured["server"]
-
-    result = await server.set_project_status(project_id_or_name="p3", status="on_hold")
-
-    assert json.loads(result) == payload
-    script = state["calls"][0]["script"]
-    assert 'const projectFilter = "p3";' in script
-    assert 'const statusInput = "on_hold";' in script
-    assert "Project.Status.OnHold" in script
-    assert "project.status = statusValue;" in script
-
-
 @pytest.mark.asyncio
 async def test_create_tag_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {"id": "tag1"}
@@ -968,9 +948,9 @@ async def test_set_project_status_happy_path_criterion9(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert 'const projectFilter = "p4";' in script
-    assert 'const statusValue = "on_hold";' in script
+    assert 'const statusInput = "on_hold";' in script
     assert "Project.Status.OnHold" in script
-    assert "project.status = targetStatus;" in script
+    assert "project.status = statusValue;" in script
 
 
 @pytest.mark.asyncio

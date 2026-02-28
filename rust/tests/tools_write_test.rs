@@ -8,7 +8,10 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
-        projects::{complete_project, create_project, uncomplete_project, update_project},
+        projects::{
+            complete_project, create_project, set_project_status, uncomplete_project,
+            update_project,
+        },
         tags::create_tag,
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
@@ -203,6 +206,11 @@ async fn write_project_and_tag_tools_happy_path() {
     .expect("update_project should succeed");
     assert_eq!(updated_project["id"], "p1");
 
+    let status_project = set_project_status(&runner, "p1", "on_hold")
+        .await
+        .expect("set_project_status should succeed");
+    assert_eq!(status_project["id"], "p1");
+
     let created_tag = create_tag(&runner, "home", Some("parent"))
         .await
         .expect("create_tag should succeed");
@@ -313,6 +321,14 @@ async fn validation_errors_for_write_tools() {
             Some("   ")
         )
         .await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        set_project_status(&runner, "   ", "active").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        set_project_status(&runner, "project", "completed").await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -571,6 +587,30 @@ async fn update_project_script_applies_partial_fields_and_tag_replacement() {
     );
     assert!(captured.contains("existingTags.forEach"));
     assert!(captured.contains("project.addTag(tag);"));
+}
+
+#[tokio::test]
+async fn set_project_status_script_sets_organizational_status_enum() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "p4", "name": "Project Four", "status": "on_hold"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = set_project_status(&runner, "p4", "on_hold").await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const projectFilter = \"p4\";"));
+    assert!(captured.contains("const statusValue = \"on_hold\";"));
+    assert!(captured.contains("Project.Status.OnHold"));
+    assert!(captured.contains("project.status = targetStatus;"));
 }
 
 #[tokio::test]

@@ -167,7 +167,7 @@ Reference implementations:
          Return updated project summary.
        - Implement and test in all 3 implementations.
 
-9. [ ] **`set_project_status`** — all 3 implementations.
+9. [x] **`set_project_status`** — all 3 implementations.
        - **Input:** `project_id_or_name: str` (non-empty),
          `status: str` (one of: "active", "on_hold", "dropped")
        - **JXA:** find project by ID or name. Map status string to

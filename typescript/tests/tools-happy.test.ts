@@ -323,9 +323,9 @@ describe("tool happy paths", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const projectFilter = "p4";');
-    expect(script).toContain('const statusValue = "on_hold";');
+    expect(script).toContain('const statusInput = "on_hold";');
     expect(script).toContain("Project.Status.OnHold");
-    expect(script).toContain("project.status = targetStatus;");
+    expect(script).toContain("project.status = statusValue;");
   });
 
   test("update_project updates provided fields and returns project summary", async () => {
@@ -389,8 +389,7 @@ describe("tool happy paths", () => {
     const result = await handler!({ project_id_or_name: "p4", status: "completed" });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
-      error:
-        'Invalid enum value. Expected \'active\' | \'on_hold\' | \'dropped\', received \'completed\'',
+      error: "status must be one of: active, on_hold, dropped.",
     });
   });
 });
