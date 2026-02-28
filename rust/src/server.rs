@@ -36,7 +36,7 @@ use crate::{
             complete_project, create_project, delete_project, get_project, list_projects,
             move_project, search_projects, set_project_status, uncomplete_project, update_project,
         },
-        tags::{create_tag, delete_tag, list_tags, update_tag},
+        tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
             delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks, move_task,
@@ -167,6 +167,12 @@ struct ListProjectsParams {
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct SearchProjectsParams {
+    query: String,
+    limit: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct SearchTagsParams {
     query: String,
     limit: Option<i32>,
 }
@@ -689,6 +695,21 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             self.runner.as_ref(),
             &params.project_id_or_name,
             &params.status,
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "search tags by name text using omnifocus fuzzy matching.")]
+    async fn search_tags(
+        &self,
+        Parameters(params): Parameters<SearchTagsParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = search_tags(
+            self.runner.as_ref(),
+            &params.query,
+            params.limit.unwrap_or(100),
         )
         .await
         .map_err(to_mcp_error)?;

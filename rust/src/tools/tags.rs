@@ -76,7 +76,6 @@ return tagsMatching(queryValue)
     runner.run_omnijs(&script).await
 }
 
-
 pub async fn create_tag<R: JxaRunner>(
     runner: &R,
     name: &str,

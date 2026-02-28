@@ -1039,4 +1039,3 @@ return {{
     );
     runner.run_omnijs(&script).await
 }
-
