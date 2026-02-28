@@ -58,6 +58,8 @@ pub async fn list_tasks<R: JxaRunner>(
     completed_before: Option<&str>,
     completed_after: Option<&str>,
     max_estimated_minutes: Option<i32>,
+    sort_by: Option<&str>,
+    sort_order: &str,
     limit: i32,
 ) -> Result<Vec<TaskResult>> {
     if limit < 1 {
@@ -100,6 +102,27 @@ pub async fn list_tasks<R: JxaRunner>(
             ));
         }
     }
+    if let Some(sort_field) = sort_by {
+        if !matches!(
+            sort_field,
+            "dueDate"
+                | "deferDate"
+                | "name"
+                | "completionDate"
+                | "estimatedMinutes"
+                | "project"
+                | "flagged"
+        ) {
+            return Err(OmniFocusError::Validation(
+                "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged.".to_string(),
+            ));
+        }
+    }
+    if !matches!(sort_order, "asc" | "desc") {
+        return Err(OmniFocusError::Validation(
+            "sortOrder must be one of: asc, desc.".to_string(),
+        ));
+    }
     if !matches!(
         status,
         "available" | "due_soon" | "overdue" | "completed" | "all"
@@ -107,6 +130,13 @@ pub async fn list_tasks<R: JxaRunner>(
         return Err(OmniFocusError::Validation(
             "status must be one of: available, due_soon, overdue, completed, all.".to_string(),
         ));
+    }
+
+    let mut effective_sort_by = sort_by;
+    let mut effective_sort_order = sort_order;
+    if (completed_before.is_some() || completed_after.is_some()) && effective_sort_by.is_none() {
+        effective_sort_by = Some("completionDate");
+        effective_sort_order = "desc";
     }
 
     let project_filter = project
@@ -164,6 +194,10 @@ pub async fn list_tasks<R: JxaRunner>(
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
+    let sort_by_filter = effective_sort_by
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let sort_order_filter = escape_for_jxa(effective_sort_order);
 
     let script = format!(
         r#"const projectFilter = {project_filter};
@@ -178,6 +212,8 @@ const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
+const sortBy = {sort_by_filter};
+const sortOrder = {sort_order_filter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
 const parseOptionalDate = (value, fieldName) => {{
@@ -196,7 +232,7 @@ const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore")
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
 
-const tasks = document.flattenedTasks
+const filteredTasks = document.flattenedTasks
   .filter(task => {{
     if (projectFilter !== null) {{
       const projectName = task.containingProject ? task.containingProject.name : null;
@@ -241,8 +277,55 @@ const tasks = document.flattenedTasks
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
     if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
     return true;
-  }})
-  .slice(0, {limit});
+  }});
+
+const compareValues = (aValue, bValue, isString = false) => {{
+  if (aValue === null && bValue === null) return 0;
+  if (aValue === null) return 1;
+  if (bValue === null) return -1;
+  let left = aValue;
+  let right = bValue;
+  if (isString) {{
+    left = String(aValue).toLowerCase();
+    right = String(bValue).toLowerCase();
+  }}
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+}};
+
+const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort((a, b) => {{
+  let aValue = null;
+  let bValue = null;
+  let isString = false;
+  if (sortBy === "dueDate") {{
+    aValue = a.dueDate;
+    bValue = b.dueDate;
+  }} else if (sortBy === "deferDate") {{
+    aValue = a.deferDate;
+    bValue = b.deferDate;
+  }} else if (sortBy === "name") {{
+    aValue = a.name;
+    bValue = b.name;
+    isString = true;
+  }} else if (sortBy === "completionDate") {{
+    aValue = a.completionDate;
+    bValue = b.completionDate;
+  }} else if (sortBy === "estimatedMinutes") {{
+    aValue = a.estimatedMinutes;
+    bValue = b.estimatedMinutes;
+  }} else if (sortBy === "project") {{
+    aValue = a.containingProject ? a.containingProject.name : null;
+    bValue = b.containingProject ? b.containingProject.name : null;
+    isString = true;
+  }} else if (sortBy === "flagged") {{
+    aValue = a.flagged;
+    bValue = b.flagged;
+  }}
+  return compareValues(aValue, bValue, isString);
+}});
+
+const tasks = sortedTasks.slice(0, {limit});
 
 return tasks.map(task => {{
   const tags = task.tags.map(taskTag => taskTag.name);
