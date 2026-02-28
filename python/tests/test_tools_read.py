@@ -418,6 +418,27 @@ async def test_get_project_happy_path(mock_server_run_omnijs: Callable[[Any], di
 
 
 @pytest.mark.asyncio
+async def test_search_tags_happy_path_criterion22(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = [
+        {"id": "g7", "name": "Errands", "status": "active", "parent": "Personal"},
+    ]
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.search_tags(query="err", limit=6)
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const queryValue = "err";' in script
+    assert "return tagsMatching(queryValue)" in script
+    assert ".slice(0, 6)" in script
+    assert "parent: tag.parent ? tag.parent.name : null" in script
+
+
+@pytest.mark.asyncio
 async def test_list_tags_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = [
         {
@@ -554,6 +575,14 @@ async def test_search_projects_validation_errors_criterion21(server_module: Any)
         await server_module.search_projects("   ")
     with pytest.raises(ValueError, match="limit must be greater than 0."):
         await server_module.search_projects("admin", limit=0)
+
+
+@pytest.mark.asyncio
+async def test_search_tags_validation_errors_criterion22(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="query must not be empty."):
+        await server_module.search_tags("   ")
+    with pytest.raises(ValueError, match="limit must be greater than 0."):
+        await server_module.search_tags("err", limit=0)
 
 
 @pytest.mark.asyncio
