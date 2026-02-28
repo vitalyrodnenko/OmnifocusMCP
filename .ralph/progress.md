@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 38
-- Current status: Phase 7 in progress (criterion 68 complete; next 69).
+- Iterations completed: 40
+- Current status: Phase 8 in progress (Phase 7 complete; next 72).
 
 ## How This Works
 
@@ -23,10 +23,10 @@ This is how Ralph maintains continuity across iterations.
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
 | 6     | Python: Polish                    | 54–59     | 6/6  |
-| 7     | TypeScript: Full Port + Tests     | 60–71     | 9/12 |
+| 7     | TypeScript: Full Port + Tests     | 60–71     | 12/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 68 / 75 criteria complete**
+**Total: 70 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -987,3 +987,21 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:29:58
 **Session 40 started** (model: auto)
+
+### 2026-02-27 23:30:28
+**Session 40 update**
+- completed phase 7 criteria 69-71:
+  - aligned `typescript/tests/errors.test.ts` with `runJxa` runtime error typing (`Error` with `stderr`/`code`)
+  - verified representative and happy-path tool tests run successfully (`tests/tools-representative.test.ts`, `tests/tools-happy.test.ts`)
+  - confirmed `npx tsc --noEmit && npm test` passes with zero errors
+- switched MCP registrations in `typescript/src/index.ts` to `registerResource` and `registerPrompt` for compatibility with existing test mocks
+- ran full validation command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- phase 7 is complete; next up is phase 8 criterion 72 (top-level README final polish)
+
+### 2026-02-27 23:30:34
+**Session 40 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:30:36
+**Session 41 started** (model: auto)

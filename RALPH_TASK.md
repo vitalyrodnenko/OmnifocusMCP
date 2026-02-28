@@ -330,12 +330,12 @@ identical — only the server framework and subprocess calls change.
 
 68. [x] Tests for `escapeForJxa`: same adversarial inputs as Python tests
         (quotes, backslashes, newlines, unicode, emoji, empty, long).
-69. [ ] Tests for `runJxa` / `runOmniJs` error paths (mocked subprocess):
+69. [x] Tests for `runJxa` / `runOmniJs` error paths (mocked subprocess):
         non-zero exit, timeout, malformed JSON.
-70. [ ] Happy-path tests for at least 3 representative read tools and
+70. [x] Happy-path tests for at least 3 representative read tools and
         3 representative write tools (mocked `runOmniJs`). Verifies
         correct JXA script generation and response parsing.
-71. [ ] `npx tsc --noEmit && npm test` passes with zero errors.
+71. [x] `npx tsc --noEmit && npm test` passes with zero errors.
 
 ---
 

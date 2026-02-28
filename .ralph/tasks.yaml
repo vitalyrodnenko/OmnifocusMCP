@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772256549
-generated_at: 2026-02-28T05:29:54Z
+source_mtime: 1772256617
+generated_at: 2026-02-28T05:30:33Z
 
 tasks:
   - id: "line_109"
@@ -485,21 +485,21 @@ tasks:
     raw_marker: 68.
   - id: "line_333"
     line_number: 333
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tests for `runJxa` / `runOmniJs` error paths (mocked subprocess):
     indent_level: 0
     raw_marker: 69.
   - id: "line_335"
     line_number: 335
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Happy-path tests for at least 3 representative read tools and
     indent_level: 0
     raw_marker: 70.
   - id: "line_338"
     line_number: 338
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `npx tsc --noEmit && npm test` passes with zero errors.
     indent_level: 0

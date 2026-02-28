@@ -18,6 +18,10 @@ vi.mock("@modelcontextprotocol/sdk/server/mcp.js", () => {
 
     registerPrompt(): void {}
 
+    resource(): void {}
+
+    prompt(): void {}
+
     async connect(): Promise<void> {}
   }
 

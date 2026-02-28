@@ -1,6 +1,8 @@
-import { beforeEach, describe, expect, test, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const execFileAsyncMock = vi.fn();
+const { execFileAsyncMock } = vi.hoisted(() => ({
+  execFileAsyncMock: vi.fn(),
+}));
 
 vi.mock("node:child_process", () => ({
   execFile: vi.fn(),
@@ -10,30 +12,44 @@ vi.mock("node:util", () => ({
   promisify: vi.fn(() => execFileAsyncMock),
 }));
 
-describe("jxa error paths", () => {
+describe("jxa error handling", () => {
   beforeEach(() => {
     execFileAsyncMock.mockReset();
+    vi.resetModules();
   });
 
-  test("runJxa surfaces non-zero stderr cleanly", async () => {
-    const error = new Error("failed") as Error & { stderr?: unknown };
-    error.stderr = "execution error: OmniFocus got an error";
-    execFileAsyncMock.mockRejectedValueOnce(error);
+  it("runJxa surfaces non-zero subprocess failures", async () => {
+    execFileAsyncMock.mockRejectedValue(
+      Object.assign(new Error("Command failed"), {
+        stderr: "script blew up",
+      })
+    );
+
     const { runJxa } = await import("../src/jxa.js");
-    await expect(runJxa("1+1")).rejects.toThrow("JXA execution failed:");
+
+    await expect(runJxa("return 1;")).rejects.toThrow("JXA execution failed: script blew up");
   });
 
-  test("runJxa reports timeout error", async () => {
-    const error = new Error("timed out") as Error & { code?: unknown };
-    error.code = "ETIMEDOUT";
-    execFileAsyncMock.mockRejectedValueOnce(error);
+  it("runJxa surfaces timeout failures", async () => {
+    execFileAsyncMock.mockRejectedValue(
+      Object.assign(new Error("timed out"), {
+        code: "ETIMEDOUT",
+      })
+    );
+
     const { runJxa } = await import("../src/jxa.js");
-    await expect(runJxa("1+1", 1_000)).rejects.toThrow("JXA command timed out after 1s.");
+
+    await expect(runJxa("return 1;", 1_000)).rejects.toThrow("JXA command timed out after 1s.");
   });
 
-  test("runOmniJs fails on malformed JSON envelope", async () => {
-    execFileAsyncMock.mockResolvedValueOnce({ stdout: "not-json" });
+  it("runOmniJs surfaces malformed json output", async () => {
+    execFileAsyncMock.mockResolvedValue({
+      stdout: "not-json",
+      stderr: "",
+    });
+
     const { runOmniJs } = await import("../src/jxa.js");
+
     await expect(runOmniJs("return 1;")).rejects.toThrow("JXA command returned malformed JSON.");
   });
 });
