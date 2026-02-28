@@ -18,6 +18,8 @@ pub struct TaskResult {
     pub defer_date: Option<String>,
     #[serde(rename = "completionDate", alias = "completion_date", default)]
     pub completion_date: Option<String>,
+    #[serde(rename = "plannedDate", alias = "planned_date", default)]
+    pub planned_date: Option<String>,
     #[serde(default)]
     pub tags: Vec<String>,
     #[serde(rename = "estimatedMinutes", alias = "estimated_minutes", default)]
