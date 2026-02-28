@@ -660,3 +660,61 @@ async def test_create_task_empty_project_validation_error(server_module: Any) ->
 async def test_move_task_empty_project_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="project must not be empty when provided"):
         await server_module.move_task("task-1", project="   ")
+
+
+@pytest.mark.asyncio
+async def test_delete_tasks_batch_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "deleted_count": 2,
+        "not_found_count": 0,
+        "results": [
+            {"id": "t1", "name": "Task One", "deleted": True},
+            {"id": "t2", "name": "Task Two", "deleted": True},
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_tasks_batch(["t1", "t2"])
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    script = state["calls"][0]["script"]
+    assert 'const taskIds = ["t1", "t2"];' in script
+    assert "task.drop(false);" in script
+    assert "deleted_count" in script
+
+
+@pytest.mark.asyncio
+async def test_delete_tasks_batch_partial_failure(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "deleted_count": 1,
+        "not_found_count": 1,
+        "results": [
+            {"id": "t1", "name": "Task One", "deleted": True},
+            {"id": "missing", "deleted": False, "error": "not found"},
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    server = configured["server"]
+
+    result = await server.delete_tasks_batch(["t1", "missing"])
+
+    assert json.loads(result) == payload
+
+
+@pytest.mark.asyncio
+async def test_delete_tasks_batch_empty_array_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="task_ids must contain at least one task id."):
+        await server_module.delete_tasks_batch([])
+
+
+@pytest.mark.asyncio
+async def test_delete_tasks_batch_empty_string_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="each task id must be a non-empty string."):
+        await server_module.delete_tasks_batch(["task-1", "   "])

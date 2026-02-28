@@ -38,7 +38,7 @@ Reference:
 
 1. [x] Read `python/src/omnifocus_mcp/tools/tasks.py` to understand the
        existing `delete_task` and `create_tasks_batch` implementations.
-2. [ ] Add `delete_tasks_batch` tool to `python/src/omnifocus_mcp/tools/tasks.py`:
+2. [x] Add `delete_tasks_batch` tool to `python/src/omnifocus_mcp/tools/tasks.py`:
        - **Input:** `task_ids: list[str]` — array of task IDs to delete.
          Minimum 1 element. Each ID must be non-empty.
        - **Tool description** must include: "IMPORTANT: before calling
@@ -58,12 +58,12 @@ Reference:
        - **Escape** each task ID via `escape_for_jxa` / `json.dumps`
          (pass the whole array as a JSON-serialized string, same pattern
          as `create_tasks_batch` passes its task array).
-3. [ ] Add tests in `python/tests/test_tools_write.py`:
+3. [x] Add tests in `python/tests/test_tools_write.py`:
        - Happy path: mock JXA returns successful batch deletion
        - Partial failure: some IDs not found
        - Validation error: empty array
        - Validation error: array contains empty string
-4. [ ] `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+4. [x] `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
 
 ---
 

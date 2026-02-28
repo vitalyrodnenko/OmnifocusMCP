@@ -19,12 +19,13 @@ def test_top_level_readme_documents_python_typescript_switching() -> None:
     lowered = readme.lower()
 
     assert "## mcp client config examples" in lowered
-    assert "### switching between python and typescript" in lowered
+    assert "### switching between rust, python, and typescript" in lowered
     assert '"command": "uv"' in readme
     assert '"args": ["run", "omnifocus-mcp"]' in readme
     assert '"command": "python"' in readme
     assert '"args": ["-m", "omnifocus_mcp"]' in readme
     assert '"command": "node"' in readme
-    assert '["/absolute/path/to/OmnifocusMCP/typescript/dist/index.js"]' in readme
+    assert '"args": ["dist/index.js"]' in readme
+    assert '"cwd": "/absolute/path/to/OmnifocusMCP/typescript"' in readme
     assert "## switching implementations" in lowered
     assert "restart the mcp client so it reloads the server command" in lowered

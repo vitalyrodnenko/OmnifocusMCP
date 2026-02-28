@@ -557,6 +557,61 @@ return {{
 
 
 @typed_tool(mcp)
+async def delete_tasks_batch(task_ids: list[str]) -> str:
+    """delete multiple tasks by id in a single omnijs call.
+
+    important: before calling this tool, always show the user the list of tasks
+    to be deleted and ask for explicit confirmation. do not proceed without user
+    approval.
+    """
+    if len(task_ids) == 0:
+        raise ValueError("task_ids must contain at least one task id.")
+
+    normalized_task_ids: list[str] = []
+    for task_id in task_ids:
+        if not isinstance(task_id, str):
+            raise ValueError("each task id must be a string.")
+        normalized_task_id = task_id.strip()
+        if normalized_task_id == "":
+            raise ValueError("each task id must be a non-empty string.")
+        normalized_task_ids.append(normalized_task_id)
+
+    task_ids_value = json.dumps(normalized_task_ids)
+    script = f"""
+const taskIds = {task_ids_value};
+const results = taskIds.map(taskId => {{
+  const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+  if (!task) {{
+    return {{
+      id: taskId,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const taskName = task.name;
+  task.drop(false);
+  return {{
+    id: taskId,
+    name: taskName,
+    deleted: true
+  }};
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const notFoundCount = results.length - deletedCount;
+
+return {{
+  deleted_count: deletedCount,
+  not_found_count: notFoundCount,
+  results: results
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def move_task(task_id: str, project: str | None = None) -> str:
     """move a task to a named project or back to inbox.
 

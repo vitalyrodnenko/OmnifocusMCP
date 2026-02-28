@@ -23,6 +23,7 @@ from omnifocus_mcp.tools.tasks import (  # noqa: E402,F401
     create_task,
     create_tasks_batch,
     delete_task,
+    delete_tasks_batch,
     get_inbox,
     get_task,
     list_tasks,
