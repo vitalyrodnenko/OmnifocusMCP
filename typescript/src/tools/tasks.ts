@@ -563,7 +563,7 @@ return { id: task.id.primaryKey, name: task.name, projectName: task.containingPr
 
   server.tool(
     "append_to_note",
-    "append text to a task or project note by object id.",
+    "append text to a task or project note by id.",
     {
       object_type: z.enum(["task", "project"]),
       object_id: z.string().min(1),
@@ -584,26 +584,28 @@ return { id: task.id.primaryKey, name: task.name, projectName: task.containingPr
 
         const objectType = escapeForJxa(object_type);
         const objectId = escapeForJxa(normalizedObjectId);
-        const textValue = escapeForJxa(text);
+        const textToAppend = escapeForJxa(text);
         const script = `
 const objectType = ${objectType};
 const objectId = ${objectId};
-const textValue = ${textValue};
-
+const textToAppend = ${textToAppend};
 let obj;
+ 
 if (objectType === "task") {
   obj = document.flattenedTasks.find(item => item.id.primaryKey === objectId);
+  if (!obj) {
+    throw new Error(\`Task not found: \${objectId}\`);
+  }
 } else if (objectType === "project") {
   obj = document.flattenedProjects.find(item => item.id.primaryKey === objectId);
+  if (!obj) {
+    throw new Error(\`Project not found: \${objectId}\`);
+  }
 } else {
   throw new Error(\`Invalid object_type: \${objectType}\`);
 }
 
-if (!obj) {
-  throw new Error(\`\${objectType} not found: \${objectId}\`);
-}
-
-obj.appendStringToNote(textValue);
+obj.appendStringToNote(textToAppend);
 
 return {
   id: obj.id.primaryKey,

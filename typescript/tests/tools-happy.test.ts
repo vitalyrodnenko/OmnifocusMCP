@@ -339,8 +339,8 @@ describe("tool happy paths", () => {
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const objectType = "task";');
     expect(script).toContain('const objectId = "t6";');
-    expect(script).toContain('const textToAppend = "\\nfollow-up details";');
-    expect(script).toContain("obj.appendStringToNote(textToAppend);");
+    expect(script).toContain('const textValue = "\\nfollow-up details";');
+    expect(script).toContain("obj.appendStringToNote(textValue);");
     expect(script).toContain("noteLength: obj.note.length");
   });
 
