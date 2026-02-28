@@ -706,9 +706,9 @@ describe("representative read and write tool handlers", () => {
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const taskId = "task-9";');
     expect(script).toContain("const includeChildren = true;");
-    expect(script).toContain("const duplicated = duplicateTasks([task], insertionLocation);");
-    expect(script).toContain("const taskStatusValue = (taskItem) => {");
-    expect(script).toContain("taskStatus: taskStatusValue(duplicatedTask)");
+    expect(script).toContain("const duplicates = duplicateTasks([task], insertionLocation);");
+    expect(script).toContain("const clonedTask = (() => {");
+    expect(script).toContain("const s = String(clonedTask.taskStatus);");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "copy-1",
       name: "Copied task",
@@ -737,8 +737,9 @@ describe("representative read and write tool handlers", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain("const includeChildren = false;");
-    expect(script).toContain("duplicatedTask = new Task(task.name, insertionLocation);");
-    expect(script).toContain("task.tags.forEach(tag => duplicatedTask.addTag(tag));");
+    expect(script).toContain("const manualClone = new Task(task.name, insertionLocation);");
+    expect(script).toContain("task.tags.forEach(tag => {");
+    expect(script).toContain("manualClone.addTag(tag);");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "copy-2",
       name: "Copied task flat",

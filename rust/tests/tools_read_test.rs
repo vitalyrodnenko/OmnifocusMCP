@@ -985,6 +985,7 @@ async fn duplicate_task_script_supports_children_and_manual_clone_modes() {
     assert!(with_children_script_text
         .contains("const duplicated = duplicateTasks([task], insertionLocation);"));
     assert!(with_children_script_text.contains("const taskStatusValue = (taskItem) => {"));
+    assert!(with_children_script_text.contains("taskStatus: taskStatusValue(duplicatedTask)"));
 
     let without_children_script = Arc::new(Mutex::new(String::new()));
     let without_children_runner = CapturingRunner {
@@ -1003,10 +1004,8 @@ async fn duplicate_task_script_supports_children_and_manual_clone_modes() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(without_children_script_text.contains("const includeChildren = false;"));
-    assert!(without_children_script_text
-        .contains("duplicatedTask = new Task(task.name, insertionLocation);"));
-    assert!(without_children_script_text
-        .contains("task.tags.forEach(tag => duplicatedTask.addTag(tag));"));
+    assert!(without_children_script_text.contains("duplicatedTask = new Task(task.name, insertionLocation);"));
+    assert!(without_children_script_text.contains("task.tags.forEach(tag => duplicatedTask.addTag(tag));"));
 }
 
 #[tokio::test]

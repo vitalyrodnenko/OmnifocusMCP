@@ -6,9 +6,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phases 1-9 complete; moving to Phase 10 (31/36 criteria done).
-- Next criterion: **32** — implement `duplicate_task` across all 3 implementations
-- Remaining: criteria 32-36 (5 criteria across Phases 10-11)
+- Current status: phases 1-10 complete and phase 11 queued (33/36 criteria done).
+- Next criterion: **34** — final parity verification across all 3 implementations
+- Remaining: criteria 34-36 (3 criteria in Phase 11)
 
 ## Phase Overview
 
@@ -23,28 +23,20 @@
 | 7     | Documentation                      | 21–22    | 2/2  |
 | 8     | Native Properties & Effective Vals | 23–27    | 5/5  |
 | 9     | Notifications                      | 28–31    | 4/4  |
-| 10    | Duplicate Task                     | 32–33    | 0/2  |
+| 10    | Duplicate Task                     | 32–33    | 2/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 31 / 36 criteria complete**
+**Total: 33 / 36 criteria complete**
 
 ## Key Context
 
 - Python tools: `python/src/omnifocus_mcp/tools/*.py`
 - TypeScript tools: `typescript/src/tools/*.ts`
 - Rust tools: `rust/src/tools/*.rs`
-- Criteria 23-31 complete: taskStatus/effective fields/modified/plannedDate and full notifications phase
-- Next: criterion 32 (`duplicate_task`)
+- Criteria 23-33 complete: taskStatus/effective fields/modified/plannedDate, notifications, and duplicate_task with gate passing
+- Next: criterion 34 (final parity verification)
 
 ## Session History (keep only last 3 substantive entries)
-
-### 2026-02-28 16:14
-- completed criterion 30 by verifying `remove_notification` behavior and parity in Python/TypeScript/Rust
-- ran focused remove-notification tests:
-  - `cd python && pytest tests/test_tools_read.py -k remove_notification -v`
-  - `cd typescript && npm test -- tools-representative.test.ts -t remove_notification`
-  - `cd rust && cargo test --test tools_read_test remove_notification`
-- next: criterion 31 (phase 9 full gate)
 
 ### 2026-02-28 16:15
 - completed criterion 31 by running full cross-implementation gate with zero failures
@@ -62,3 +54,12 @@
   - `cd typescript && npx tsc --noEmit && npm test -- tools-representative.test.ts -t "remove_notification|add_notification|list_notifications"`
   - `cd rust && cargo test --test tools_read_test notification`
 - next: criterion 32 (`duplicate_task`)
+
+### 2026-02-28 16:23
+- completed criterion 32 by stabilizing `duplicate_task` and keeping one canonical active implementation per language
+- resolved duplicate-definition regressions introduced during iteration and reran focused duplicate_task checks
+- focused verification run:
+  - `cd python && pytest tests/test_tools_write.py -k duplicate_task -v`
+  - `cd typescript && npm test -- tools-representative.test.ts -t duplicate_task`
+  - `cd rust && cargo test --test tools_write_test duplicate_task`
+- next: criterion 33 (phase 10 full gate)
