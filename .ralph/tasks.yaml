@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772314393
-generated_at: 2026-02-28T21:33:46Z
+source_mtime: 1772316213
+generated_at: 2026-02-28T22:06:02Z
 
 tasks:
   - id: "line_108"
@@ -184,14 +184,14 @@ tasks:
     raw_marker: 25.
   - id: "line_472"
     line_number: 472
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Add `plannedDate` support** — all 3 implementations.
     indent_level: 0
     raw_marker: 26.
   - id: "line_488"
     line_number: 488
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All lint and test commands pass for Phase 8 (same as criterion 6).
     indent_level: 0
