@@ -61,7 +61,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
        .cursor/
        ```
 
-6. [ ] Remove tracked `.ralph/` and `.cursor/` files from the git
+6. [x] Remove tracked `.ralph/` and `.cursor/` files from the git
        index WITHOUT deleting them from disk:
        ```
        git rm -r --cached .ralph/ .cursor/
