@@ -418,3 +418,24 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 15:19:22
 **Session 46 started** (model: auto)
+
+### 2026-02-28 15:20:40
+- removed duplicate `get_task_counts` tool registration in `typescript/src/tools/tasks.ts`
+- aligned python `get_task_counts` counting script to single-pass filtering/counting (no intermediate filtered array)
+- verified rust has a single active `get_task_counts` symbol and retained working script parity behavior
+- removed duplicate `get_project_counts` tool registration in `typescript/src/tools/projects.ts` and kept runtime folder validation/trim
+- reran focused gates:
+  - python: `pytest tests/test_tools_read.py -k get_task_counts -v` and `-k get_project_counts -v`
+  - typescript: `npm test -- -t get_task_counts` and `-t get_project_counts`
+  - rust: `cargo test get_task_counts -- --nocapture` and `cargo test get_project_counts -- --nocapture`
+- reran full cross-implementation gate successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- next: criterion 17 (`get_forecast` enrichment across all 3 implementations)
+
+### 2026-02-28 15:19:51
+**Session 46 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 15:19:53
+**Session 47 started** (model: auto)
