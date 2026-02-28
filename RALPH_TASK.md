@@ -186,7 +186,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
           section.
         - Fix placeholder URLs if any.
 
-11. [ ] Fix `typescript/README.md`:
+11. [x] Fix `typescript/README.md`:
         - Change Node.js version from "18+" to "20+" (matches
           `docs/install-typescript.md`).
         - Fix placeholder URLs if any.

@@ -5,7 +5,7 @@ TypeScript implementation of an MCP server for OmniFocus on macOS.
 ## Prerequisites
 
 - macOS with OmniFocus installed and running
-- Node.js 18+
+- Node.js 20+
 - npm
 - macOS Automation permission granted to your terminal/editor
 
