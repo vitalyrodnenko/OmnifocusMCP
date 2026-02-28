@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 40
-- Current status: Phase 8 in progress (Phase 7 complete; next 72).
+- Current status: Phase 8 in progress (criterion 72 complete; next 73).
 
 ## How This Works
 
@@ -24,9 +24,9 @@ This is how Ralph maintains continuity across iterations.
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
 | 6     | Python: Polish                    | 54–59     | 6/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 12/12 |
-| 8     | Final Polish                      | 72–75     | 0/4  |
+| 8     | Final Polish                      | 72–75     | 1/4  |
 
-**Total: 70 / 75 criteria complete**
+**Total: 71 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -1005,3 +1005,15 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:30:36
 **Session 41 started** (model: auto)
+
+### 2026-02-28 23:31:20
+**Session 41 update**
+- completed phase 8 criterion 72 by expanding top-level `README.md`:
+  - added feature comparison table for Python vs TypeScript implementations
+  - added install instructions for both implementations
+  - added MCP client config examples for Claude Desktop, Cursor, Cline, and generic stdio clients
+  - added links to `python/README.md` and `typescript/README.md`
+- ran full validation command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 8 criterion 73 (test/document switching between Python and TypeScript MCP configs)

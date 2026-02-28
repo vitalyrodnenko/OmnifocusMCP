@@ -345,7 +345,7 @@ Ensure both implementations are complete, documented, and consistent.
 
 ### Success Criteria
 
-72. [ ] Top-level `README.md` updated with feature comparison table,
+72. [x] Top-level `README.md` updated with feature comparison table,
         installation instructions for both implementations, MCP client
         config examples for popular clients, and links.
 73. [ ] MCP client configs for both implementations tested. Documented
