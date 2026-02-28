@@ -684,10 +684,11 @@ async fn move_project_script_moves_to_folder_or_library() {
         .expect("move_project top-level script should be captured");
     assert!(folder_script.contains("const projectFilter = \"p6\";"));
     assert!(folder_script.contains("const folderName = \"Work\";"));
-    assert!(folder_script.contains("destination = targetFolder.ending;"));
+    assert!(folder_script.contains("const destination = (() => {"));
+    assert!(folder_script.contains("return targetFolder.ending;"));
     assert!(folder_script.contains("moveSections([project], destination);"));
     assert!(top_level_script.contains("const folderName = null;"));
-    assert!(top_level_script.contains("destination = library.ending;"));
+    assert!(top_level_script.contains("if (folderName === null) return library.ending;"));
 }
 
 #[tokio::test]
