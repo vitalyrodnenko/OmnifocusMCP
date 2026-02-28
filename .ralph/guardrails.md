@@ -55,3 +55,8 @@
 - **Instruction**: Ensure every interpolated filter variable (for example `statusFilter`) is declared in the embedded OmniJS string, then run the real integration test path that exercises that filter
 - **Added after**: TypeScript integration failed in `list_tags` with `Can't find variable: statusFilter` because the script referenced a variable that was never declared inside OmniJS
 
+### Sign: Verify Single-Definition File Integrity After Large Rewrites
+- **Trigger**: After replacing a large file with generated or merged content
+- **Instruction**: Immediately validate symbol uniqueness (for example with `rg` counts for core types/functions) before running broader test commands
+- **Added after**: Rust smoke test failed to compile because `examples/smoke_test.rs` contained duplicated type/function blocks
+

@@ -586,6 +586,13 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-28 11:29:06
 **Session 18 started** (model: auto)
 
+### 2026-02-28 12:05:00
+- fixed `rust/examples/smoke_test.rs` integrity by removing duplicated definitions and restoring a single compileable smoke test implementation
+- ran phase 4 smoke criterion command: `cd rust && cargo run --example smoke_test` with real OmniFocus (`PASS` for bridge/read/write, `0 failures`)
+- reran required rust task command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- added a new guardrail sign to prevent duplicate-definition regressions after large file rewrites
+- next focus: criterion 33 (`rust/tests/integration_test.rs` behind `integration` feature)
+
 ### 2026-02-28 11:31:21
 **Session 18 ended** - 🔄 Context rotation (token limit reached)
 
