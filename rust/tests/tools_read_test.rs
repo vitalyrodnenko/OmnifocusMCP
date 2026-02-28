@@ -585,6 +585,73 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
 }
 
 #[tokio::test]
+async fn list_tasks_duration_filter_script_contains_expected_logic() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-duration", "duration task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed_15 = list_tasks(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(15),
+        5,
+    )
+    .await
+    .expect("15-minute filter should parse");
+    assert_eq!(listed_15.len(), 1);
+    let script_15 = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_15.contains("const maxEstimatedMinutes = 15;"));
+    assert!(script_15.contains(
+        "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
+    ));
+
+    let listed_60 = list_tasks(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(60),
+        5,
+    )
+    .await
+    .expect("60-minute filter should parse");
+    assert_eq!(listed_60.len(), 1);
+    let script_60 = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_60.contains("const maxEstimatedMinutes = 60;"));
+    assert!(script_60.contains(
+        "task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes"
+    ));
+}
+
+#[tokio::test]
 async fn list_tasks_invalid_date_error_bubbles_up() {
     let runner = ErrorRunner {
         message: "dueBefore must be a valid ISO 8601 date string.".to_string(),
@@ -774,4 +841,68 @@ async fn list_tasks_empty_tags_array_is_ignored() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script.contains("const tagNames = null;"));
+}
+
+#[tokio::test]
+async fn list_tasks_duration_filter_values_and_null_exclusion_are_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-duration", "duration task")]),
+        last_script: last_script.clone(),
+    };
+
+    list_tasks(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(15),
+        5,
+    )
+    .await
+    .expect("list tasks with 15-minute duration filter should parse");
+
+    let script_15 = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_15.contains("const maxEstimatedMinutes = 15;"));
+    assert!(script_15.contains(
+        "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
+    ));
+
+    list_tasks(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some(60),
+        5,
+    )
+    .await
+    .expect("list tasks with 60-minute duration filter should parse");
+
+    let script_60 = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_60.contains("const maxEstimatedMinutes = 60;"));
 }

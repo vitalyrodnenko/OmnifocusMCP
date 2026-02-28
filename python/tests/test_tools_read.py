@@ -378,6 +378,52 @@ async def test_list_tasks_tags_filter_ignores_empty_tags_array(
 
 
 @pytest.mark.asyncio
+async def test_list_tasks_duration_filter_15_minutes_is_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(maxEstimatedMinutes=15, limit=5)
+
+    script = state["calls"][0]["script"]
+    assert "const maxEstimatedMinutes = 15;" in script
+    assert (
+        "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
+        in script
+    )
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_duration_filter_60_minutes_is_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(maxEstimatedMinutes=60, limit=5)
+
+    script = state["calls"][0]["script"]
+    assert "const maxEstimatedMinutes = 60;" in script
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_duration_filter_excludes_null_estimated_minutes_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(maxEstimatedMinutes=30, limit=5)
+
+    script = state["calls"][0]["script"]
+    assert "task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes" in script
+
+
+@pytest.mark.asyncio
 async def test_get_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {
         "id": "t3",

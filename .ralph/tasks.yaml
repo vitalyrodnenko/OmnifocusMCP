@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772310734
-generated_at: 2026-02-28T20:32:25Z
+source_mtime: 1772310848
+generated_at: 2026-02-28T20:34:19Z
 
 tasks:
   - id: "line_108"
@@ -23,7 +23,7 @@ tasks:
     raw_marker: 2.
   - id: "line_151"
     line_number: 151
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Add duration filter to `list_tasks`** — all 3 implementations.
     indent_level: 0

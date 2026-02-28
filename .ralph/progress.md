@@ -251,3 +251,18 @@ Reading even two full files will blow your budget and trigger rotation.
 
 ### 2026-02-28 14:33:21
 **Session 16 started** (model: auto)
+
+### 2026-02-28 14:34:05
+- verified criterion 3 (`maxEstimatedMinutes` duration filter) is implemented across python/typescript/rust:
+  - tool params and validation are wired in all 3 implementations
+  - jxa filtering uses `task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes`
+  - coverage includes 15-minute and 60-minute filters plus null-estimate exclusion behavior
+- reran full `test_command` successfully across python/typescript/rust
+- updated `RALPH_TASK.md` criterion 3 to `[x]`
+- next criterion: 4 (add sorting to `list_tasks`)
+
+### 2026-02-28 14:34:21
+**Session 16 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 14:34:23
+**Session 17 started** (model: auto)

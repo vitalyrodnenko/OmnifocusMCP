@@ -149,6 +149,38 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("if (tagNames !== null && tagNames.length > 0) {");
   });
 
+  test("list_tasks includes duration filter for 15 minutes", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-15", name: "short task" }]);
+    await getTool("list_tasks")({
+      maxEstimatedMinutes: 15,
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("const maxEstimatedMinutes = 15;");
+  });
+
+  test("list_tasks includes duration filter for 60 minutes", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-60", name: "medium task" }]);
+    await getTool("list_tasks")({
+      maxEstimatedMinutes: 60,
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("const maxEstimatedMinutes = 60;");
+  });
+
+  test("list_tasks duration filter excludes null estimated minutes", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-duration", name: "duration filtered" }]);
+    await getTool("list_tasks")({
+      maxEstimatedMinutes: 30,
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain(
+      "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
+    );
+  });
+
   test("list_tasks includes date filters and completed-date status override logic", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-date", name: "dated filter" }]);
     const result = await getTool("list_tasks")({
@@ -174,6 +206,28 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-date", name: "dated filter" }]);
   });
 
+  test("list_tasks supports maxEstimatedMinutes duration filtering", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-15", name: "quick task" }]);
+    await getTool("list_tasks")({
+      maxEstimatedMinutes: 15,
+      limit: 5,
+    });
+    const script15 = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script15).toContain("const maxEstimatedMinutes = 15;");
+    expect(script15).toContain(
+      "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
+    );
+
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-60", name: "longer task" }]);
+    await getTool("list_tasks")({
+      maxEstimatedMinutes: 60,
+      limit: 5,
+    });
+    const script60 = String(runOmniJsMock.mock.calls[1]?.[0]);
+    expect(script60).toContain("const maxEstimatedMinutes = 60;");
+    expect(script60).toContain("task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes");
+  });
+
   test("list_tasks surfaces invalid date validation errors", async () => {
     runOmniJsMock.mockRejectedValueOnce(new Error("dueBefore must be a valid ISO 8601 date string."));
     const result = await getTool("list_tasks")({
@@ -183,6 +237,39 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual({
       error: "dueBefore must be a valid ISO 8601 date string.",
     });
+  });
+
+  test("list_tasks duration filter 15 minutes is included in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-15", name: "short task" }]);
+    await getTool("list_tasks")({
+      maxEstimatedMinutes: 15,
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("const maxEstimatedMinutes = 15;");
+    expect(script).toContain(
+      "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
+    );
+  });
+
+  test("list_tasks duration filter 60 minutes is included in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-60", name: "longer task" }]);
+    await getTool("list_tasks")({
+      maxEstimatedMinutes: 60,
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("const maxEstimatedMinutes = 60;");
+  });
+
+  test("list_tasks duration filter excludes null estimated minutes in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-null-estimate", name: "estimated task" }]);
+    await getTool("list_tasks")({
+      maxEstimatedMinutes: 30,
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes");
   });
 
   test("list_subtasks generates child query script with limit", async () => {

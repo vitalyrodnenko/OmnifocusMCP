@@ -148,7 +148,7 @@ See individual phase criteria below.
          array ignored.
        - All lint/test commands pass.
 
-3. [ ] **Add duration filter to `list_tasks`** — all 3 implementations.
+3. [x] **Add duration filter to `list_tasks`** — all 3 implementations.
        - New optional param: `maxEstimatedMinutes: int | null`
        - **JXA logic:** `task.estimatedMinutes !== null && task.estimatedMinutes <= max`
          When this filter is active, tasks with null estimatedMinutes

@@ -72,6 +72,8 @@ struct ListTasksParams {
     completed_before: Option<String>,
     #[serde(rename = "completedAfter")]
     completed_after: Option<String>,
+    #[serde(rename = "maxEstimatedMinutes")]
+    max_estimated_minutes: Option<i32>,
     limit: Option<i32>,
 }
 
@@ -345,6 +347,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             defer_after,
             completed_before,
             completed_after,
+            max_estimated_minutes,
             limit,
         } = params;
         let result = list_tasks(
@@ -361,6 +364,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             defer_after.as_deref(),
             completed_before.as_deref(),
             completed_after.as_deref(),
+            max_estimated_minutes,
             limit.unwrap_or(100),
         )
         .await
