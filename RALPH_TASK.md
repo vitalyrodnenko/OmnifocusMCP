@@ -151,7 +151,7 @@ Reference implementations:
          not currently completed.
        - Implement and test in all 3 implementations.
 
-8. [ ] **`update_project`** — all 3 implementations.
+8. [x] **`update_project`** — all 3 implementations.
        - **Input:** `project_id_or_name: str` (required, non-empty),
          plus optional fields: `name: str`, `note: str`,
          `dueDate: str` (ISO 8601), `deferDate: str` (ISO 8601),

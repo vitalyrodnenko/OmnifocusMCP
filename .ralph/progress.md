@@ -1083,6 +1083,21 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-28 12:36:54
 **Session 2 started** (model: auto)
 
+### 2026-02-28 12:40:46
+- completed criterion 8 (`update_project`) across all implementations in required order (Python -> TypeScript -> Rust) with matching input contract (`project_id_or_name` plus optional `name`, `note`, `dueDate`, `deferDate`, `flagged`, `tags`, `sequential`, `completedByChildren`, `reviewInterval`)
+- implemented partial-update semantics and tag replacement in each implementation, plus review interval parsing for `"N unit"` values into `{ steps, unit }` with validation
+- wired tool exports/registration where needed (`python/src/omnifocus_mcp/server.py`, `rust/src/server.rs`) and added criterion-specific happy-path coverage in:
+  - `python/tests/test_tools_write.py`
+  - `typescript/tests/tools-happy.test.ts`
+  - `rust/tests/tools_write_test.rs`
+- resolved a rust compile blocker by removing a duplicate `update_project` definition in `rust/src/tools/projects.rs`, retaining one canonical implementation
+- ran required quality gates successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`79 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`38 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 8 complete in `RALPH_TASK.md`
+- next focus: criterion 9 (`set_project_status`) in Python -> TypeScript -> Rust
+
 ### 2026-02-28 12:37:17
 **Session 2 ended** - 🔄 Context rotation (token limit reached)
 
@@ -1133,3 +1148,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:40:18
 **Session 9 started** (model: auto)
+
+### 2026-02-28 12:40:52
+**Session 9 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:40:54
+**Session 10 started** (model: auto)

@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772303808
-generated_at: 2026-02-28T18:36:51Z
+source_mtime: 1772304040
+generated_at: 2026-02-28T18:40:50Z
 
 tasks:
   - id: "line_71"
@@ -58,7 +58,7 @@ tasks:
     raw_marker: 7.
   - id: "line_154"
     line_number: 154
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **`update_project`** — all 3 implementations.
     indent_level: 0
