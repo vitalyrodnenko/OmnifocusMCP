@@ -268,6 +268,23 @@ async fn validation_errors_for_write_tools() {
         update_project(
             &runner,
             "project",
+            Some("   "),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None
+        )
+        .await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_project(
+            &runner,
+            "project",
             None,
             None,
             None,
@@ -277,6 +294,23 @@ async fn validation_errors_for_write_tools() {
             None,
             None,
             None
+        )
+        .await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_project(
+            &runner,
+            "project",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some("   ")
         )
         .await,
         Err(OmniFocusError::Validation(_))
