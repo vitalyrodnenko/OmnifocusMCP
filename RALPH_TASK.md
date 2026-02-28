@@ -1,6 +1,6 @@
 ---
 task: Build OmniFocus MCP server — Python + TypeScript implementations
-test_command: "cd python && python -c 'import omnifocus_mcp' && cd ../typescript && npx tsc --noEmit"
+test_command: "cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test"
 ---
 
 # Task: OmniFocus MCP Server (Multi-Implementation)
@@ -52,6 +52,13 @@ OmnifocusMCP/
   .ralph/                           — Ralph loop state
   python/                           — Python implementation
     pyproject.toml                  — uv/pip config with mcp dependency
+    tests/                          — pytest test suite
+      conftest.py                   — shared fixtures, mocks
+      test_jxa.py                   — JXA escaping + execution tests
+      test_tools_tasks.py           — task tool tests (mocked JXA)
+      test_tools_projects.py        — project tool tests
+      test_tools_misc.py            — tags, folders, forecast, perspectives
+      test_errors.py                — error handling paths
     src/
       omnifocus_mcp/
         __init__.py
@@ -70,6 +77,12 @@ OmnifocusMCP/
   typescript/                       — TypeScript implementation
     package.json
     tsconfig.json
+    tests/                          — vitest test suite
+      jxa.test.ts
+      tools-tasks.test.ts
+      tools-projects.test.ts
+      tools-misc.test.ts
+      errors.test.ts
     src/
       index.ts                      — McpServer entry point
       jxa.ts                        — osascript execution helpers
@@ -112,8 +125,9 @@ depends on. Validate it works against real OmniFocus.
 ### Success Criteria
 
 4. [ ] `python/pyproject.toml` exists with `mcp` dependency, project
-       metadata, and Python >=3.10 requirement. Installable via `uv pip install -e .`
-       or `pip install -e .`.
+       metadata, Python >=3.10 requirement, and dev deps (`pytest`,
+       `pytest-asyncio`, `ruff`, `mypy`). Installable via
+       `uv pip install -e ".[dev]"` or `pip install -e ".[dev]"`.
 5. [ ] `python/src/omnifocus_mcp/jxa.py` exports `async def run_jxa(script: str) -> str`
        that spawns `osascript -l JavaScript -e <script>` via asyncio subprocess
        and returns stdout. Raises on non-zero exit with stderr.
@@ -130,6 +144,18 @@ depends on. Validate it works against real OmniFocus.
        `ping` health-check tool. Running `python -m omnifocus_mcp` starts
        the server over stdio.
 
+### Tests (Phase 2)
+
+11. [ ] Test setup: `python/tests/conftest.py` with shared fixtures and a
+       mock for `run_omnijs` that returns pre-built JSON (no real osascript).
+12. [ ] Tests for `escape_for_jxa`: strings with double quotes, backslashes,
+       newlines, unicode, emoji, empty string, very long strings. All pass.
+13. [ ] Tests for `run_jxa` error paths (mocked subprocess): non-zero exit
+       → clear error message. Timeout → TimeoutError.
+14. [ ] Tests for `run_omnijs` / `run_jxa_json` (mocked subprocess): valid
+       JSON stdout → parsed result. Malformed stdout → clean error.
+15. [ ] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+
 ---
 
 ## Phase 3 — Python: Read Tools
@@ -140,35 +166,45 @@ parameter (default 100).
 
 ### Success Criteria
 
-11. [ ] Tool `get_inbox` — returns all inbox (unprocessed) tasks. Each task
+16. [ ] Tool `get_inbox` — returns all inbox (unprocessed) tasks. Each task
         includes: `id`, `name`, `note`, `flagged`, `dueDate`, `deferDate`,
         `tags[]`, `estimatedMinutes`.
-12. [ ] Tool `list_tasks` — workhorse query tool. Optional filters: `project`
+17. [ ] Tool `list_tasks` — workhorse query tool. Optional filters: `project`
         (name), `tag` (name), `flagged` (bool), `status` (available |
         due_soon | overdue | completed | all), `limit` (default 100).
         Returns task objects with: `id`, `name`, `note`, `flagged`,
         `dueDate`, `deferDate`, `completed`, `projectName`, `tags[]`,
         `estimatedMinutes`.
-13. [ ] Tool `get_task` — accepts task `id`, returns full detail including:
+18. [ ] Tool `get_task` — accepts task `id`, returns full detail including:
         all list_tasks fields plus `children[]`, `parentName`, `sequential`,
         `repetitionRule`, `completionDate`.
-14. [ ] Tool `search_tasks` — accepts `query` string + optional `limit`.
+19. [ ] Tool `search_tasks` — accepts `query` string + optional `limit`.
         Searches task names AND notes. Returns matching tasks.
-15. [ ] Tool `list_projects` — optional filters: `folder` (name), `status`
+20. [ ] Tool `list_projects` — optional filters: `folder` (name), `status`
         (active | on_hold | completed | dropped, default: active). Returns:
         `id`, `name`, `status`, `folderName`, `taskCount`,
         `remainingTaskCount`, `deferDate`, `dueDate`, `note`, `sequential`,
         `reviewInterval`.
-16. [ ] Tool `get_project` — accepts project `id` or `name`. Returns full
+21. [ ] Tool `get_project` — accepts project `id` or `name`. Returns full
         project detail with root-level tasks.
-17. [ ] Tool `list_tags` — returns all tags: `id`, `name`, `parent` (for
+22. [ ] Tool `list_tags` — returns all tags: `id`, `name`, `parent` (for
         nested), `availableTaskCount`, `status`.
-18. [ ] Tool `list_folders` — returns folder hierarchy: `id`, `name`,
+23. [ ] Tool `list_folders` — returns folder hierarchy: `id`, `name`,
         `parentName`, `projectCount`.
-19. [ ] Tool `get_forecast` — today's dashboard: overdue + due today +
+24. [ ] Tool `get_forecast` — today's dashboard: overdue + due today +
         flagged tasks, grouped by section.
-20. [ ] Tool `list_perspectives` — available perspectives (built-in + custom):
+25. [ ] Tool `list_perspectives` — available perspectives (built-in + custom):
         `id`, `name`.
+
+### Tests (Phase 3)
+
+26. [ ] Happy-path tests for every read tool (mocked `run_omnijs`): mock
+        returns realistic JSON → verify correct parsing, field mapping,
+        and return shape. One test per tool minimum.
+27. [ ] Error-path tests: task not found by ID → error response. Invalid
+        filter value → validation error. Empty result set → empty array
+        (not an error).
+28. [ ] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
 
 ---
 
@@ -179,25 +215,40 @@ write tools return confirmation with the affected item's current state.
 
 ### Success Criteria
 
-21. [ ] Tool `create_task` — required `name`, optional `project` (name),
+29. [ ] Tool `create_task` — required `name`, optional `project` (name),
         `note`, `dueDate` (ISO 8601), `deferDate`, `flagged`, `tags[]`
         (names), `estimatedMinutes`. No project → inbox. Returns `{id, name}`.
-22. [ ] Tool `create_tasks_batch` — array of task definitions (same schema).
+30. [ ] Tool `create_tasks_batch` — array of task definitions (same schema).
         Single JXA call for efficiency. Returns `[{id, name}]`.
-23. [ ] Tool `complete_task` — by `id`. Handles repeating tasks gracefully.
+31. [ ] Tool `complete_task` — by `id`. Handles repeating tasks gracefully.
         Returns confirmation with task name.
-24. [ ] Tool `update_task` — by `id`. Optional: `name`, `note`, `dueDate`,
+32. [ ] Tool `update_task` — by `id`. Optional: `name`, `note`, `dueDate`,
         `deferDate`, `flagged`, `tags[]`, `estimatedMinutes`. Only provided
         fields change. Returns updated task.
-25. [ ] Tool `delete_task` — drops/removes by `id`. Warns if task has
+33. [ ] Tool `delete_task` — drops/removes by `id`. Warns if task has
         children. Returns confirmation.
-26. [ ] Tool `move_task` — moves task to a different project (by name) or
+34. [ ] Tool `move_task` — moves task to a different project (by name) or
         back to inbox. Returns confirmation.
-27. [ ] Tool `create_project` — required `name`, optional `folder` (name),
+35. [ ] Tool `create_project` — required `name`, optional `folder` (name),
         `note`, `dueDate`, `deferDate`, `sequential` (bool). Returns `{id}`.
-28. [ ] Tool `complete_project` — by `id` or `name`. Returns confirmation.
-29. [ ] Tool `create_tag` — required `name`, optional `parent` (tag name
+36. [ ] Tool `complete_project` — by `id` or `name`. Returns confirmation.
+37. [ ] Tool `create_tag` — required `name`, optional `parent` (tag name
         for nesting). Returns `{id}`.
+
+### Tests (Phase 4)
+
+38. [ ] Happy-path tests for every write tool (mocked `run_omnijs`): verify
+        the generated JXA script contains correct parameters (e.g.,
+        `create_task` sets name, project, tags). Verify return shape.
+39. [ ] Test `create_task` with all optional fields set and with only
+        required fields. Verify JXA script differs correctly.
+40. [ ] Test `create_tasks_batch` creates N tasks in a single JXA call
+        (verify single `run_omnijs` invocation, not N calls).
+41. [ ] Test `update_task` only modifies provided fields (omitted fields
+        must NOT be nulled out in the JXA script).
+42. [ ] Error-path tests: `complete_task` with nonexistent ID → error.
+        `create_task` with empty name → validation error.
+43. [ ] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
 
 ---
 
@@ -208,17 +259,25 @@ encoding GTD workflows.
 
 ### Success Criteria
 
-30. [ ] Resource `omnifocus://inbox` — current inbox tasks as JSON.
-31. [ ] Resource `omnifocus://today` — forecast: overdue + due today + flagged.
-32. [ ] Resource `omnifocus://projects` — all active projects summary.
-33. [ ] Prompt `daily_review` — fetches due-soon, overdue, flagged tasks;
+44. [ ] Resource `omnifocus://inbox` — current inbox tasks as JSON.
+45. [ ] Resource `omnifocus://today` — forecast: overdue + due today + flagged.
+46. [ ] Resource `omnifocus://projects` — all active projects summary.
+47. [ ] Prompt `daily_review` — fetches due-soon, overdue, flagged tasks;
         helps prioritize the day and identify top 3 items.
-34. [ ] Prompt `weekly_review` — fetches all active projects, identifies
+48. [ ] Prompt `weekly_review` — fetches all active projects, identifies
         stalled projects, guides GTD-style weekly review.
-35. [ ] Prompt `inbox_processing` — fetches inbox items, walks through each:
+49. [ ] Prompt `inbox_processing` — fetches inbox items, walks through each:
         decide project, tags, dates, or delete.
-36. [ ] Prompt `project_planning` — accepts project name, fetches state,
+50. [ ] Prompt `project_planning` — accepts project name, fetches state,
         helps break down into actionable steps with estimates.
+
+### Tests (Phase 5)
+
+51. [ ] Tests for each resource: verify correct JXA script is called and
+        response is valid JSON.
+52. [ ] Tests for each prompt: verify template renders with expected
+        structure (contains instructions, placeholder for data).
+53. [ ] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
 
 ---
 
@@ -228,19 +287,21 @@ Harden error handling, packaging, and MCP client integration docs.
 
 ### Success Criteria
 
-37. [ ] All tools return user-friendly errors: OmniFocus not running,
+54. [ ] All tools return user-friendly errors: OmniFocus not running,
         task/project/tag not found, invalid input, macOS automation
         permissions not granted.
-38. [ ] `python/README.md` with: install instructions (uv + pip), MCP client
+55. [ ] `python/README.md` with: install instructions (uv + pip), MCP client
         configuration examples (Claude Desktop, Cursor, Cline, generic
         stdio), usage examples.
-39. [ ] MCP client configs documented and tested. Examples:
+56. [ ] MCP client configs documented and tested. Examples:
         - Claude Desktop: `"command": "uv", "args": ["run", "omnifocus-mcp"]`
         - Cursor: `"command": "python", "args": ["-m", "omnifocus_mcp"]`
         - Generic stdio: `omnifocus-mcp` (any client that supports stdio)
-40. [ ] Server handles rapid sequential tool calls without crashing.
-41. [ ] `pyproject.toml` has `[project.scripts]` entry so `omnifocus-mcp`
+57. [ ] Server handles rapid sequential tool calls without crashing.
+58. [ ] `pyproject.toml` has `[project.scripts]` entry so `omnifocus-mcp`
         CLI command works after install.
+59. [ ] Full test suite passes: `ruff check src/ && ruff format --check src/
+        && mypy src/ --strict && pytest tests/ -v`. Zero warnings.
 
 ---
 
@@ -251,18 +312,30 @@ identical — only the server framework and subprocess calls change.
 
 ### Success Criteria
 
-42. [ ] `typescript/package.json` with `@modelcontextprotocol/sdk`, `zod`,
-        dev deps. `"type": "module"`. Build/start/dev scripts.
-43. [ ] `typescript/tsconfig.json` targets ES2022 / NodeNext, outputs `dist/`.
-44. [ ] `typescript/src/jxa.ts` — JXA execution layer ported: `runJxa`,
+60. [ ] `typescript/package.json` with `@modelcontextprotocol/sdk`, `zod`,
+        dev deps (`typescript`, `@types/node`, `vitest`). `"type": "module"`.
+        Scripts: `build`, `start`, `dev`, `test`, `lint`.
+61. [ ] `typescript/tsconfig.json` targets ES2022 / NodeNext, outputs `dist/`.
+62. [ ] `typescript/src/jxa.ts` — JXA execution layer ported: `runJxa`,
         `runJxaJson`, `runOmniJs`, `escapeForJxa`. Same error handling +
         timeout. Uses `child_process.execFile`.
-45. [ ] All 10 read tools ported and `npm run build` passes with no errors.
-46. [ ] All 9 write tools ported and build passes.
-47. [ ] Resources (3) and prompts (4) ported.
-48. [ ] `typescript/README.md` with install instructions, MCP client config
+63. [ ] All 10 read tools ported and `npm run build` passes with no errors.
+64. [ ] All 9 write tools ported and build passes.
+65. [ ] Resources (3) and prompts (4) ported.
+66. [ ] `typescript/README.md` with install instructions, MCP client config
         examples (Claude Desktop, Cursor, Cline, generic stdio).
-49. [ ] `package.json` has `"bin"` entry; server runs via `npx`.
+67. [ ] `package.json` has `"bin"` entry; server runs via `npx`.
+
+### Tests (Phase 7)
+
+68. [ ] Tests for `escapeForJxa`: same adversarial inputs as Python tests
+        (quotes, backslashes, newlines, unicode, emoji, empty, long).
+69. [ ] Tests for `runJxa` / `runOmniJs` error paths (mocked subprocess):
+        non-zero exit, timeout, malformed JSON.
+70. [ ] Happy-path tests for at least 3 representative read tools and
+        3 representative write tools (mocked `runOmniJs`). Verifies
+        correct JXA script generation and response parsing.
+71. [ ] `npx tsc --noEmit && npm test` passes with zero errors.
 
 ---
 
@@ -272,14 +345,14 @@ Ensure both implementations are complete, documented, and consistent.
 
 ### Success Criteria
 
-50. [ ] Top-level `README.md` updated with feature comparison table,
+72. [ ] Top-level `README.md` updated with feature comparison table,
         installation instructions for both implementations, MCP client
         config examples for popular clients, and links.
-51. [ ] MCP client configs for both implementations tested. Documented
+73. [ ] MCP client configs for both implementations tested. Documented
         how to switch between Python and TS versions in any client.
-52. [ ] Both implementations pass their respective build/lint checks with
-        no warnings.
-53. [ ] `.gitignore` is complete, repo is clean, tagged as `v1.0.0`.
+74. [ ] Both implementations pass their respective full check commands
+        with no warnings (lint + typecheck + tests).
+75. [ ] `.gitignore` is complete, repo is clean, tagged as `v1.0.0`.
 
 ---
 
@@ -287,7 +360,7 @@ Ensure both implementations are complete, documented, and consistent.
 
 1. Work on the next incomplete criterion (marked `[ ]`)
 2. Check off completed criteria (change `[ ]` to `[x]`)
-3. Run tests / build after changes
+3. Run tests after every code change — all tests must pass before proceeding
 4. Commit your changes frequently
 5. When ALL criteria are `[x]`, output: `<ralph>COMPLETE</ralph>`
 6. If stuck on the same issue 3+ times, output: `<ralph>GUTTER</ralph>`

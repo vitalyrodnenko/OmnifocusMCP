@@ -1,0 +1,129 @@
+---
+description: Testing strategy and quality controls for the OmniFocus MCP server
+alwaysApply: true
+---
+
+# Testing Strategy
+
+## Tooling
+
+- **Python:** `pytest` + `pytest-asyncio`. Run: `cd python && pytest tests/ -v`.
+- **TypeScript:** `vitest` (or Node built-in test runner). Run: `cd typescript && npm test`.
+- **All checks must pass before any RALPH_TASK criterion is marked done.**
+
+## Test Categories
+
+### 1. JXA Script Generation Tests (highest priority)
+
+The JXA scripts are the core logic. Test that they produce correct JavaScript strings.
+
+- Test that `escape_for_jxa` / `escapeForJxa` handles adversarial inputs:
+  - Strings with double quotes: `He said "hello"`
+  - Strings with backslashes: `C:\Users\test`
+  - Strings with newlines, tabs, null bytes
+  - Unicode characters: emoji, CJK, RTL text
+  - Empty strings
+  - Very long strings (10,000+ chars)
+- Test that generated JXA script strings are syntactically valid JavaScript (parse with a JS parser or regex sanity check).
+- Test that user input is never interpolated without escaping (static analysis or grep for raw f-string/template patterns in JXA scripts).
+
+### 2. JSON Response Parsing Tests
+
+- Test that mock osascript stdout (simulated JSON) parses correctly.
+- Test malformed JSON handling (osascript returned an error message instead of JSON).
+- Test empty stdout handling.
+- Test the `{ ok: true, data: ... }` / `{ ok: false, error: ... }` envelope parsing.
+
+### 3. Error Handling Tests
+
+- **OmniFocus not running:** mock osascript to return error code → verify user-friendly error message.
+- **Invalid task ID:** mock JXA returning `{ ok: false, error: "not found" }` → verify error response.
+- **Timeout:** mock a slow osascript call → verify timeout error after 30s.
+- **Malformed input:** pass invalid dates, empty names, null IDs → verify validation errors.
+- **Permission denied:** mock macOS automation permission error → verify helpful guidance message.
+
+### 4. Tool Logic Tests
+
+Test each tool function in isolation (not through the MCP protocol layer):
+
+- **get_inbox:** mock JXA response with 3 inbox tasks → verify correct parsing and field mapping.
+- **list_tasks with filters:** verify that the generated JXA script includes the right filter conditions for each parameter combination.
+- **create_task:** verify the generated JXA script correctly sets all provided fields and ignores null optionals.
+- **create_tasks_batch:** verify batch creates N tasks in a single JXA call.
+- **complete_task:** verify the generated JXA script calls `markComplete()`.
+- **update_task:** verify only provided fields are set (no nulling out omitted fields).
+- **search_tasks:** verify search is case-insensitive and checks both name and note.
+
+### 5. Integration Tests (requires OmniFocus running)
+
+These tests actually talk to OmniFocus. They are slow and environment-dependent.
+
+- Mark with `@pytest.mark.integration` (Python) or `.skip` condition (TypeScript).
+- Skipped by default in CI. Run manually with: `pytest tests/ -v -m integration`.
+- Test lifecycle: create a task → verify it exists → update it → complete it → verify completion.
+- **Always clean up:** delete any tasks/projects/tags created during tests.
+- Use a unique prefix for test data (e.g., `[TEST] Buy milk`) so manual cleanup is easy if tests fail.
+
+## Test File Structure
+
+```
+python/tests/
+  conftest.py              — shared fixtures, mock helpers
+  test_jxa.py              — JXA script generation and escaping
+  test_parsing.py          — JSON response parsing
+  test_errors.py           — error handling paths
+  test_tools_tasks.py      — task tool logic (mocked JXA)
+  test_tools_projects.py   — project tool logic (mocked JXA)
+  test_integration.py      — integration tests (real OmniFocus)
+
+typescript/tests/
+  jxa.test.ts
+  parsing.test.ts
+  errors.test.ts
+  tools-tasks.test.ts
+  tools-projects.test.ts
+  integration.test.ts
+```
+
+## Mocking Strategy
+
+- Mock at the `run_omnijs` / `runOmniJs` boundary. This is the single point where osascript is called.
+- The mock returns a pre-built JSON string (simulating what osascript would return).
+- Never mock internal OmniFocus objects — we can't simulate the Omni Automation API faithfully.
+- For error tests, mock osascript to raise subprocess errors or return stderr.
+
+```python
+# python example
+@pytest.fixture
+def mock_omnijs(monkeypatch):
+    async def fake_run(script: str) -> Any:
+        return {"ok": True, "data": [{"id": "abc123", "name": "Test Task"}]}
+    monkeypatch.setattr("omnifocus_mcp.jxa.run_omnijs", fake_run)
+```
+
+```typescript
+// typescript example
+vi.mock("../src/jxa.js", () => ({
+  runOmniJs: vi.fn().mockResolvedValue({
+    ok: true,
+    data: [{ id: "abc123", name: "Test Task" }],
+  }),
+}));
+```
+
+## Coverage Expectations (Targeted, Not Blanket)
+
+No blanket coverage percentage. Enforce coverage where it matters:
+
+- `jxa.py` / `jxa.ts` — 100% of escape functions and error handling paths have tests.
+- `tools/` — every tool has at least one happy-path test with mocked JXA and one error-path test.
+- `resources.py` / `resources.ts` — at least one test per resource verifying correct JXA script is called.
+- `prompts.py` / `prompts.ts` — verify prompt templates render correctly (string content check).
+
+## What NOT to Test
+
+- Don't test the MCP SDK itself (McpServer, StdioTransport). That's upstream's job.
+- Don't test the `osascript` binary behavior. Mock it.
+- Don't write E2E tests that spin up the full MCP server and send JSON-RPC messages. Test tools directly.
+- Don't write snapshot tests for JXA script strings — they're brittle and hard to review.
+- Don't test OmniFocus UI behavior (e.g., "does the task appear in the sidebar"). We test data, not UI.
