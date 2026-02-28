@@ -109,7 +109,7 @@ Reference implementations:
          Return `{ id, name, parentTaskId, parentTaskName }`.
        - Implement and test in all 3 implementations.
 
-4. [ ] **`list_subtasks`** — all 3 implementations.
+4. [x] **`list_subtasks`** — all 3 implementations.
        - **Input:** `task_id: str` (non-empty), `limit: int = 100`
        - **JXA:** find task by ID, return `task.children` mapped to
          standard task summary objects (id, name, note, flagged,

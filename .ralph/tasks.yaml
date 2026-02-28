@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772302990
-generated_at: 2026-02-28T18:25:45Z
+source_mtime: 1772303191
+generated_at: 2026-02-28T18:26:43Z
 
 tasks:
   - id: "line_71"
@@ -30,7 +30,7 @@ tasks:
     raw_marker: 3.
   - id: "line_112"
     line_number: 112
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **`list_subtasks`** — all 3 implementations.
     indent_level: 0

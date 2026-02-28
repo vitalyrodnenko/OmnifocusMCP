@@ -919,6 +919,19 @@ This is how Ralph maintains continuity across iterations.
 - marked criterion 3 complete in `RALPH_TASK.md`
 - next focus: criterion 4 (`list_subtasks` in Python -> TypeScript -> Rust)
 
+### 2026-02-28 12:27:00
+- completed criterion 4 (`list_subtasks`) across Python, TypeScript, and Rust with matching task-id lookup, not-found handling, `task.children` slicing, and standard task-summary mapping fields (`id`, `name`, `note`, `flagged`, `completed`, `dueDate`, `deferDate`, `tags`, `estimatedMinutes`, `hasChildren`)
+- implementation updates:
+  - Python: added `list_subtasks(task_id, limit=100)` to `python/src/omnifocus_mcp/tools/tasks.py`, wired export in `python/src/omnifocus_mcp/server.py`, and added read tests in `python/tests/test_tools_read.py`
+  - TypeScript: added `list_subtasks` tool registration in `typescript/src/tools/tasks.ts` and representative handler test in `typescript/tests/tools-representative.test.ts`
+  - Rust: added `list_subtasks` function in `rust/src/tools/tasks.rs`, registered it in `rust/src/server.rs`, and added read-tool coverage in `rust/tests/tools_read_test.rs`
+- reran required quality gates after implementation:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`73 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`32 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 4 complete in `RALPH_TASK.md`
+- next focus: criterion 5 (`set_task_repetition` in Python -> TypeScript -> Rust)
+
 ### 2026-02-28 12:25:46
 **Session 8 ended** - 🔄 Context rotation (token limit reached)
 
@@ -930,3 +943,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:26:23
 **Session 10 started** (model: auto)
+
+### 2026-02-28 12:26:44
+**Session 10 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:26:46
+**Session 11 started** (model: auto)
