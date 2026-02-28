@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 3
-- Current status: Phase 3 complete (criteria 16-28 complete). next: phase 4 criterion 29.
+- Current status: Phase 4 in progress (criterion 29 complete; next 30).
 
 ## How This Works
 
@@ -20,13 +20,13 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
-| 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
+| 4     | Python: Write Tools + Tests       | 29–43     | 1/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 28 / 75 criteria complete**
+**Total: 29 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -274,3 +274,15 @@ This is how Ralph maintains continuity across iterations.
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - phase 3 is now complete (criteria 16-28)
 - next up: phase 4 criterion 29 (`create_task`)
+
+### 2026-02-28 05:18:20
+**Session 4 update**
+- completed phase 4 criterion 29 (`create_task`)
+- extended `python/src/omnifocus_mcp/server.py` with `create_task(...)`:
+  - validates non-empty task name
+  - supports optional project placement (fallback to inbox)
+  - supports optional note, due/defer dates, flagged state, tags, and estimated minutes
+  - throws clear error if specified project is missing
+  - returns `{id, name}` for created task
+- re-ran full command from `RALPH_TASK.md`; all checks passed
+- next up: phase 4 criterion 30 (`create_tasks_batch`)

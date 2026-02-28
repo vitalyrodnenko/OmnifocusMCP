@@ -553,3 +553,74 @@ return unique.slice(0, {limit});
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def create_task(
+    name: str,
+    project: str | None = None,
+    note: str | None = None,
+    dueDate: str | None = None,
+    deferDate: str | None = None,
+    flagged: bool | None = None,
+    tags: list[str] | None = None,
+    estimatedMinutes: int | None = None,
+) -> str:
+    """create a new task in inbox or a named project.
+
+    accepts required name and optional project, note, dates, flagged state,
+    tags, and estimated minutes. returns the created task id and name.
+    """
+    if name.strip() == "":
+        raise ValueError("name must not be empty.")
+
+    task_name = escape_for_jxa(name.strip())
+    project_name = "null" if project is None else escape_for_jxa(project.strip())
+    note_value = "null" if note is None else escape_for_jxa(note)
+    due_date_value = "null" if dueDate is None else escape_for_jxa(dueDate)
+    defer_date_value = "null" if deferDate is None else escape_for_jxa(deferDate)
+    flagged_value = "null" if flagged is None else ("true" if flagged else "false")
+    tags_value = "null" if tags is None else json.dumps(tags)
+    estimated_minutes_value = "null" if estimatedMinutes is None else str(estimatedMinutes)
+
+    script = f"""
+const taskName = {task_name};
+const projectName = {project_name};
+const noteValue = {note_value};
+const dueDateValue = {due_date_value};
+const deferDateValue = {defer_date_value};
+const flaggedValue = {flagged_value};
+const tagNames = {tags_value};
+const estimatedMinutesValue = {estimated_minutes_value};
+
+const parent = (() => {{
+  if (projectName === null || projectName === "") return inbox.ending;
+  const targetProject = document.flattenedProjects.byName(projectName);
+  if (!targetProject) {{
+    throw new Error(`Project not found: ${{projectName}}`);
+  }}
+  return targetProject.ending;
+}})();
+
+const task = new Task(taskName, parent);
+
+if (noteValue !== null) task.note = noteValue;
+if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
+if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (flaggedValue !== null) task.flagged = flaggedValue;
+if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
+
+if (tagNames !== null) {{
+  tagNames.forEach(tagName => {{
+    const tag = document.flattenedTags.byName(tagName);
+    if (tag) task.addTag(tag);
+  }});
+}}
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

@@ -291,3 +291,15 @@ EOF
 [22:57:49] 🔴 SHELL git diff --staged; git diff → exit 0
 [22:57:49] 🔴 SHELL git log -8 --oneline → exit 0
 [22:57:49] 🔴 SHELL git status --short → exit 0
+[22:57:55] 🔴 SHELL git add "RALPH_TASK.md" ".ralph/progress.md" ".ralph/activity.log" && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: complete phase 3 validation criterion
+
+Mark phase 3 criterion 28 complete after full check command success and update progress tracking to reflect read-phase completion.
+EOF
+)" && git status --short → exit 0
+[22:57:59] 🔴 SHELL git push → exit 0
+[22:58:15] 🔴 TOKENS: 66352 / 80000 (82%) - approaching limit [read:253KB write:0KB assist:2KB shell:0KB]
+[22:58:20] 🔴 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[22:58:40] 🔴 SHELL git status --short → exit 0
+[22:58:40] 🔴 SHELL git log -8 --oneline → exit 0
+[22:58:40] 🔴 SHELL git diff --staged; git diff → exit 0

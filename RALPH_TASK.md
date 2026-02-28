@@ -215,7 +215,7 @@ write tools return confirmation with the affected item's current state.
 
 ### Success Criteria
 
-29. [ ] Tool `create_task` — required `name`, optional `project` (name),
+29. [x] Tool `create_task` — required `name`, optional `project` (name),
         `note`, `dueDate` (ISO 8601), `deferDate`, `flagged`, `tags[]`
         (names), `estimatedMinutes`. No project → inbox. Returns `{id, name}`.
 30. [ ] Tool `create_tasks_batch` — array of task definitions (same schema).
