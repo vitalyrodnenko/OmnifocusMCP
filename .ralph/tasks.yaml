@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772311102
-generated_at: 2026-02-28T20:38:43Z
+source_mtime: 1772311623
+generated_at: 2026-02-28T20:47:31Z
 
 tasks:
   - id: "line_108"
@@ -37,14 +37,14 @@ tasks:
     raw_marker: 4.
   - id: "line_181"
     line_number: 181
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Add `completionDate` and `hasChildren` to list_tasks response** —
     indent_level: 0
     raw_marker: 5.
   - id: "line_193"
     line_number: 193
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All lint and test commands pass for Phase 1:
     indent_level: 0
