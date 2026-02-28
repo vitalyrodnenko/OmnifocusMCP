@@ -1040,7 +1040,7 @@ const warning = childCount > 0
   ? `Deleted task had ${{childCount}} child task(s).`
   : null;
 
-task.drop();
+task.drop(false);
 
 return {{
   id: taskId,

@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772289691
-generated_at: 2026-02-28T14:42:36Z
+source_mtime: 1772290162
+generated_at: 2026-02-28T14:49:56Z
 
 tasks:
   - id: "line_32"
@@ -16,7 +16,7 @@ tasks:
     raw_marker: 1.
   - id: "line_37"
     line_number: 37
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Smoke test verifies JXA bridge basics: `run_omnijs` can execute
     indent_level: 0

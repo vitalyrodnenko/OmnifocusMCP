@@ -34,7 +34,7 @@ few tasks, projects, and tags.
        sequence. Not a pytest test — a runnable script with clear
        pass/fail output. Must be runnable via `python scripts/smoke_test.py`
        from within `python/`.
-2. [ ] Smoke test verifies JXA bridge basics: `run_omnijs` can execute
+2. [x] Smoke test verifies JXA bridge basics: `run_omnijs` can execute
        `return document.flattenedTasks.length;` and return a number.
 3. [ ] Smoke test calls every read tool function and verifies each returns
        valid JSON with expected field names: `get_inbox`, `list_tasks`,

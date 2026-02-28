@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 0
-- Current status: Phase 1 started. smoke test script created; real OmniJS bridge execution currently timing out.
+- Current status: Phase 1 in progress. criteria 1-2 complete after successful OmniJS bridge probe against real OmniFocus.
 - Previous task: v1 completed (75/75), archived at `.ralph/RALPH_TASK_v1_complete.md`.
 
 ## How This Works
@@ -18,13 +18,13 @@ This is how Ralph maintains continuity across iterations.
 
 | Phase | Description                    | Criteria  | Done |
 |-------|--------------------------------|-----------|------|
-| 1     | Real OmniFocus Smoke Test      | 1–5       | 1/5  |
+| 1     | Real OmniFocus Smoke Test      | 1–5       | 2/5  |
 | 2     | Fix JXA Bugs                   | 6–9       | 0/4  |
 | 3     | Split Monolith Files           | 10–17     | 0/8  |
 | 4     | Integration Tests              | 18–24     | 0/7  |
 | 5     | Final Cleanup                  | 25–28     | 0/4  |
 
-**Total: 1 / 28 criteria complete**
+**Total: 2 / 28 criteria complete**
 
 ## Key Context
 
@@ -58,3 +58,15 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 08:48:52
 **Session 2 started** (model: auto)
+
+### 2026-02-28 09:02:00
+- ran guardrail probe first: `uv run python` calling `run_omnijs('return document.flattenedTasks.length;')`
+- probe succeeded with numeric response (`int 742`) in ~1.2s against real OmniFocus
+- marked criterion 2 complete in `RALPH_TASK.md`
+- next focus: execute full read-tool validation path for criterion 3
+
+### 2026-02-28 08:49:57
+**Session 2 ended** - Agent finished naturally (26 criteria remaining)
+
+### 2026-02-28 08:49:59
+**Session 3 started** (model: auto)

@@ -63,6 +63,8 @@ class SmokeTest:
             raise ValueError(f"{label} missing keys: {', '.join(missing)}")
 
     async def check_bridge(self) -> None:
+        # BUG: app.evaluateJavaScript failed with message-not-understood (-1708); fixed bridge method name to evaluateJavascript.
+        # BUG: OmniJS exposes flattened* globals while tool scripts referenced document.flattened*; fixed with run_omnijs compatibility shim.
         result = await run_omnijs("return document.flattenedTasks.length;")
         if not isinstance(result, int):
             raise ValueError("run_omnijs did not return a numeric task count")
@@ -285,6 +287,7 @@ class SmokeTest:
                 raise ValueError("complete_task did not mark task complete")
 
             deleted = self.parse_json("delete_task", await delete_task(task_id=created_task_id))
+            # BUG: task.drop() required explicit allOccurrences boolean in Omni Automation; fixed delete scripts to call task.drop(false).
             if not isinstance(deleted, dict):
                 raise ValueError("delete_task did not return an object")
             if deleted.get("deleted") is not True:

@@ -212,7 +212,7 @@ async def test_delete_task_happy_path(mock_server_run_omnijs: Callable[[Any], di
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert 'const taskId = "t3";' in state["calls"][0]["script"]
-    assert "task.drop();" in state["calls"][0]["script"]
+    assert "task.drop(false);" in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio
@@ -498,7 +498,7 @@ async def test_delete_task_happy_path(mock_server_run_omnijs: Callable[[Any], di
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert 'const taskId = "t6";' in script
-    assert "task.drop();" in script
+    assert "task.drop(false);" in script
 
 
 @pytest.mark.asyncio
