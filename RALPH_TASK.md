@@ -469,7 +469,7 @@ availability that OmniFocus shows in its UI.
         - Add tests verifying modified field is present.
         - All lint/test commands pass.
 
-26. [ ] **Add `plannedDate` support** — all 3 implementations.
+26. [x] **Add `plannedDate` support** — all 3 implementations.
         - New response field on `get_task`:
           `plannedDate: task.plannedDate ? task.plannedDate.toISOString() : null`
           `effectivePlannedDate: task.effectivePlannedDate ? task.effectivePlannedDate.toISOString() : null`
@@ -485,7 +485,7 @@ availability that OmniFocus shows in its UI.
         - Add tests for plannedDate field and filter params.
         - All lint/test commands pass.
 
-27. [ ] All lint and test commands pass for Phase 8 (same as criterion 6).
+27. [x] All lint and test commands pass for Phase 8 (same as criterion 6).
 
 ---
 
