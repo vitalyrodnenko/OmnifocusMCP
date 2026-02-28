@@ -189,7 +189,7 @@ parameter (default 100).
         project detail with root-level tasks.
 22. [x] Tool `list_tags` — returns all tags: `id`, `name`, `parent` (for
         nested), `availableTaskCount`, `status`.
-23. [ ] Tool `list_folders` — returns folder hierarchy: `id`, `name`,
+23. [x] Tool `list_folders` — returns folder hierarchy: `id`, `name`,
         `parentName`, `projectCount`.
 24. [ ] Tool `get_forecast` — today's dashboard: overdue + due today +
         flagged tasks, grouped by section.
