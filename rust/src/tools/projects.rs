@@ -9,6 +9,11 @@ pub async fn list_projects<R: JxaRunner>(
     runner: &R,
     folder: Option<&str>,
     status: &str,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    stalled_only: bool,
+    sort_by: Option<&str>,
+    sort_order: &str,
     limit: i32,
 ) -> Result<Value> {
     if limit < 1 {
@@ -28,14 +33,69 @@ pub async fn list_projects<R: JxaRunner>(
             "status must be one of: active, on_hold, completed, dropped.".to_string(),
         ));
     }
+    if let Some(sort_field) = sort_by {
+        if !matches!(sort_field, "name" | "dueDate" | "completionDate" | "taskCount") {
+            return Err(OmniFocusError::Validation(
+                "sortBy must be one of: name, dueDate, completionDate, taskCount.".to_string(),
+            ));
+        }
+    }
+    if !matches!(sort_order, "asc" | "desc") {
+        return Err(OmniFocusError::Validation(
+            "sortOrder must be one of: asc, desc.".to_string(),
+        ));
+    }
+
+    let mut effective_status = status;
+    if completed_before.is_some() || completed_after.is_some() {
+        effective_status = "completed";
+    }
+    if stalled_only {
+        effective_status = "active";
+    }
+
+    let mut effective_sort_by = sort_by;
+    let mut effective_sort_order = sort_order;
+    if (completed_before.is_some() || completed_after.is_some()) && effective_sort_by.is_none() {
+        effective_sort_by = Some("completionDate");
+        effective_sort_order = "desc";
+    }
 
     let folder_filter = folder
         .map(|value| escape_for_jxa(value.trim()))
         .unwrap_or_else(|| "null".to_string());
-    let status_filter = escape_for_jxa(status);
+    let status_filter = escape_for_jxa(effective_status);
+    let completed_before_filter = completed_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let completed_after_filter = completed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let stalled_only_filter = if stalled_only { "true" } else { "false" };
+    let sort_by_filter = effective_sort_by
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let sort_order_filter = escape_for_jxa(effective_sort_order);
     let script = format!(
         r#"const folderFilter = {folder_filter};
 const statusFilter = {status_filter};
+const completedBeforeRaw = {completed_before_filter};
+const completedAfterRaw = {completed_after_filter};
+const stalledOnly = {stalled_only_filter};
+const sortBy = {sort_by_filter};
+const sortOrder = {sort_order_filter};
+
+const parseOptionalDate = (rawValue, fieldName) => {{
+  if (rawValue === null) return null;
+  const parsed = new Date(rawValue);
+  if (Number.isNaN(parsed.getTime())) {{
+    throw new Error(`${{fieldName}} must be a valid ISO 8601 date string.`);
+  }}
+  return parsed;
+}};
+
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
 
 const projectCounts = new Map();
 document.flattenedTasks.forEach(task => {{
@@ -60,15 +120,22 @@ const normalizeProjectStatus = (project) => {{
 
 const projects = document.flattenedProjects
   .filter(project => {{
+    const nextTask = project.nextTask;
+    const isStalled = normalizeProjectStatus(project) === "active"
+      && project.flattenedTasks.some(t => !t.completed)
+      && nextTask === null;
     if (folderFilter !== null) {{
       const folderName = project.folder ? project.folder.name : null;
       if (folderName !== folderFilter) return false;
     }}
-    return normalizeProjectStatus(project) === statusFilter;
-  }})
-  .slice(0, {limit});
+    if (normalizeProjectStatus(project) !== statusFilter) return false;
+    if (completedBefore !== null && !(project.completionDate !== null && project.completionDate < completedBefore)) return false;
+    if (completedAfter !== null && !(project.completionDate !== null && project.completionDate > completedAfter)) return false;
+    if (stalledOnly && !isStalled) return false;
+    return true;
+  }});
 
-return projects.map(project => {{
+const mappedProjects = projects.map(project => {{
   const projectId = project.id.primaryKey;
   const counts = projectCounts.get(projectId) || {{ taskCount: 0, remainingTaskCount: 0 }};
   const nextTask = project.nextTask;
@@ -94,6 +161,43 @@ return projects.map(project => {{
     reviewInterval: reviewInterval === null || reviewInterval === undefined ? null : String(reviewInterval)
   }};
 }});"#
+    );
+    let script = format!(
+        r#"{script}
+
+const compareValues = (left, right) => {{
+  if (left < right) return sortOrder === "asc" ? -1 : 1;
+  if (left > right) return sortOrder === "asc" ? 1 : -1;
+  return 0;
+}};
+
+const sortedProjects = sortBy === null ? mappedProjects : mappedProjects.slice().sort((a, b) => {{
+  let aValue = null;
+  let bValue = null;
+  if (sortBy === "name") {{
+    aValue = a.name;
+    bValue = b.name;
+  }} else if (sortBy === "dueDate") {{
+    aValue = a.dueDate;
+    bValue = b.dueDate;
+  }} else if (sortBy === "completionDate") {{
+    aValue = a.completionDate;
+    bValue = b.completionDate;
+  }} else if (sortBy === "taskCount") {{
+    aValue = a.taskCount;
+    bValue = b.taskCount;
+  }}
+
+  if (aValue === null) return 1;
+  if (bValue === null) return -1;
+
+  if (sortBy === "name") {{
+    return compareValues(String(aValue).toLowerCase(), String(bValue).toLowerCase());
+  }}
+  return compareValues(aValue, bValue);
+}});
+
+return sortedProjects.slice(0, {limit});"#,
     );
 
     runner.run_omnijs(&script).await

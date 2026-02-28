@@ -49,7 +49,7 @@ pub async fn daily_review<R: JxaRunner>(runner: &R) -> Result<String> {
 }
 
 pub async fn weekly_review<R: JxaRunner>(runner: &R) -> Result<String> {
-    let active_projects = list_projects(runner, None, "active", 500).await?;
+    let active_projects = list_projects(runner, None, "active", None, None, false, None, "asc", 500).await?;
     let available_tasks = list_tasks(
         runner,
         None,

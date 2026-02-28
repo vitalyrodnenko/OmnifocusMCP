@@ -183,6 +183,16 @@ struct SetTaskRepetitionParams {
 struct ListProjectsParams {
     folder: Option<String>,
     status: Option<String>,
+    #[serde(rename = "completedBefore")]
+    completed_before: Option<String>,
+    #[serde(rename = "completedAfter")]
+    completed_after: Option<String>,
+    #[serde(rename = "stalledOnly")]
+    stalled_only: Option<bool>,
+    #[serde(rename = "sortBy")]
+    sort_by: Option<String>,
+    #[serde(rename = "sortOrder")]
+    sort_order: Option<String>,
     limit: Option<i32>,
 }
 
@@ -611,6 +621,11 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             self.runner.as_ref(),
             params.folder.as_deref(),
             params.status.as_deref().unwrap_or("active"),
+            params.completed_before.as_deref(),
+            params.completed_after.as_deref(),
+            params.stalled_only.unwrap_or(false),
+            params.sort_by.as_deref(),
+            params.sort_order.as_deref().unwrap_or("asc"),
             params.limit.unwrap_or(100),
         )
         .await
