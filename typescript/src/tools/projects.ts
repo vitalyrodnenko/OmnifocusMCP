@@ -268,4 +268,131 @@ return {
       }
     }
   );
+
+  server.tool(
+    "update_project",
+    "update a project by id or name, modifying only provided fields.",
+    {
+      project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name"),
+      name: z.string().min(1).optional().describe("optional new project name"),
+      note: z.string().optional().describe("optional project note"),
+      dueDate: z.string().optional().describe("optional due date in iso 8601"),
+      deferDate: z.string().optional().describe("optional defer date in iso 8601"),
+      flagged: z.boolean().optional().describe("optional flagged setting"),
+      tags: z.array(z.string().min(1)).optional().describe("optional full replacement tag list"),
+      sequential: z.boolean().optional().describe("optional sequential setting"),
+      completedByChildren: z.boolean().optional().describe("optional completed-by-children setting"),
+      reviewInterval: z.string().min(1).optional().describe("optional review interval like '2 weeks'"),
+    },
+    async ({ project_id_or_name, ...rawUpdates }) => {
+      try {
+        const normalizedProjectFilter = project_id_or_name.trim();
+        if (normalizedProjectFilter === "") {
+          throw new Error("project_id_or_name must not be empty.");
+        }
+        if (rawUpdates.tags !== undefined && rawUpdates.tags.some((tag) => tag.trim() === "")) {
+          throw new Error("tags must not contain empty values.");
+        }
+        if (rawUpdates.reviewInterval !== undefined && rawUpdates.reviewInterval.trim() === "") {
+          throw new Error("reviewInterval must not be empty when provided.");
+        }
+        const updates = Object.fromEntries(
+          Object.entries(rawUpdates).map(([key, value]) => {
+            if (typeof value === "string") {
+              return [key, value.trim()];
+            }
+            if (key === "tags" && Array.isArray(value)) {
+              return [key, value.map((tag) => tag.trim())];
+            }
+            return [key, value];
+          }).filter(([, value]) => value !== undefined)
+        );
+        const projectFilter = escapeForJxa(normalizedProjectFilter);
+        const script = `
+const projectFilter = ${projectFilter};
+const updates = ${JSON.stringify(updates)};
+const project = document.flattenedProjects.find(item => {
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+});
+if (!project) {
+  throw new Error(\`Project not found: \${projectFilter}\`);
+}
+
+const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
+const normalizeProjectStatus = (item) => {
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
+    return "on_hold";
+  }
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+const parseReviewInterval = (value) => {
+  const match = String(value).trim().match(/^(\\d+)\\s+([a-zA-Z_]+)$/);
+  if (!match) {
+    throw new Error(\`Invalid reviewInterval format: \${value}. Expected 'N unit'.\`);
+  }
+  const steps = Number(match[1]);
+  if (!Number.isInteger(steps) || steps < 1) {
+    throw new Error(\`Invalid reviewInterval steps: \${match[1]}\`);
+  }
+  let unit = match[2].toLowerCase();
+  if (unit.endsWith("s")) unit = unit.slice(0, -1);
+  const allowed = new Set(["minute", "hour", "day", "week", "month", "year"]);
+  if (!allowed.has(unit)) {
+    throw new Error(\`Invalid reviewInterval unit: \${match[2]}\`);
+  }
+  return { steps, unit };
+};
+
+if (has("name")) project.name = updates.name;
+if (has("note")) project.note = updates.note;
+if (has("dueDate")) project.dueDate = new Date(updates.dueDate);
+if (has("deferDate")) project.deferDate = new Date(updates.deferDate);
+if (has("flagged")) project.flagged = updates.flagged;
+if (has("sequential")) project.sequential = updates.sequential;
+if (has("completedByChildren")) project.completedByChildren = updates.completedByChildren;
+if (has("reviewInterval")) {
+  project.reviewInterval = parseReviewInterval(updates.reviewInterval);
+}
+if (has("tags")) {
+  const existingTags = project.tags.slice();
+  existingTags.forEach(tag => {
+    project.removeTag(tag);
+  });
+  updates.tags.forEach(tagName => {
+    const tag = document.flattenedTags.byName(tagName);
+    if (tag) project.addTag(tag);
+  });
+}
+
+const allProjectTasks = document.flattenedTasks.filter(task => {
+  return task.containingProject && task.containingProject.id.primaryKey === project.id.primaryKey;
+});
+const reviewIntervalValue = project.reviewInterval;
+return {
+  id: project.id.primaryKey,
+  name: project.name,
+  status: normalizeProjectStatus(project),
+  folderName: project.folder ? project.folder.name : null,
+  taskCount: allProjectTasks.length,
+  remainingTaskCount: allProjectTasks.filter(task => !task.completed).length,
+  deferDate: project.deferDate ? project.deferDate.toISOString() : null,
+  dueDate: project.dueDate ? project.dueDate.toISOString() : null,
+  note: project.note,
+  flagged: project.flagged,
+  sequential: project.sequential,
+  completedByChildren: project.completedByChildren,
+  tags: project.tags.map(tag => tag.name),
+  reviewInterval: reviewIntervalValue === null || reviewIntervalValue === undefined ? null : String(reviewIntervalValue)
+};
+`.trim();
+        const result = await runOmniJs(script);
+        return textResult(result);
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
 }

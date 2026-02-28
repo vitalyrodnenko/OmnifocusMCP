@@ -310,4 +310,59 @@ describe("tool happy paths", () => {
     expect(script).toContain("project.markIncomplete()");
     expect(script).toContain('status: "active"');
   });
+
+  test("update_project updates provided fields and returns project summary", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "p3",
+      name: "Updated Project",
+      status: "active",
+      folderName: "Work",
+      taskCount: 3,
+      remainingTaskCount: 2,
+      deferDate: "2026-03-01T10:00:00Z",
+      dueDate: "2026-03-07T10:00:00Z",
+      note: "updated note",
+      flagged: true,
+      sequential: false,
+      completedByChildren: true,
+      tags: ["work", "focus"],
+      reviewInterval: "2 weeks",
+    });
+    const handler = registeredTools.get("update_project");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      project_id_or_name: "p3",
+      name: "Updated Project",
+      note: "updated note",
+      dueDate: "2026-03-07T10:00:00Z",
+      deferDate: "2026-03-01T10:00:00Z",
+      flagged: true,
+      tags: ["work", "focus"],
+      sequential: false,
+      completedByChildren: true,
+      reviewInterval: "2 weeks",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "p3",
+      name: "Updated Project",
+      status: "active",
+      folderName: "Work",
+      taskCount: 3,
+      remainingTaskCount: 2,
+      deferDate: "2026-03-01T10:00:00Z",
+      dueDate: "2026-03-07T10:00:00Z",
+      note: "updated note",
+      flagged: true,
+      sequential: false,
+      completedByChildren: true,
+      tags: ["work", "focus"],
+      reviewInterval: "2 weeks",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const projectFilter = "p3";');
+    expect(script).toContain('"completedByChildren":true');
+    expect(script).toContain("project.reviewInterval = parseReviewInterval(updates.reviewInterval);");
+    expect(script).toContain("existingTags.forEach");
+    expect(script).toContain("project.addTag(tag);");
+  });
 });
