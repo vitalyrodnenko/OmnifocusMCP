@@ -399,8 +399,42 @@ describe("representative read and write tool handlers", () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "search-shape", name: "shape" }]);
     await getTool("search_tasks")({ query: "shape", limit: 2 });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const queryFilter = "shape".toLowerCase();');
     expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
     expect(script).toContain("hasChildren: task.hasChildren");
+  });
+
+  test("search_tasks supports project filter and status/sort filters", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "search-proj", name: "shape" }]);
+    await getTool("search_tasks")({
+      query: "shape",
+      project: "Errands",
+      status: "overdue",
+      sortBy: "name",
+      sortOrder: "desc",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const projectFilter = "Errands";');
+    expect(script).toContain('const statusFilter = "overdue";');
+    expect(script).toContain('const sortBy = "name";');
+    expect(script).toContain('const sortOrder = "desc";');
+    expect(script).toContain("if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;");
+  });
+
+  test("search_tasks completion filters auto-sort by completion date", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "search-complete", name: "shape" }]);
+    await getTool("search_tasks")({
+      query: "shape",
+      completedAfter: "2026-03-01T00:00:00Z",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const sortBy = "completionDate";');
+    expect(script).toContain('const sortOrder = "desc";');
+    expect(script).toContain(
+      "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
+    );
   });
 
   test("list_tags includes totalTaskCount and default sorting envelope", async () => {

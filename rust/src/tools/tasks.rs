@@ -447,6 +447,7 @@ return subtasks.map(subtask => {{
 
 #[allow(clippy::too_many_arguments)]
 #[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub async fn search_tasks<R: JxaRunner>(
     runner: &R,
     query: &str,
@@ -484,6 +485,15 @@ pub async fn search_tasks<R: JxaRunner>(
             return Err(OmniFocusError::Validation(
                 "tag must not be empty when provided.".to_string(),
             ));
+        }
+    }
+    if let Some(tag_names) = &tags {
+        for tag_name in tag_names {
+            if tag_name.trim().is_empty() {
+                return Err(OmniFocusError::Validation(
+                    "tags entries must not be empty when provided.".to_string(),
+                ));
+            }
         }
     }
     if !matches!(tag_filter_mode, "any" | "all") {

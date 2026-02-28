@@ -577,10 +577,101 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
+    assert!(script.contains(r#"const queryFilter = "shape".toLowerCase();"#));
+    assert!(script.contains(r#"const projectFilter = "Errands";"#));
+    assert!(script.contains(
+        "if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;"
+    ));
     assert!(script.contains(
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
+}
+
+#[tokio::test]
+async fn search_tasks_completion_filters_auto_set_sorting() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-search-completed", "search completed task")]),
+        last_script: last_script.clone(),
+    };
+
+    let searched = search_tasks(
+        &runner,
+        "shape",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-03-01T00:00:00Z"),
+        None,
+        None,
+        "asc",
+        5,
+    )
+    .await
+    .expect("search with completion filters should parse");
+    assert_eq!(searched.len(), 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const statusFilter = "available";"#));
+    assert!(script.contains(r#"const sortBy = "completionDate";"#));
+    assert!(script.contains(r#"const sortOrder = "desc";"#));
+    assert!(script.contains(
+        "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
+    ));
+}
+
+#[tokio::test]
+async fn search_tasks_status_filter_and_sorting_are_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-search-overdue", "search overdue task")]),
+        last_script: last_script.clone(),
+    };
+
+    let searched = search_tasks(
+        &runner,
+        "shape",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "overdue",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("name"),
+        "desc",
+        5,
+    )
+    .await
+    .expect("search with status and sorting should parse");
+    assert_eq!(searched.len(), 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const statusFilter = "overdue";"#));
+    assert!(script.contains(r#"const sortBy = "name";"#));
+    assert!(script.contains(r#"const sortOrder = "desc";"#));
+    assert!(script.contains(r#"if (statusFilter === "overdue") {"#));
 }
 
 #[tokio::test]
