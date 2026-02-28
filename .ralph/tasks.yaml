@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772298234
-generated_at: 2026-02-28T17:04:18Z
+source_mtime: 1772298621
+generated_at: 2026-02-28T17:10:49Z
 
 tasks:
   - id: "line_44"
@@ -114,49 +114,49 @@ tasks:
     raw_marker: 15.
   - id: "line_185"
     line_number: 185
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/src/tools/tags.rs`:
     indent_level: 0
     raw_marker: 16.
   - id: "line_188"
     line_number: 188
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/src/tools/folders.rs`:
     indent_level: 0
     raw_marker: 17.
   - id: "line_190"
     line_number: 190
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/src/tools/forecast.rs`:
     indent_level: 0
     raw_marker: 18.
   - id: "line_192"
     line_number: 192
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/src/tools/perspectives.rs`:
     indent_level: 0
     raw_marker: 19.
   - id: "line_194"
     line_number: 194
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/tests/tools_read_test.rs` with mocked `JxaRunner`:
     indent_level: 0
     raw_marker: 20.
   - id: "line_199"
     line_number: 199
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `rust/tests/tools_write_test.rs` with mocked `JxaRunner`:
     indent_level: 0
     raw_marker: 21.
   - id: "line_204"
     line_number: 204
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
     indent_level: 0
