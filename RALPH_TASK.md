@@ -363,7 +363,7 @@ distribution.
 45. [x] `cargo test` passes (all mocked tests, integration skipped).
 46. [x] `.gitignore` updated to exclude `rust/target/`.
         `rust/Cargo.lock` is committed (Rust convention for binaries).
-47. [x] Git status is clean — no untracked source files, no uncommitted
+47. [ ] Git status is clean — no untracked source files, no uncommitted
         changes. Commit all work with a descriptive message.
 
 ---
