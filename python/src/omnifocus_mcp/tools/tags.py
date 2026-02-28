@@ -47,6 +47,41 @@ return tags.map(tag => {{
 
 
 @typed_tool(mcp)
+async def search_tags(query: str, limit: int = 100) -> str:
+    """search tags using omnifocus matching and return tag summaries."""
+    if query.strip() == "":
+        raise ValueError("query must not be empty.")
+    if limit < 1:
+        raise ValueError("limit must be greater than 0.")
+
+    query_value = escape_for_jxa(query.strip())
+    script = f"""
+const queryValue = {query_value};
+const normalizeTagStatus = (tag) => {{
+  const rawStatus = String(tag.status || "").toLowerCase().trim();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+    return "on_hold";
+  }}
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+return tagsMatching(queryValue)
+  .slice(0, {limit})
+  .map(tag => {{
+    return {{
+      id: tag.id.primaryKey,
+      name: tag.name,
+      status: normalizeTagStatus(tag),
+      parent: tag.parent ? tag.parent.name : null
+    }};
+  }});
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def create_tag(name: str, parent: str | None = None) -> str:
     """create a tag with optional parent tag nesting and return its id."""
     if name.strip() == "":

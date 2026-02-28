@@ -877,26 +877,28 @@ async def append_to_note(
 
     object_type_value = escape_for_jxa(object_type)
     object_id_value = escape_for_jxa(object_id.strip())
-    text_value = escape_for_jxa(text)
+    text_to_append = escape_for_jxa(text)
     script = f"""
 const objectType = {object_type_value};
 const objectId = {object_id_value};
-const textValue = {text_value};
+const textToAppend = {text_to_append};
 
 let obj;
 if (objectType === "task") {{
   obj = document.flattenedTasks.find(item => item.id.primaryKey === objectId);
+  if (!obj) {{
+    throw new Error(`Task not found: ${{objectId}}`);
+  }}
 }} else if (objectType === "project") {{
   obj = document.flattenedProjects.find(item => item.id.primaryKey === objectId);
+  if (!obj) {{
+    throw new Error(`Project not found: ${{objectId}}`);
+  }}
 }} else {{
   throw new Error(`Invalid object_type: ${{objectType}}`);
 }}
 
-if (!obj) {{
-  throw new Error(`${{objectType}} not found: ${{objectId}}`);
-}}
-
-obj.appendStringToNote(textValue);
+obj.appendStringToNote(textToAppend);
 
 return {{
   id: obj.id.primaryKey,
