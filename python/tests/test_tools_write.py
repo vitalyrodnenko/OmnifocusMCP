@@ -1,0 +1,465 @@
+import json
+from collections.abc import Callable
+import importlib
+import sys
+import types
+from typing import Any
+
+import pytest
+
+
+@pytest.fixture
+def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
+    class FakeFastMCP:
+        def __init__(self, name: str):
+            self.name = name
+
+        def tool(self) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+            def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+                return func
+
+            return decorator
+
+    mcp_module = types.ModuleType("mcp")
+    mcp_server_module = types.ModuleType("mcp.server")
+    mcp_fastmcp_module = types.ModuleType("mcp.server.fastmcp")
+    mcp_fastmcp_module.FastMCP = FakeFastMCP
+    mcp_server_module.fastmcp = mcp_fastmcp_module
+    mcp_module.server = mcp_server_module
+
+    monkeypatch.setitem(sys.modules, "mcp", mcp_module)
+    monkeypatch.setitem(sys.modules, "mcp.server", mcp_server_module)
+    monkeypatch.setitem(sys.modules, "mcp.server.fastmcp", mcp_fastmcp_module)
+
+    module = importlib.import_module("omnifocus_mcp.server")
+    return importlib.reload(module)
+
+
+@pytest.fixture
+def mock_server_run_omnijs(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Callable[[Any], dict[str, Any]]:
+    state: dict[str, Any] = {"result": None, "calls": []}
+
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        state["calls"].append({"script": script, "timeout_seconds": timeout_seconds})
+        return state["result"]
+
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+
+    def configure(result: Any) -> dict[str, Any]:
+        state["result"] = result
+        return {"state": state, "server": server_module}
+
+    return configure
+
+
+@pytest.mark.asyncio
+async def test_create_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "nt1", "name": "Buy groceries"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_task(
+        name="Buy groceries",
+        project="Errands",
+        note="milk and eggs",
+        dueDate="2026-03-01T10:00:00Z",
+        deferDate="2026-02-28T10:00:00Z",
+        flagged=True,
+        tags=["home", "quick"],
+        estimatedMinutes=20,
+    )
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const taskName = "Buy groceries";' in state["calls"][0]["script"]
+    assert 'const projectName = "Errands";' in state["calls"][0]["script"]
+    assert "const tagNames = " in state["calls"][0]["script"]
+    assert "const estimatedMinutesValue = 20;" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_create_tasks_batch_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = [{"id": "b1", "name": "Batch One"}, {"id": "b2", "name": "Batch Two"}]
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_tasks_batch(
+        [
+            {"name": "Batch One", "project": "Home", "tags": ["one"]},
+            {"name": "Batch Two", "flagged": True, "estimatedMinutes": 15},
+        ]
+    )
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert "const taskInputs = " in state["calls"][0]["script"]
+    assert '"name": "Batch One"' in state["calls"][0]["script"]
+    assert '"name": "Batch Two"' in state["calls"][0]["script"]
+    assert "const created = taskInputs.map" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_complete_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "t1", "name": "Do thing", "completed": True}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.complete_task("t1")
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const taskId = "t1";' in state["calls"][0]["script"]
+    assert "task.markComplete();" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_update_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {
+        "id": "t2",
+        "name": "Updated task",
+        "note": "new note",
+        "flagged": False,
+        "dueDate": "2026-03-02T10:00:00Z",
+        "deferDate": None,
+        "completed": False,
+        "projectName": "Work",
+        "tags": ["work"],
+        "estimatedMinutes": 30,
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.update_task(
+        task_id="t2",
+        name="Updated task",
+        note="new note",
+        dueDate="2026-03-02T10:00:00Z",
+        flagged=False,
+        tags=["work"],
+        estimatedMinutes=30,
+    )
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const taskId = "t2";' in state["calls"][0]["script"]
+    assert '"name": "Updated task"' in state["calls"][0]["script"]
+    assert '"estimatedMinutes": 30' in state["calls"][0]["script"]
+    assert 'if (has("tags")) {' in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_delete_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "t3", "name": "Old task", "deleted": True, "warning": None}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_task("t3")
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const taskId = "t3";' in state["calls"][0]["script"]
+    assert "task.drop();" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_move_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "t4", "name": "Move me", "projectName": "Target", "inInbox": False}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_task(task_id="t4", project="Target")
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const taskId = "t4";' in state["calls"][0]["script"]
+    assert 'const projectName = "Target";' in state["calls"][0]["script"]
+    assert "task.move(destination);" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_create_project_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "p1"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_project(
+        name="Launch Plan",
+        folder="Work",
+        note="critical",
+        dueDate="2026-03-10T10:00:00Z",
+        deferDate="2026-03-01T10:00:00Z",
+        sequential=True,
+    )
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const projectName = "Launch Plan";' in state["calls"][0]["script"]
+    assert 'const folderName = "Work";' in state["calls"][0]["script"]
+    assert "const sequentialValue = true;" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_complete_project_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "p2", "name": "Project Two", "completed": True}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.complete_project("p2")
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const projectFilter = "p2";' in state["calls"][0]["script"]
+    assert "project.markComplete();" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_create_tag_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "tag1"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_tag(name="urgent", parent="work")
+
+    assert json.loads(result) == payload
+    assert len(state["calls"]) == 1
+    assert 'const tagName = "urgent";' in state["calls"][0]["script"]
+    assert 'const parentName = "work";' in state["calls"][0]["script"]
+import json
+from collections.abc import Callable
+import importlib
+import sys
+import types
+from typing import Any
+
+import pytest
+
+
+@pytest.fixture
+def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
+    class FakeFastMCP:
+        def __init__(self, name: str):
+            self.name = name
+
+        def tool(self) -> Callable[[Callable[..., Any]], Callable[..., Any]]:
+            def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+                return func
+
+            return decorator
+
+    mcp_module = types.ModuleType("mcp")
+    mcp_server_module = types.ModuleType("mcp.server")
+    mcp_fastmcp_module = types.ModuleType("mcp.server.fastmcp")
+    mcp_fastmcp_module.FastMCP = FakeFastMCP
+    mcp_server_module.fastmcp = mcp_fastmcp_module
+    mcp_module.server = mcp_server_module
+
+    monkeypatch.setitem(sys.modules, "mcp", mcp_module)
+    monkeypatch.setitem(sys.modules, "mcp.server", mcp_server_module)
+    monkeypatch.setitem(sys.modules, "mcp.server.fastmcp", mcp_fastmcp_module)
+
+    module = importlib.import_module("omnifocus_mcp.server")
+    return importlib.reload(module)
+
+
+@pytest.fixture
+def mock_server_run_omnijs(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> Callable[[Any], dict[str, Any]]:
+    state: dict[str, Any] = {"result": None, "calls": []}
+
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        state["calls"].append({"script": script, "timeout_seconds": timeout_seconds})
+        return state["result"]
+
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+
+    def configure(result: Any) -> dict[str, Any]:
+        state["result"] = result
+        return {"state": state, "server": server_module}
+
+    return configure
+
+
+@pytest.mark.asyncio
+async def test_create_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "t1", "name": "Buy milk"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_task(
+        name="Buy milk",
+        project="Errands",
+        note="2%",
+        dueDate="2026-03-01T10:00:00Z",
+        deferDate="2026-02-28T10:00:00Z",
+        flagged=True,
+        tags=["home"],
+        estimatedMinutes=10,
+    )
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskName = "Buy milk";' in script
+    assert 'const projectName = "Errands";' in script
+    assert 'const tagNames = ["home"];' in script
+
+
+@pytest.mark.asyncio
+async def test_create_tasks_batch_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = [{"id": "t2", "name": "one"}, {"id": "t3", "name": "two"}]
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_tasks_batch([{"name": "one"}, {"name": "two", "project": "Work"}])
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert "const taskInputs = " in script
+    assert '"name": "one"' in script
+    assert '"project": "Work"' in script
+
+
+@pytest.mark.asyncio
+async def test_complete_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "t4", "name": "Done", "completed": True}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.complete_task("t4")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t4";' in script
+    assert "task.markComplete();" in script
+
+
+@pytest.mark.asyncio
+async def test_update_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {
+        "id": "t5",
+        "name": "Updated",
+        "note": "n",
+        "flagged": False,
+        "dueDate": None,
+        "deferDate": None,
+        "completed": False,
+        "projectName": "Work",
+        "tags": ["home"],
+        "estimatedMinutes": 20,
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.update_task("t5", name="Updated", tags=["home"], estimatedMinutes=20)
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t5";' in script
+    assert '"name": "Updated"' in script
+    assert '"tags": ["home"]' in script
+
+
+@pytest.mark.asyncio
+async def test_delete_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "t6", "name": "Drop me", "deleted": True, "warning": None}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_task("t6")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t6";' in script
+    assert "task.drop();" in script
+
+
+@pytest.mark.asyncio
+async def test_move_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "t7", "name": "Moved", "projectName": "Work", "inInbox": False}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_task("t7", project="Work")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t7";' in script
+    assert 'const projectName = "Work";' in script
+    assert "task.move(destination);" in script
+
+
+@pytest.mark.asyncio
+async def test_create_project_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "p1"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_project(
+        name="Launch",
+        folder="Work",
+        note="notes",
+        dueDate="2026-03-01T10:00:00Z",
+        deferDate="2026-02-28T10:00:00Z",
+        sequential=True,
+    )
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const projectName = "Launch";' in script
+    assert 'const folderName = "Work";' in script
+    assert "return new Project(projectName, targetFolder.ending);" in script
+
+
+@pytest.mark.asyncio
+async def test_complete_project_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "p2", "name": "Launch", "completed": True}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.complete_project("p2")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "p2";' in script
+    assert "project.markComplete();" in script
+
+
+@pytest.mark.asyncio
+async def test_create_tag_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
+    payload = {"id": "tag1"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_tag(name="home", parent="areas")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const tagName = "home";' in script
+    assert 'const parentName = "areas";' in script
+    assert "return new Tag(tagName, parentTag.ending);" in script

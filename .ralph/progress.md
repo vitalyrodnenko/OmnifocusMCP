@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 5
-- Current status: Phase 4 in progress (criterion 37 complete; next 38).
+- Current status: Phase 4 in progress (criterion 38 complete; next 39).
 
 ## How This Works
 
@@ -20,13 +20,13 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
-| 4     | Python: Write Tools + Tests       | 29–43     | 9/15 |
+| 4     | Python: Write Tools + Tests       | 29–43     | 10/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 37 / 75 criteria complete**
+**Total: 38 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -396,8 +396,26 @@ This is how Ralph maintains continuity across iterations.
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 4 criterion 38 (write-tool happy-path tests)
 
+### 2026-02-27 23:06:05
+**Session 6 update**
+- completed phase 4 criterion 38 (write-tool happy-path tests)
+- added `python/tests/test_tools_write.py` with mocked `run_omnijs` happy-path tests for all phase 4 write tools:
+  - `create_task`, `create_tasks_batch`, `complete_task`, `update_task`, `delete_task`, `move_task`
+  - `create_project`, `complete_project`, `create_tag`
+- each test verifies returned JSON shape and confirms key JXA script fragments were generated correctly
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 4 criterion 39 (`create_task` optional-field matrix test)
+
 ### 2026-02-27 23:05:31
 **Session 6 ended** - 🔄 Context rotation (token limit reached)
 
 ### 2026-02-27 23:05:33
 **Session 7 started** (model: auto)
+
+### 2026-02-27 23:06:48
+**Session 7 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:06:50
+**Session 8 started** (model: auto)

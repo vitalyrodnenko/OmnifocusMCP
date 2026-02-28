@@ -237,7 +237,7 @@ write tools return confirmation with the affected item's current state.
 
 ### Tests (Phase 4)
 
-38. [ ] Happy-path tests for every write tool (mocked `run_omnijs`): verify
+38. [x] Happy-path tests for every write tool (mocked `run_omnijs`): verify
         the generated JXA script contains correct parameters (e.g.,
         `create_task` sets name, project, tags). Verify return shape.
 39. [ ] Test `create_task` with all optional fields set and with only
