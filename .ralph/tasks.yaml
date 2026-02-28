@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772291930
-generated_at: 2026-02-28T15:19:26Z
+source_mtime: 1772292042
+generated_at: 2026-02-28T15:20:57Z
 
 tasks:
   - id: "line_32"
@@ -128,7 +128,7 @@ tasks:
     raw_marker: 17.
   - id: "line_152"
     line_number: 152
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `python/pyproject.toml` has pytest marker config:
     indent_level: 0

@@ -149,7 +149,7 @@ default and only run when explicitly requested.
 
 ### Success Criteria
 
-18. [ ] `python/pyproject.toml` has pytest marker config:
+18. [x] `python/pyproject.toml` has pytest marker config:
         `markers = ["integration: requires running OmniFocus"]`.
         `python/tests/conftest.py` updated with skip logic for
         `integration` marker when OmniFocus is not available.

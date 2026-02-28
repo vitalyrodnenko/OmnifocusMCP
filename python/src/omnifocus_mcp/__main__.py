@@ -1,4 +1,4 @@
-from omnifocus_mcp.server import mcp
+from omnifocus_mcp.app import mcp
 
 
 def main() -> None:

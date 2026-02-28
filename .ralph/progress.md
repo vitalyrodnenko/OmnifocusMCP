@@ -21,10 +21,10 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Real OmniFocus Smoke Test      | 1–5       | 5/5  |
 | 2     | Fix JXA Bugs                   | 6–9       | 4/4  |
 | 3     | Split Monolith Files           | 10–17     | 8/8  |
-| 4     | Integration Tests              | 18–24     | 0/7  |
+| 4     | Integration Tests              | 18–24     | 1/7  |
 | 5     | Final Cleanup                  | 25–28     | 0/4  |
 
-**Total: 17 / 28 criteria complete**
+**Total: 18 / 28 criteria complete**
 
 ## Key Context
 
@@ -130,7 +130,8 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 09:22:00
 - hit criterion 17 failure on first smoke run: circular import from `python/src/omnifocus_mcp/server.py` symbol imports when smoke script imported `tools.folders` directly
-- fixed bootstrap imports in `python/src/omnifocus_mcp/server.py` by switching from `from ... import ...` symbol imports to module-only imports for prompts/resources/tools registration side effects
+- fixed the circular dependency by introducing `python/src/omnifocus_mcp/app.py` as the shared `mcp` owner and updating tools/resources/prompts plus `__main__.py` to import `mcp` from `app.py`
+- kept compatibility exports in `python/src/omnifocus_mcp/server.py` for existing tests while avoiding initialization cycles
 - reran `cd python && uv run python scripts/smoke_test.py` successfully (0 failures)
 - reran `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` successfully (64 passed)
 - marked criterion 17 complete in `RALPH_TASK.md`
@@ -147,3 +148,15 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 09:19:51
 **Session 9 started** (model: auto)
+
+### 2026-02-28 09:21:00
+- completed criterion 18 by adding pytest marker config in `python/pyproject.toml` and integration auto-skip logic in `python/tests/conftest.py` when OmniFocus is unavailable
+- validated with full task command: `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test` (all passing; python 64 passed, typescript 25 passed)
+- marked criterion 18 complete in `RALPH_TASK.md`
+- next focus: implement criterion 19 (`python/tests/test_integration.py`)
+
+### 2026-02-28 09:20:58
+**Session 9 ended** - Agent finished naturally (10 criteria remaining)
+
+### 2026-02-28 09:21:00
+**Session 10 started** (model: auto)
