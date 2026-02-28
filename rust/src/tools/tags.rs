@@ -1,3 +1,4 @@
+// placeholder
 use serde_json::Value;
 
 use crate::{
@@ -44,7 +45,11 @@ return tags.map(tag => {{
     runner.run_omnijs(&script).await
 }
 
-pub async fn create_tag<R: JxaRunner>(runner: &R, name: &str, parent: Option<&str>) -> Result<Value> {
+pub async fn create_tag<R: JxaRunner>(
+    runner: &R,
+    name: &str,
+    parent: Option<&str>,
+) -> Result<Value> {
     if name.trim().is_empty() {
         return Err(OmniFocusError::Validation(
             "name must not be empty.".to_string(),
@@ -122,6 +127,7 @@ pub async fn update_tag<R: JxaRunner>(
     let status_value = status
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+
     let script = format!(
         r#"const tagFilter = {tag_filter};
 const newName = {new_name};
@@ -164,6 +170,7 @@ return {{
   status: normalizeTagStatus(tag)
 }};"#
     );
+
     runner.run_omnijs(&script).await
 }
 

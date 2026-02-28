@@ -156,6 +156,7 @@ async def delete_tag(tag_name_or_id: str) -> str:
     tag_filter = escape_for_jxa(tag_name_or_id.strip())
     script = f"""
 const tagFilter = {tag_filter};
+
 const tag = document.flattenedTags.find(
   t => t.id.primaryKey === tagFilter || t.name === tagFilter
 );

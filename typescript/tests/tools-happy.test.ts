@@ -523,6 +523,28 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("create_folder creates a folder under optional parent", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "folder-1", name: "Areas" });
+    const handler = registeredTools.get("create_folder");
+    expect(handler).toBeDefined();
+    const result = await handler!({ name: "Areas", parent: "Work" });
+    expect(JSON.parse(result.content[0].text)).toEqual({ id: "folder-1", name: "Areas" });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const folderName = "Areas";');
+    expect(script).toContain('const parentName = "Work";');
+    expect(script).toContain("return new Folder(folderName, parentFolder.ending);");
+  });
+
+  test("create_folder returns error for empty parent when provided", async () => {
+    const handler = registeredTools.get("create_folder");
+    expect(handler).toBeDefined();
+    const result = await handler!({ name: "Areas", parent: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "parent must not be empty when provided.",
+    });
+  });
+
   test("set_project_status returns error for unsupported status value", async () => {
     const handler = registeredTools.get("set_project_status");
     expect(handler).toBeDefined();

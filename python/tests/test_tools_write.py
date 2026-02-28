@@ -447,6 +447,32 @@ async def test_delete_tag_validation_error_criterion14(server_module: Any) -> No
         await server_module.delete_tag(tag_name_or_id="   ")
 
 
+@pytest.mark.asyncio
+async def test_create_folder_happy_path_criterion15(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "folder-1", "name": "Areas"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.create_folder(name="Areas", parent="Work")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const folderName = "Areas";' in script
+    assert 'const parentName = "Work";' in script
+    assert "return new Folder(folderName, parentFolder.ending);" in script
+
+
+@pytest.mark.asyncio
+async def test_create_folder_validation_error_criterion15(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="name must not be empty."):
+        await server_module.create_folder(name="   ")
+    with pytest.raises(ValueError, match="parent must not be empty when provided."):
+        await server_module.create_folder(name="Areas", parent="   ")
+
+
 @pytest.fixture
 def server_module(monkeypatch: pytest.MonkeyPatch) -> Any:
     class FakeFastMCP:
