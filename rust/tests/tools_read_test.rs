@@ -518,6 +518,10 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
+        list_notifications(&runner, "   ").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
         search_tasks(
             &runner,
             "   ",
@@ -806,6 +810,37 @@ async fn get_task_and_list_subtasks_scripts_include_task_status_mapper() {
         .clone();
     assert!(list_subtasks_script_text.contains("taskStatus: (() => {"));
     assert!(list_subtasks_script_text.contains("String(subtask.taskStatus)"));
+}
+
+#[tokio::test]
+async fn list_notifications_script_maps_notification_fields() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{
+            "id": "n1",
+            "kind": "absolute",
+            "absoluteFireDate": "2026-03-02T09:00:00Z",
+            "relativeFireOffset": null,
+            "nextFireDate": "2026-03-02T09:00:00Z",
+            "isSnoozed": false
+        }]),
+        last_script: last_script.clone(),
+    };
+
+    let notifications = list_notifications(&runner, "t3")
+        .await
+        .expect("list_notifications should parse");
+    assert!(notifications.is_array());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const taskId = "t3";"#));
+    assert!(script.contains("return task.notifications.map(n => ({"));
+    assert!(script.contains(r#"kind: n.initialFireDate ? "absolute" : "relative","#));
+    assert!(script.contains("relativeFireOffset: n.initialFireDate ? null : n.relativeFireOffset,"));
+    assert!(script.contains("isSnoozed: n.isSnoozed"));
 }
 
 #[tokio::test]
