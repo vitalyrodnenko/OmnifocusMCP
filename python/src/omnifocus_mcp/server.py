@@ -29,6 +29,7 @@ from omnifocus_mcp.tools.tasks import (  # noqa: E402,F401
     add_notification,
     append_to_note,
     complete_task,
+    duplicate_task,
     create_task,
     create_tasks_batch,
     delete_task,

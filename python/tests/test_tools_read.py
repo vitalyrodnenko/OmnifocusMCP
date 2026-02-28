@@ -839,6 +839,57 @@ async def test_remove_notification_happy_path(
 
 
 @pytest.mark.asyncio
+async def test_duplicate_task_happy_path_with_children(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "copy-1",
+        "name": "Copied task",
+        "note": "copied",
+        "flagged": True,
+        "dueDate": "2026-03-10T09:00:00Z",
+        "deferDate": None,
+        "completed": False,
+        "completionDate": None,
+        "projectName": "Errands",
+        "tags": ["Home"],
+        "estimatedMinutes": 15,
+        "hasChildren": True,
+        "taskStatus": "available",
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.duplicate_task(task_id="t3")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t3";' in script
+    assert "const includeChildren = true;" in script
+    assert "const duplicates = duplicateTasks([task], insertionLocation);" in script
+    assert "taskStatus: (() => {" in script
+
+
+@pytest.mark.asyncio
+async def test_duplicate_task_happy_path_without_children(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "copy-2", "name": "Copied task flat"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.duplicate_task(task_id="t3", includeChildren=False)
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert "const includeChildren = false;" in script
+    assert "const manualClone = new Task(task.name, insertionLocation);" in script
+    assert "manualClone.addTag(tag);" in script
+
+
+@pytest.mark.asyncio
 async def test_search_tasks_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -1440,6 +1491,12 @@ async def test_remove_notification_validation_errors(server_module: Any) -> None
         await server_module.remove_notification(task_id="   ", notification_id="n1")
     with pytest.raises(ValueError, match="notification_id must not be empty"):
         await server_module.remove_notification(task_id="t3", notification_id="   ")
+
+
+@pytest.mark.asyncio
+async def test_duplicate_task_validation_errors(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="task_id must not be empty"):
+        await server_module.duplicate_task(task_id="   ")
 
 
 @pytest.mark.asyncio

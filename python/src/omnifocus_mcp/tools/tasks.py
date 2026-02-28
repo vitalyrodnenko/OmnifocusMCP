@@ -1620,6 +1620,61 @@ return {{
 
 
 @typed_tool(mcp)
+async def duplicate_task(task_id: str, includeChildren: bool = True) -> str:
+    """duplicate a task with all properties and optional child tasks."""
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+
+    task_id_value = escape_for_jxa(task_id.strip())
+    include_children_value = "true" if includeChildren else "false"
+    script = f"""
+const taskId = {task_id_value};
+const includeChildren = {include_children_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const insertionLocation = task.containingProject ? task.containingProject.ending : inbox.ending;
+let duplicatedTask = null;
+
+if (includeChildren) {{
+  const duplicatedTasks = duplicateTasks([task], insertionLocation);
+  if (duplicatedTasks && duplicatedTasks.length > 0) {{
+    duplicatedTask = duplicatedTasks[0];
+  }}
+}} else {{
+  duplicatedTask = new Task(task.name, insertionLocation);
+  duplicatedTask.note = task.note;
+  duplicatedTask.flagged = task.flagged;
+  if (task.dueDate !== null) duplicatedTask.dueDate = new Date(task.dueDate);
+  if (task.deferDate !== null) duplicatedTask.deferDate = new Date(task.deferDate);
+  if (task.estimatedMinutes !== null) duplicatedTask.estimatedMinutes = task.estimatedMinutes;
+  task.tags.forEach(tag => duplicatedTask.addTag(tag));
+}}
+
+if (!duplicatedTask) {{
+  throw new Error(`Failed to duplicate task: ${{taskId}}`);
+}}
+
+return {{
+  id: duplicatedTask.id.primaryKey,
+  name: duplicatedTask.name,
+  note: duplicatedTask.note,
+  flagged: duplicatedTask.flagged,
+  dueDate: duplicatedTask.dueDate ? duplicatedTask.dueDate.toISOString() : null,
+  deferDate: duplicatedTask.deferDate ? duplicatedTask.deferDate.toISOString() : null,
+  completed: duplicatedTask.completed,
+  projectName: duplicatedTask.containingProject ? duplicatedTask.containingProject.name : null,
+  tags: duplicatedTask.tags.map(tag => tag.name),
+  estimatedMinutes: duplicatedTask.estimatedMinutes
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def create_tasks_batch(
     tasks: list[dict[str, Any]],
 ) -> str:

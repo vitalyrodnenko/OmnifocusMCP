@@ -124,6 +124,37 @@ async def test_create_subtask_happy_path(
 
 
 @pytest.mark.asyncio
+async def test_duplicate_task_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "dup-1",
+        "name": "Duplicated task",
+        "note": "copied",
+        "flagged": True,
+        "dueDate": "2026-03-11T10:00:00Z",
+        "deferDate": "2026-03-10T10:00:00Z",
+        "completed": False,
+        "projectName": "Errands",
+        "tags": ["home"],
+        "estimatedMinutes": 25,
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
+
+    result = await tasks_mod.duplicate_task(task_id="task-1", includeChildren=False)
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "task-1";' in script
+    assert "const includeChildren = false;" in script
+    assert "const duplicatedTasks = duplicateTasks([task], insertionLocation);" in script
+    assert "duplicatedTask = new Task(task.name, insertionLocation);" in script
+    assert "task.tags.forEach(tag => duplicatedTask.addTag(tag));" in script
+
+
+@pytest.mark.asyncio
 async def test_create_task_optional_field_matrix(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -1074,6 +1105,13 @@ async def test_create_subtask_empty_parent_validation_error(server_module: Any) 
     tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
     with pytest.raises(ValueError, match="parent_task_id must not be empty."):
         await tasks_mod.create_subtask("Task", parent_task_id="   ")
+
+
+@pytest.mark.asyncio
+async def test_duplicate_task_empty_task_id_validation_error(server_module: Any) -> None:
+    tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
+    with pytest.raises(ValueError, match="task_id must not be empty."):
+        await tasks_mod.duplicate_task(task_id="   ")
 
 
 @pytest.mark.asyncio
