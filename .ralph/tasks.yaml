@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772307213
-generated_at: 2026-02-28T19:33:36Z
+source_mtime: 1772307383
+generated_at: 2026-02-28T19:36:33Z
 
 tasks:
   - id: "line_71"
@@ -170,7 +170,7 @@ tasks:
     raw_marker: 23.
   - id: "line_306"
     line_number: 306
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Update `rust/examples/smoke_test.rs` to exercise all new tools:
     indent_level: 0

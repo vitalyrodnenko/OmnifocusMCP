@@ -303,7 +303,7 @@ Reference implementations:
 
 ### Success Criteria
 
-24. [ ] Update `rust/examples/smoke_test.rs` to exercise all new tools:
+24. [x] Update `rust/examples/smoke_test.rs` to exercise all new tools:
         - `uncomplete_task`: create → complete → uncomplete → verify
         - `create_subtask` + `list_subtasks`: create parent → create
           subtask → list → verify
