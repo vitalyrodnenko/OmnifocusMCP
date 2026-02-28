@@ -6,7 +6,7 @@ import { errorResult, normalizeError, textResult, type Server } from "../types.j
 export function register(server: Server): void {
   server.tool(
     "get_forecast",
-    "get forecast sections for overdue, due today, and flagged tasks.",
+    "get forecast sections for overdue, due today, flagged, deferred, and due-this-week tasks.",
     { limit: z.number().int().min(1).default(100) },
     async ({ limit }) => {
       try {
@@ -23,6 +23,7 @@ export async function getForecastData(limit: number): Promise<unknown> {
 const now = new Date();
 const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 const endOfToday = new Date(startOfToday.getTime() + (24 * 60 * 60 * 1000));
+const endOfWeek = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
 const toTaskSummary = task => ({
   id: task.id.primaryKey,
   name: task.name,
@@ -31,24 +32,48 @@ const toTaskSummary = task => ({
   completed: task.completed,
   dueDate: task.dueDate ? task.dueDate.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+  completionDate: task.completionDate ? task.completionDate.toISOString() : null,
   projectName: task.containingProject ? task.containingProject.name : null,
   tags: task.tags.map(tag => tag.name),
-  estimatedMinutes: task.estimatedMinutes
+  estimatedMinutes: task.estimatedMinutes,
+  hasChildren: task.hasChildren
 });
 const openTasks = document.flattenedTasks.filter(task => !task.completed);
-const overdue = openTasks
-  .filter(task => task.dueDate !== null && task.dueDate < startOfToday)
-  .slice(0, ${limit})
-  .map(toTaskSummary);
-const dueToday = openTasks
-  .filter(task => task.dueDate !== null && task.dueDate >= startOfToday && task.dueDate < endOfToday)
-  .slice(0, ${limit})
-  .map(toTaskSummary);
-const flagged = openTasks
-  .filter(task => task.flagged)
-  .slice(0, ${limit})
-  .map(toTaskSummary);
-return { overdue, dueToday, flagged };
+const overdue = [];
+const dueToday = [];
+const flagged = [];
+const deferred = [];
+const dueThisWeek = [];
+const counts = {
+  overdueCount: 0,
+  dueTodayCount: 0,
+  flaggedCount: 0,
+  deferredCount: 0,
+  dueThisWeekCount: 0
+};
+openTasks.forEach(task => {
+  if (task.dueDate !== null && task.dueDate < startOfToday) {
+    counts.overdueCount += 1;
+    if (overdue.length < ${limit}) overdue.push(toTaskSummary(task));
+  }
+  if (task.dueDate !== null && task.dueDate >= startOfToday && task.dueDate < endOfToday) {
+    counts.dueTodayCount += 1;
+    if (dueToday.length < ${limit}) dueToday.push(toTaskSummary(task));
+  }
+  if (task.flagged) {
+    counts.flaggedCount += 1;
+    if (flagged.length < ${limit}) flagged.push(toTaskSummary(task));
+  }
+  if (task.deferDate !== null && task.deferDate > now) {
+    counts.deferredCount += 1;
+    if (deferred.length < ${limit}) deferred.push(toTaskSummary(task));
+  }
+  if (task.dueDate !== null && task.dueDate >= endOfToday && task.dueDate < endOfWeek) {
+    counts.dueThisWeekCount += 1;
+    if (dueThisWeek.length < ${limit}) dueThisWeek.push(toTaskSummary(task));
+  }
+});
+return { overdue, dueToday, flagged, deferred, dueThisWeek, counts };
 `.trim();
   return runOmniJs(script);
 }
