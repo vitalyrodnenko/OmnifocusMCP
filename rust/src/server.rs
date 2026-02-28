@@ -26,7 +26,7 @@ use crate::{
         PROJECTS_RESOURCE_URI, TODAY_RESOURCE_URI,
     },
     tools::{
-        folders::{create_folder, get_folder, list_folders, update_folder},
+        folders::{create_folder, get_folder, list_folders, update_folder as update_folder_tool},
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
@@ -736,7 +736,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<UpdateFolderParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = update_folder(
+        let result = update_folder_tool(
             self.runner.as_ref(),
             &params.folder_name_or_id,
             params.name.as_deref(),
