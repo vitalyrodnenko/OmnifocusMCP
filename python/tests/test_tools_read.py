@@ -303,6 +303,66 @@ async def test_list_tasks_completed_date_filter_auto_includes_completed_logic(
 
 
 @pytest.mark.asyncio
+async def test_list_tasks_tags_filter_single_via_tags_param(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(tags=["Home"], limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const tagNames = ["Home"];' in script
+    assert 'const tagFilterMode = "any";' in script
+    assert "task.tags.some(t => tagNames.includes(t.name))" in script
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_tags_filter_all_mode(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(tags=["Home", "Deep"], tagFilterMode="all", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const tagNames = ["Home", "Deep"];' in script
+    assert 'const tagFilterMode = "all";' in script
+    assert "tagNames.every(tn => task.tags.some(t => t.name === tn))" in script
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_tags_filter_merges_tag_and_tags_union(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(tag="Home", tags=["Errands", "Home"], limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const tagNames = ["Home", "Errands"];' in script
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_tags_filter_ignores_empty_tags_array(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(tags=[], limit=5)
+
+    script = state["calls"][0]["script"]
+    assert "const tagNames = null;" in script
+
+
+@pytest.mark.asyncio
 async def test_get_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {
         "id": "t3",

@@ -196,7 +196,7 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
     }
 
     let listed = list_tasks(
-        &runner, None, None, None, "all", None, None, None, None, None, None, 20,
+        &runner, None, None, None, "any", None, "all", None, None, None, None, None, None, 20,
     )
     .await?;
     if let Some(first) = listed.first() {
