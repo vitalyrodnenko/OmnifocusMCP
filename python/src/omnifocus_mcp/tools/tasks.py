@@ -917,52 +917,6 @@ return {{
 
 
 @typed_tool(mcp)
-async def append_to_note(object_type: Literal["task", "project"], object_id: str, text: str) -> str:
-    """append text to a task or project note by object id.
-
-    accepts object_type ("task" or "project"), object_id, and text to append.
-    returns object id, name, type, and updated note length.
-    """
-    if object_type not in ("task", "project"):
-        raise ValueError("object_type must be one of: task, project.")
-    if object_id.strip() == "":
-        raise ValueError("object_id must not be empty.")
-    if text.strip() == "":
-        raise ValueError("text must not be empty.")
-
-    object_type_value = escape_for_jxa(object_type)
-    object_id_value = escape_for_jxa(object_id.strip())
-    text_value = escape_for_jxa(text)
-    script = f"""
-const objectType = {object_type_value};
-const objectId = {object_id_value};
-const textValue = {text_value};
-
-let obj;
-if (objectType === "task") {{
-  obj = document.flattenedTasks.find(item => item.id.primaryKey === objectId);
-  if (!obj) throw new Error(`Task not found: ${{objectId}}`);
-}} else if (objectType === "project") {{
-  obj = document.flattenedProjects.find(item => item.id.primaryKey === objectId);
-  if (!obj) throw new Error(`Project not found: ${{objectId}}`);
-}} else {{
-  throw new Error(`Invalid object_type: ${{objectType}}`);
-}}
-
-obj.appendStringToNote(textValue);
-
-return {{
-  id: obj.id.primaryKey,
-  name: obj.name,
-  type: objectType,
-  noteLength: obj.note.length
-}};
-""".strip()
-    result = await run_omnijs(script)
-    return json.dumps(result)
-
-
-@typed_tool(mcp)
 async def append_to_note(
     object_type: Literal["task", "project"],
     object_id: str,

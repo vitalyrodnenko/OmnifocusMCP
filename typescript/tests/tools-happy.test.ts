@@ -147,6 +147,51 @@ describe("tool happy paths", () => {
     expect(script).toContain("task.markIncomplete();");
   });
 
+  test("append_to_note appends text to note and returns summary", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "task-1", name: "Task One", type: "task", noteLength: 42 });
+    const handler = registeredTools.get("append_to_note");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      object_type: "task",
+      object_id: "task-1",
+      text: "more context",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "task-1",
+      name: "Task One",
+      type: "task",
+      noteLength: 42,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const objectType = "task";');
+    expect(script).toContain('const objectId = "task-1";');
+    expect(script).toContain('const textValue = "more context";');
+    expect(script).toContain("obj.appendStringToNote(textValue);");
+  });
+
+  test("append_to_note validates object_type, object_id, and text", async () => {
+    const handler = registeredTools.get("append_to_note");
+    expect(handler).toBeDefined();
+
+    const badType = await handler!({ object_type: "folder", object_id: "task-1", text: "x" });
+    expect(badType.isError).toBe(true);
+    expect(JSON.parse(badType.content[0].text)).toEqual({
+      error: "object_type must be one of: task, project.",
+    });
+
+    const badObjectId = await handler!({ object_type: "task", object_id: "   ", text: "x" });
+    expect(badObjectId.isError).toBe(true);
+    expect(JSON.parse(badObjectId.content[0].text)).toEqual({
+      error: "object_id must not be empty.",
+    });
+
+    const badText = await handler!({ object_type: "task", object_id: "task-1", text: "   " });
+    expect(badText.isError).toBe(true);
+    expect(JSON.parse(badText.content[0].text)).toEqual({
+      error: "text must not be empty.",
+    });
+  });
+
   test("set_task_repetition sets repetition rule", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "t10", name: "Weekly", repetitionRule: "FREQ=WEEKLY" });
     const handler = registeredTools.get("set_task_repetition");
@@ -273,6 +318,39 @@ describe("tool happy paths", () => {
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
       error: "task_ids must contain at least one task id.",
+    });
+  });
+
+  test("append_to_note appends text and returns note length", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "t6", name: "Task six", type: "task", noteLength: 24 });
+    const handler = registeredTools.get("append_to_note");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      object_type: "task",
+      object_id: "t6",
+      text: "\nfollow-up details",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "t6",
+      name: "Task six",
+      type: "task",
+      noteLength: 24,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const objectType = "task";');
+    expect(script).toContain('const objectId = "t6";');
+    expect(script).toContain('const textToAppend = "\\nfollow-up details";');
+    expect(script).toContain("obj.appendStringToNote(textToAppend);");
+    expect(script).toContain("noteLength: obj.note.length");
+  });
+
+  test("append_to_note returns error for empty object id", async () => {
+    const handler = registeredTools.get("append_to_note");
+    expect(handler).toBeDefined();
+    const result = await handler!({ object_type: "task", object_id: "   ", text: "x" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "object_id must not be empty.",
     });
   });
 

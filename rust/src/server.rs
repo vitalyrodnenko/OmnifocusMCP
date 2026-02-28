@@ -38,9 +38,10 @@ use crate::{
         },
         tags::{create_tag, delete_tag, list_tags, update_tag},
         tasks::{
-            complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks, move_task,
-            search_tasks, set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
+            append_to_note, complete_task, create_subtask, create_task, create_tasks_batch,
+            delete_task, delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks,
+            move_task, search_tasks, set_task_repetition, uncomplete_task, update_task,
+            CreateTaskInput,
         },
     },
 };
@@ -136,6 +137,13 @@ struct UpdateTaskParams {
 struct MoveTaskParams {
     task_id: String,
     project: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct AppendToNoteParams {
+    object_type: String,
+    object_id: String,
+    text: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -510,6 +518,22 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             self.runner.as_ref(),
             &params.task_id,
             params.project.as_deref(),
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "append text to a task or project note by object id.")]
+    async fn append_to_note(
+        &self,
+        Parameters(params): Parameters<AppendToNoteParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = append_to_note(
+            self.runner.as_ref(),
+            &params.object_type,
+            &params.object_id,
+            &params.text,
         )
         .await
         .map_err(to_mcp_error)?;

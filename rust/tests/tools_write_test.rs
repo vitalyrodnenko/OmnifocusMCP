@@ -15,9 +15,9 @@ use omnifocus_mcp::{
         },
         tags::{create_tag, delete_tag, update_tag},
         tasks::{
-            complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, move_task, set_task_repetition, uncomplete_task, update_task,
-            CreateTaskInput,
+            append_to_note, complete_task, create_subtask, create_task, create_tasks_batch,
+            delete_task, delete_tasks_batch, move_task, set_task_repetition, uncomplete_task,
+            update_task, CreateTaskInput,
         },
     },
 };
@@ -159,6 +159,11 @@ async fn write_task_tools_happy_path() {
         .await
         .expect("move_task should succeed");
     assert_eq!(moved["id"], "t1");
+
+    let appended = append_to_note(&runner, "task", "t1", "more context")
+        .await
+        .expect("append_to_note should succeed");
+    assert_eq!(appended["id"], "t1");
 }
 
 #[tokio::test]
@@ -442,6 +447,18 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         move_task(&runner, "task-id", Some("   ")).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        append_to_note(&runner, "folder", "task-id", "x").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        append_to_note(&runner, "task", "   ", "x").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        append_to_note(&runner, "task", "task-id", "   ").await,
         Err(OmniFocusError::Validation(_))
     ));
 }
@@ -960,4 +977,28 @@ async fn set_task_repetition_script_sets_and_clears_rules() {
     ));
     assert!(clear_script.contains("const ruleString = null;"));
     assert!(clear_script.contains("task.repetitionRule = null;"));
+}
+
+#[tokio::test]
+async fn append_to_note_script_targets_task_or_project_and_appends_text() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "task-1", "name": "Task 1", "type": "task", "noteLength": 42}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = append_to_note(&runner, "task", "task-1", "more context").await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const objectType = \"task\";"));
+    assert!(captured.contains("const objectId = \"task-1\";"));
+    assert!(captured.contains("const textValue = \"more context\";"));
+    assert!(captured.contains("obj.appendStringToNote(textValue);"));
 }

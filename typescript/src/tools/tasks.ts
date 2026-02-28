@@ -357,6 +357,61 @@ return {
   );
 
   server.tool(
+    "append_to_note",
+    "append text to a task or project note by object id.",
+    {
+      object_type: z.enum(["task", "project"]),
+      object_id: z.string().min(1),
+      text: z.string().min(1),
+    },
+    async ({ object_type, object_id, text }) => {
+      try {
+        if (object_type !== "task" && object_type !== "project") {
+          throw new Error("object_type must be one of: task, project.");
+        }
+        const normalizedObjectId = object_id.trim();
+        if (normalizedObjectId === "") {
+          throw new Error("object_id must not be empty.");
+        }
+        if (text.trim() === "") {
+          throw new Error("text must not be empty.");
+        }
+        const objectType = escapeForJxa(object_type);
+        const objectId = escapeForJxa(normalizedObjectId);
+        const textValue = escapeForJxa(text);
+        const script = `
+const objectType = ${objectType};
+const objectId = ${objectId};
+const textValue = ${textValue};
+
+let obj;
+if (objectType === "task") {
+  obj = document.flattenedTasks.find(item => item.id.primaryKey === objectId);
+  if (!obj) throw new Error(\`Task not found: \${objectId}\`);
+} else if (objectType === "project") {
+  obj = document.flattenedProjects.find(item => item.id.primaryKey === objectId);
+  if (!obj) throw new Error(\`Project not found: \${objectId}\`);
+} else {
+  throw new Error(\`Invalid object_type: \${objectType}\`);
+}
+
+obj.appendStringToNote(textValue);
+
+return {
+  id: obj.id.primaryKey,
+  name: obj.name,
+  type: objectType,
+  noteLength: obj.note.length
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "set_task_repetition",
     "set or clear a task repetition rule by task id.",
     {
