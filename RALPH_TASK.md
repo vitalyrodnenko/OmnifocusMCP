@@ -283,7 +283,7 @@ See individual phase criteria below.
           count desc, totalTaskCount field.
         - All lint/test commands pass.
 
-12. [ ] **Add filter params to `search_tasks`** — all 3 implementations.
+12. [x] **Add filter params to `search_tasks`** — all 3 implementations.
         - Add same optional filter params as list_tasks: `project`,
           `tag`, `tags`, `tagFilterMode`, `flagged`, `status`,
           `dueBefore`, `dueAfter`, `deferBefore`, `deferAfter`,
@@ -301,7 +301,7 @@ See individual phase criteria below.
           range, search with status filter.
         - All lint/test commands pass.
 
-13. [ ] All lint and test commands pass for Phase 3 (same as criterion 6).
+13. [x] All lint and test commands pass for Phase 3 (same as criterion 6).
 
 ---
 

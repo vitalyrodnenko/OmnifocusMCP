@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772312472
-generated_at: 2026-02-28T21:02:03Z
+source_mtime: 1772312768
+generated_at: 2026-02-28T21:06:09Z
 
 tasks:
   - id: "line_108"
@@ -86,14 +86,14 @@ tasks:
     raw_marker: 11.
   - id: "line_286"
     line_number: 286
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Add filter params to `search_tasks`** — all 3 implementations.
     indent_level: 0
     raw_marker: 12.
   - id: "line_304"
     line_number: 304
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All lint and test commands pass for Phase 3 (same as criterion 6).
     indent_level: 0

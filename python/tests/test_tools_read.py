@@ -607,7 +607,7 @@ async def test_search_tasks_with_completed_after_auto_includes_completed_and_aut
 
     await server.search_tasks(query="shape", completedAfter="2026-03-01T00:00:00Z", limit=5)
     script = state["calls"][0]["script"]
-    assert 'const statusFilter = "available";' in script
+    assert 'const statusFilter = "all";' in script
     assert 'const sortBy = "completionDate";' in script
     assert 'const sortOrder = "desc";' in script
     assert "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;" in script

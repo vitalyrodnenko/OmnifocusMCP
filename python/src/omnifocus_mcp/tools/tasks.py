@@ -365,7 +365,9 @@ async def search_tasks(
     tags: list[str] | None = None,
     tagFilterMode: Literal["any", "all"] = "any",
     flagged: bool | None = None,
-    status: Literal["available", "due_soon", "overdue", "completed", "all"] = "all",
+    status: Literal[
+        "available", "due_soon", "overdue", "completed", "all"
+    ] = "available",
     dueBefore: str | None = None,
     dueAfter: str | None = None,
     deferBefore: str | None = None,
@@ -374,7 +376,13 @@ async def search_tasks(
     completedAfter: str | None = None,
     maxEstimatedMinutes: int | None = None,
     sortBy: Literal[
-        "dueDate", "deferDate", "name", "completionDate", "estimatedMinutes", "project", "flagged"
+        "dueDate",
+        "deferDate",
+        "name",
+        "completionDate",
+        "estimatedMinutes",
+        "project",
+        "flagged",
     ]
     | None = None,
     sortOrder: Literal["asc", "desc"] = "asc",
@@ -395,7 +403,9 @@ async def search_tasks(
     if tagFilterMode not in ("any", "all"):
         raise ValueError("tagFilterMode must be one of: any, all.")
     if status not in ("available", "due_soon", "overdue", "completed", "all"):
-        raise ValueError("status must be one of: available, due_soon, overdue, completed, all.")
+        raise ValueError(
+            "status must be one of: available, due_soon, overdue, completed, all."
+        )
     if sortBy is not None and sortBy not in (
         "dueDate",
         "deferDate",
@@ -417,7 +427,9 @@ async def search_tasks(
 
     effective_sort_by = sortBy
     effective_sort_order = sortOrder
-    if (completedBefore is not None or completedAfter is not None) and effective_sort_by is None:
+    if (
+        completedBefore is not None or completedAfter is not None
+    ) and effective_sort_by is None:
         effective_sort_by = "completionDate"
         effective_sort_order = "desc"
 
@@ -432,7 +444,9 @@ async def search_tasks(
             normalized_tag = tag_name.strip()
             if normalized_tag and normalized_tag not in merged_tag_names:
                 merged_tag_names.append(normalized_tag)
-    tag_names_filter = "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    tag_names_filter = (
+        "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    )
     tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
     flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
     status_filter = escape_for_jxa(status)
@@ -440,10 +454,18 @@ async def search_tasks(
     due_after_filter = "null" if dueAfter is None else escape_for_jxa(dueAfter)
     defer_before_filter = "null" if deferBefore is None else escape_for_jxa(deferBefore)
     defer_after_filter = "null" if deferAfter is None else escape_for_jxa(deferAfter)
-    completed_before_filter = "null" if completedBefore is None else escape_for_jxa(completedBefore)
-    completed_after_filter = "null" if completedAfter is None else escape_for_jxa(completedAfter)
-    max_estimated_minutes_filter = "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
-    sort_by_filter = "null" if effective_sort_by is None else escape_for_jxa(effective_sort_by)
+    completed_before_filter = (
+        "null" if completedBefore is None else escape_for_jxa(completedBefore)
+    )
+    completed_after_filter = (
+        "null" if completedAfter is None else escape_for_jxa(completedAfter)
+    )
+    max_estimated_minutes_filter = (
+        "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
+    )
+    sort_by_filter = (
+        "null" if effective_sort_by is None else escape_for_jxa(effective_sort_by)
+    )
     sort_order_filter = escape_for_jxa(effective_sort_order)
     query_filter = escape_for_jxa(query.strip())
     script = f"""
