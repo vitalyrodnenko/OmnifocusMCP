@@ -33,7 +33,8 @@ use crate::{
         tags::{create_tag, list_tags},
         tasks::{
             complete_task, create_task, create_tasks_batch, delete_task, delete_tasks_batch,
-            get_inbox, get_task, list_tasks, move_task, search_tasks, update_task, CreateTaskInput,
+            get_inbox, get_task, list_tasks, move_task, search_tasks, uncomplete_task, update_task,
+            CreateTaskInput,
         },
     },
 };
@@ -291,6 +292,17 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<TaskIdParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = complete_task(self.runner.as_ref(), &params.task_id)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "mark a completed task incomplete by id.")]
+    async fn uncomplete_task(
+        &self,
+        Parameters(params): Parameters<TaskIdParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = uncomplete_task(self.runner.as_ref(), &params.task_id)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)

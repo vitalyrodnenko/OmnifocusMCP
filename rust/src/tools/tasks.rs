@@ -469,6 +469,34 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn uncomplete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+if (!task.completed) {{
+  throw new Error(`Task is not completed: ${{taskId}}`);
+}}
+
+task.markIncomplete();
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  completed: task.completed
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn update_task<R: JxaRunner>(
     runner: &R,

@@ -12,7 +12,7 @@ use omnifocus_mcp::{
         tags::create_tag,
         tasks::{
             complete_task, create_task, create_tasks_batch, delete_task, delete_tasks_batch,
-            move_task, update_task, CreateTaskInput,
+            move_task, uncomplete_task, update_task, CreateTaskInput,
         },
     },
 };
@@ -99,6 +99,11 @@ async fn write_task_tools_happy_path() {
         .await
         .expect("complete_task should succeed");
     assert_eq!(completed["id"], "t1");
+
+    let uncompleted = uncomplete_task(&runner, "t1")
+        .await
+        .expect("uncomplete_task should succeed");
+    assert_eq!(uncompleted["id"], "t1");
 
     let updated = update_task(
         &runner,
@@ -326,4 +331,26 @@ async fn create_task_script_contains_expected_escaped_values() {
         "const dueDateValue = {};",
         escape_for_jxa(due_date)
     )));
+}
+
+#[tokio::test]
+async fn uncomplete_task_script_marks_incomplete_and_checks_completed_state() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "t2", "name": "Done", "completed": false}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = uncomplete_task(&runner, "t2").await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("if (!task.completed) {"));
+    assert!(captured.contains("task.markIncomplete();"));
 }
