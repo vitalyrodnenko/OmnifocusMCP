@@ -315,7 +315,7 @@ identical — only the server framework and subprocess calls change.
 60. [x] `typescript/package.json` with `@modelcontextprotocol/sdk`, `zod`,
         dev deps (`typescript`, `@types/node`, `vitest`). `"type": "module"`.
         Scripts: `build`, `start`, `dev`, `test`, `lint`.
-61. [ ] `typescript/tsconfig.json` targets ES2022 / NodeNext, outputs `dist/`.
+61. [x] `typescript/tsconfig.json` targets ES2022 / NodeNext, outputs `dist/`.
 62. [ ] `typescript/src/jxa.ts` — JXA execution layer ported: `runJxa`,
         `runJxaJson`, `runOmniJs`, `escapeForJxa`. Same error handling +
         timeout. Uses `child_process.execFile`.

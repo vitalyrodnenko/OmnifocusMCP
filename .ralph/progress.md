@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 27
-- Current status: Phase 7 in progress (criterion 60 complete; next 61).
+- Iterations completed: 28
+- Current status: Phase 7 in progress (criterion 61 complete; next 62).
 
 ## How This Works
 
@@ -23,10 +23,10 @@ This is how Ralph maintains continuity across iterations.
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
 | 6     | Python: Polish                    | 54–59     | 6/6  |
-| 7     | TypeScript: Full Port + Tests     | 60–71     | 1/12 |
+| 7     | TypeScript: Full Port + Tests     | 60–71     | 2/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 60 / 75 criteria complete**
+**Total: 61 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -801,6 +801,19 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:20:16
 **Session 28 started** (model: auto)
+
+### 2026-02-28 18:02:30
+**Session 28 update**
+- completed phase 7 criterion 61 by updating `typescript/tsconfig.json` to emit build output:
+  - preserved `target: "ES2022"` and `module/moduleResolution: "NodeNext"`
+  - removed `noEmit` and added `rootDir: "src"` with `outDir: "dist"`
+- ran the full validation command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- updated task tracking state:
+  - marked criterion 61 complete in `RALPH_TASK.md`
+  - updated phase/total counters in `.ralph/progress.md`
+- next up: phase 7 criterion 62 (`typescript/src/jxa.ts` JXA execution layer)
 
 ### 2026-02-27 23:20:54
 **Session 28 ended** - 🔄 Context rotation (token limit reached)
