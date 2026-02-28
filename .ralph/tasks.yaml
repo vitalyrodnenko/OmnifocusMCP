@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772256023
-generated_at: 2026-02-28T05:20:53Z
+source_mtime: 1772256142
+generated_at: 2026-02-28T05:23:13Z
 
 tasks:
   - id: "line_109"
@@ -429,14 +429,14 @@ tasks:
     raw_marker: 60.
   - id: "line_318"
     line_number: 318
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `typescript/tsconfig.json` targets ES2022 / NodeNext, outputs `dist/`.
     indent_level: 0
     raw_marker: 61.
   - id: "line_319"
     line_number: 319
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `typescript/src/jxa.ts` — JXA execution layer ported: `runJxa`,
     indent_level: 0

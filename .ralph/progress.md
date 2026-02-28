@@ -831,3 +831,9 @@ This is how Ralph maintains continuity across iterations.
 - verified TypeScript checks pass:
   - `cd typescript && npx tsc --noEmit && npm test`
 - next up: phase 7 criterion 63 (port read tools and pass `npm run build`)
+
+### 2026-02-27 23:23:15
+**Session 29 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:23:17
+**Session 30 started** (model: auto)
