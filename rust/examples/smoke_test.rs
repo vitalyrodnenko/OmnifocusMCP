@@ -222,7 +222,7 @@ impl SmokeTest {
             Some("2030-01-01T10:00:00Z"),
             None,
             Some(true),
-            Some(vec![tag_name.clone()]),
+            Some(vec![updated_tag_name.clone()]),
             Some(15),
         )
         .await?;
@@ -237,7 +237,7 @@ impl SmokeTest {
             None,
             None,
             Some(false),
-            Some(vec![tag_name.clone()]),
+            Some(vec![updated_tag_name.clone()]),
             Some(20),
         )
         .await?;
@@ -351,7 +351,7 @@ impl SmokeTest {
             None,
             None,
             Some(false),
-            Some(vec![tag_name.clone()]),
+            Some(vec![updated_tag_name.clone()]),
             Some(true),
             Some(false),
             None,
@@ -412,7 +412,7 @@ impl SmokeTest {
                 "search_projects did not find the updated project.".to_string(),
             ));
         }
-        let tag_search = search_tags(runner, &tag_name, 20).await?;
+        let tag_search = search_tags(runner, &updated_tag_name, 20).await?;
         if require_array(&tag_search, "search_tags result")?.is_empty() {
             return Err(OmniFocusError::Validation(
                 "search_tags did not find the created tag.".to_string(),
