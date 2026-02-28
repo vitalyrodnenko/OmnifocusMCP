@@ -175,7 +175,7 @@ const children = task.children.map(child => {{
   }};
 }});
 
-const repetitionRule = task.repetitionRule ? String(task.repetitionRule) : null;
+const repetitionRule = task.repetitionRule ? task.repetitionRule.ruleString : null;
 
 return {{
   id: task.id.primaryKey,

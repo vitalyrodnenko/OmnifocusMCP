@@ -58,7 +58,7 @@ return {
   children: task.children.map(child => ({ id: child.id.primaryKey, name: child.name })),
   parentName: task.parentTask ? task.parentTask.name : null,
   sequential: task.sequential,
-  repetitionRule: task.repetitionRule ? String(task.repetitionRule) : null
+  repetitionRule: task.repetitionRule ? task.repetitionRule.ruleString : null
 };
 `.trim();
       return textResult(await runOmniJs(script));
