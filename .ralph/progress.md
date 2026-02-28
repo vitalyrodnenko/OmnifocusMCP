@@ -45,15 +45,12 @@
 - result: all python/typescript/rust checks passed (integration tests skipped as expected)
 - next: criterion 32 (`duplicate_task`)
 
-### 2026-02-28 16:16
-- added/confirmed `remove_notification` Python tool wiring and validation path in `server.py` and `tools/tasks.py`
-- aligned TypeScript notification assertions with the canonical script shape and verified remove/list/add notification behavior stays green
-- verification run:
-  - `cd python && pytest tests/test_tools_read.py -k notification -v`
-  - `cd python && ruff check src/ && mypy src/ --strict`
-  - `cd typescript && npx tsc --noEmit && npm test -- tools-representative.test.ts -t "remove_notification|add_notification|list_notifications"`
-  - `cd rust && cargo test --test tools_read_test notification`
-- next: criterion 32 (`duplicate_task`)
+### 2026-02-28 16:24
+- completed criterion 33 by running the full cross-language gate end-to-end
+- full gate command:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test && cd ../rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- result: all python/typescript/rust checks passed
+- next: criterion 34 (final parity verification)
 
 ### 2026-02-28 16:23
 - completed criterion 32 by stabilizing `duplicate_task` and keeping one canonical active implementation per language
