@@ -26,7 +26,7 @@ use crate::{
         PROJECTS_RESOURCE_URI, TODAY_RESOURCE_URI,
     },
     tools::{
-        folders::{create_folder, get_folder, list_folders},
+        folders::{create_folder, get_folder, list_folders, update_folder},
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
@@ -216,6 +216,13 @@ struct CreateFolderParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct FolderNameOrIdParams {
     folder_name_or_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct UpdateFolderParams {
+    folder_name_or_id: String,
+    name: Option<String>,
+    status: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -721,6 +728,22 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = get_folder(self.runner.as_ref(), &params.folder_name_or_id)
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "update a folder by id or name.")]
+    async fn update_folder(
+        &self,
+        Parameters(params): Parameters<UpdateFolderParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = update_folder(
+            self.runner.as_ref(),
+            &params.folder_name_or_id,
+            params.name.as_deref(),
+            params.status.as_deref(),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 

@@ -113,3 +113,129 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def update_folder(
+    folder_name_or_id: str,
+    name: str | None = None,
+    status: str | None = None,
+) -> str:
+    """update a folder by id or name."""
+    if folder_name_or_id.strip() == "":
+        raise ValueError("folder_name_or_id must not be empty.")
+    if name is not None and name.strip() == "":
+        raise ValueError("name must not be empty when provided.")
+    if status is not None and status not in ("active", "dropped"):
+        raise ValueError("status must be one of: active, dropped.")
+    if name is None and status is None:
+        raise ValueError("at least one field must be provided: name or status.")
+
+    folder_filter = escape_for_jxa(folder_name_or_id.strip())
+    new_name = "null" if name is None else escape_for_jxa(name.strip())
+    status_value = "null" if status is None else escape_for_jxa(status)
+    script = f"""
+const folderFilter = {folder_filter};
+const newName = {new_name};
+const statusValue = {status_value};
+
+const folder = document.flattenedFolders.find(item => {{
+  return item.id.primaryKey === folderFilter || item.name === folderFilter;
+}});
+if (!folder) {{
+  throw new Error(`Folder not found: ${{folderFilter}}`);
+}}
+
+if (newName !== null) {{
+  folder.name = newName;
+}}
+
+if (statusValue !== null) {{
+  let targetStatus;
+  if (statusValue === "active") {{
+    targetStatus = Folder.Status.Active;
+  }} else if (statusValue === "dropped") {{
+    targetStatus = Folder.Status.Dropped;
+  }} else {{
+    throw new Error(`Invalid status: ${{statusValue}}`);
+  }}
+  folder.status = targetStatus;
+}}
+
+const normalizeFolderStatus = (item) => {{
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+return {{
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeFolderStatus(folder)
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def update_folder(
+    folder_name_or_id: str,
+    name: str | None = None,
+    status: str | None = None,
+) -> str:
+    """update a folder by id or name."""
+    if folder_name_or_id.strip() == "":
+        raise ValueError("folder_name_or_id must not be empty.")
+    if name is not None and name.strip() == "":
+        raise ValueError("name must not be empty when provided.")
+    if status is not None and status not in ("active", "dropped"):
+        raise ValueError("status must be one of: active, dropped.")
+    if name is None and status is None:
+        raise ValueError("at least one field must be provided: name or status.")
+
+    folder_filter = escape_for_jxa(folder_name_or_id.strip())
+    new_name = "null" if name is None else escape_for_jxa(name.strip())
+    status_value = "null" if status is None else escape_for_jxa(status)
+    script = f"""
+const folderFilter = {folder_filter};
+const newName = {new_name};
+const statusValue = {status_value};
+
+const folder = document.flattenedFolders.find(
+  item => item.id.primaryKey === folderFilter || item.name === folderFilter
+);
+if (!folder) {{
+  throw new Error(`Folder not found: ${{folderFilter}}`);
+}}
+
+if (newName !== null) {{
+  folder.name = newName;
+}}
+
+if (statusValue !== null) {{
+  let targetStatus;
+  if (statusValue === "active") {{
+    targetStatus = Folder.Status.Active;
+  }} else if (statusValue === "dropped") {{
+    targetStatus = Folder.Status.Dropped;
+  }} else {{
+    throw new Error(`Invalid status: ${{statusValue}}`);
+  }}
+  folder.status = targetStatus;
+}}
+
+const normalizeFolderStatus = (item) => {{
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+return {{
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeFolderStatus(folder)
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

@@ -103,32 +103,21 @@ if (!folder) {
   throw new Error(\`Folder not found: \${folderFilter}\`);
 }
 
-const normalizeFolderStatus = (item) => {
-  const rawStatus = String(item.status || "").toLowerCase();
-  if (rawStatus.includes("dropped")) return "dropped";
-  return "active";
-};
-
-const normalizeProjectStatus = (item) => {
-  const rawStatus = String(item.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
-    return "on_hold";
-  }
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
-  return "active";
+const normalizeStatus = (value) => {
+  const raw = String(value || "").split(".").pop() || "";
+  return raw.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
 };
 
 return {
   id: folder.id.primaryKey,
   name: folder.name,
-  status: normalizeFolderStatus(folder),
+  status: normalizeStatus(folder.status),
   parentName: folder.parent ? folder.parent.name : null,
   projects: folder.projects.map(project => {
     return {
       id: project.id.primaryKey,
       name: project.name,
-      status: normalizeProjectStatus(project)
+      status: normalizeStatus(project.status)
     };
   }),
   subfolders: folder.folders.map(subfolder => {

@@ -8,7 +8,7 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
-        folders::{create_folder, get_folder},
+        folders::{create_folder, get_folder, update_folder},
         projects::{
             complete_project, create_project, delete_project, move_project, set_project_status,
             uncomplete_project, update_project,
@@ -246,6 +246,11 @@ async fn write_project_and_tag_tools_happy_path() {
         .await
         .expect("get_folder should succeed");
     assert_eq!(fetched_folder["id"], "p1");
+
+    let updated_folder = update_folder(&runner, "Areas", Some("Areas"), Some("active"))
+        .await
+        .expect("update_folder should succeed");
+    assert_eq!(updated_folder["id"], "p1");
 }
 
 #[tokio::test]
@@ -305,6 +310,22 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         get_folder(&runner, "   ").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_folder(&runner, "   ", Some("Areas"), None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_folder(&runner, "folder-id", Some("   "), None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_folder(&runner, "folder-id", None, Some("on_hold")).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        update_folder(&runner, "folder-id", None, None).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -841,6 +862,31 @@ async fn get_folder_script_returns_direct_children() {
     assert!(captured.contains("Folder not found"));
     assert!(captured.contains("projects: folder.projects.map"));
     assert!(captured.contains("subfolders: folder.folders.map"));
+}
+
+#[tokio::test]
+async fn update_folder_script_sets_name_and_status() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "folder-1", "name": "Areas", "status": "dropped"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = update_folder(&runner, "folder-1", Some("Areas"), Some("dropped")).await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const folderFilter = \"folder-1\";"));
+    assert!(captured.contains("const newName = \"Areas\";"));
+    assert!(captured.contains("const statusValue = \"dropped\";"));
+    assert!(captured.contains("Folder.Status.Dropped"));
+    assert!(captured.contains("folder.status = targetStatus;"));
 }
 
 #[tokio::test]
