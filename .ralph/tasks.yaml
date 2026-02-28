@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772254414
-generated_at: 2026-02-28T04:54:00Z
+source_mtime: 1772254703
+generated_at: 2026-02-28T04:58:55Z
 
 tasks:
   - id: "line_109"
@@ -170,42 +170,42 @@ tasks:
     raw_marker: 23.
   - id: "line_194"
     line_number: 194
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `get_forecast` — today's dashboard: overdue + due today +
     indent_level: 0
     raw_marker: 24.
   - id: "line_196"
     line_number: 196
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `list_perspectives` — available perspectives (built-in + custom):
     indent_level: 0
     raw_marker: 25.
   - id: "line_201"
     line_number: 201
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Happy-path tests for every read tool (mocked `run_omnijs`): mock
     indent_level: 0
     raw_marker: 26.
   - id: "line_204"
     line_number: 204
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Error-path tests: task not found by ID → error response. Invalid
     indent_level: 0
     raw_marker: 27.
   - id: "line_207"
     line_number: 207
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
     indent_level: 0
     raw_marker: 28.
   - id: "line_218"
     line_number: 218
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `create_task` — required `name`, optional `project` (name),
     indent_level: 0
