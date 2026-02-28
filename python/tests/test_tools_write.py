@@ -333,6 +333,53 @@ async def test_uncomplete_project_happy_path_criterion7(
 
 
 @pytest.mark.asyncio
+async def test_update_project_happy_path_criterion8(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "p3",
+        "name": "Updated Project",
+        "status": "active",
+        "folderName": "Work",
+        "taskCount": 3,
+        "remainingTaskCount": 2,
+        "deferDate": "2026-03-01T10:00:00Z",
+        "dueDate": "2026-03-07T10:00:00Z",
+        "note": "updated note",
+        "flagged": True,
+        "sequential": False,
+        "completedByChildren": True,
+        "tags": ["work", "focus"],
+        "reviewInterval": "2 weeks",
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.update_project(
+        project_id_or_name="p3",
+        name="Updated Project",
+        note="updated note",
+        dueDate="2026-03-07T10:00:00Z",
+        deferDate="2026-03-01T10:00:00Z",
+        flagged=True,
+        tags=["work", "focus"],
+        sequential=False,
+        completedByChildren=True,
+        reviewInterval="2 weeks",
+    )
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "p3";' in script
+    assert '"name": "Updated Project"' in script
+    assert '"completedByChildren": true' in script
+    assert "project.reviewInterval = parseReviewInterval(updates.reviewInterval);" in script
+    assert "existingTags.forEach" in script
+    assert "project.addTag(tag);" in script
+
+
+@pytest.mark.asyncio
 async def test_create_tag_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {"id": "tag1"}
     configured = mock_server_run_omnijs(payload)

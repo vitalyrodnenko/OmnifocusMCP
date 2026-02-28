@@ -267,3 +267,136 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def update_project(
+    project_id_or_name: str,
+    name: str | None = None,
+    note: str | None = None,
+    dueDate: str | None = None,
+    deferDate: str | None = None,
+    flagged: bool | None = None,
+    tags: list[str] | None = None,
+    sequential: bool | None = None,
+    completedByChildren: bool | None = None,
+    reviewInterval: str | None = None,
+) -> str:
+    """update a project by id or name, modifying only provided fields.
+
+    accepts optional updates for metadata, tags, sequencing mode, completion
+    mode, and review interval. returns an updated project summary payload.
+    """
+    if project_id_or_name.strip() == "":
+        raise ValueError("project_id_or_name must not be empty.")
+    if name is not None and name.strip() == "":
+        raise ValueError("name must not be empty when provided.")
+    if tags is not None and any(tag.strip() == "" for tag in tags):
+        raise ValueError("tags must not contain empty values.")
+    if reviewInterval is not None and reviewInterval.strip() == "":
+        raise ValueError("reviewInterval must not be empty when provided.")
+
+    updates: dict[str, object] = {}
+    if name is not None:
+        updates["name"] = name.strip()
+    if note is not None:
+        updates["note"] = note
+    if dueDate is not None:
+        updates["dueDate"] = dueDate
+    if deferDate is not None:
+        updates["deferDate"] = deferDate
+    if flagged is not None:
+        updates["flagged"] = flagged
+    if tags is not None:
+        updates["tags"] = [tag.strip() for tag in tags]
+    if sequential is not None:
+        updates["sequential"] = sequential
+    if completedByChildren is not None:
+        updates["completedByChildren"] = completedByChildren
+    if reviewInterval is not None:
+        updates["reviewInterval"] = reviewInterval.strip()
+
+    project_filter = escape_for_jxa(project_id_or_name.strip())
+    updates_value = json.dumps(updates)
+    script = f"""
+const projectFilter = {project_filter};
+const updates = {updates_value};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+
+const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
+const normalizeProjectStatus = (item) => {{
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+    return "on_hold";
+  }}
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+const parseReviewInterval = (value) => {{
+  const match = String(value).trim().match(/^(\\d+)\\s+([a-zA-Z_]+)$/);
+  if (!match) {{
+    throw new Error(`Invalid reviewInterval format: ${{value}}. Expected 'N unit'.`);
+  }}
+  const steps = Number(match[1]);
+  if (!Number.isInteger(steps) || steps < 1) {{
+    throw new Error(`Invalid reviewInterval steps: ${{match[1]}}`);
+  }}
+  let unit = match[2].toLowerCase();
+  if (unit.endsWith("s")) unit = unit.slice(0, -1);
+  const allowed = new Set(["minute", "hour", "day", "week", "month", "year"]);
+  if (!allowed.has(unit)) {{
+    throw new Error(`Invalid reviewInterval unit: ${{match[2]}}`);
+  }}
+  return {{ steps, unit }};
+}};
+
+if (has("name")) project.name = updates.name;
+if (has("note")) project.note = updates.note;
+if (has("dueDate")) project.dueDate = new Date(updates.dueDate);
+if (has("deferDate")) project.deferDate = new Date(updates.deferDate);
+if (has("flagged")) project.flagged = updates.flagged;
+if (has("sequential")) project.sequential = updates.sequential;
+if (has("completedByChildren")) project.completedByChildren = updates.completedByChildren;
+if (has("reviewInterval")) {{
+  project.reviewInterval = parseReviewInterval(updates.reviewInterval);
+}}
+if (has("tags")) {{
+  const existingTags = project.tags.slice();
+  existingTags.forEach(tag => {{
+    project.removeTag(tag);
+  }});
+  updates.tags.forEach(tagName => {{
+    const tag = document.flattenedTags.byName(tagName);
+    if (tag) project.addTag(tag);
+  }});
+}}
+
+const allProjectTasks = document.flattenedTasks.filter(task => {{
+  return task.containingProject && task.containingProject.id.primaryKey === project.id.primaryKey;
+}});
+const reviewIntervalValue = project.reviewInterval;
+return {{
+  id: project.id.primaryKey,
+  name: project.name,
+  status: normalizeProjectStatus(project),
+  folderName: project.folder ? project.folder.name : null,
+  taskCount: allProjectTasks.length,
+  remainingTaskCount: allProjectTasks.filter(task => !task.completed).length,
+  deferDate: project.deferDate ? project.deferDate.toISOString() : null,
+  dueDate: project.dueDate ? project.dueDate.toISOString() : null,
+  note: project.note,
+  flagged: project.flagged,
+  sequential: project.sequential,
+  completedByChildren: project.completedByChildren,
+  tags: project.tags.map(tag => tag.name),
+  reviewInterval: reviewIntervalValue === null || reviewIntervalValue === undefined ? null : String(reviewIntervalValue)
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

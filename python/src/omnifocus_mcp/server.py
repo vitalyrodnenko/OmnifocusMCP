@@ -16,6 +16,7 @@ from omnifocus_mcp.tools.projects import (  # noqa: E402,F401
     create_project,
     get_project,
     list_projects,
+    update_project,
     uncomplete_project,
 )
 from omnifocus_mcp.tools.tags import create_tag, list_tags  # noqa: E402,F401
