@@ -34,7 +34,7 @@ use crate::{
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
             delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks, move_task,
-            search_tasks, uncomplete_task, update_task, CreateTaskInput,
+            search_tasks, set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
         },
     },
 };
@@ -135,6 +135,13 @@ struct MoveTaskParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct DeleteTasksBatchParams {
     task_ids: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct SetTaskRepetitionParams {
+    task_id: String,
+    rule_string: Option<String>,
+    schedule_type: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -362,6 +369,22 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = uncomplete_task(self.runner.as_ref(), &params.task_id)
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "set or clear a task repetition rule by id.")]
+    async fn set_task_repetition(
+        &self,
+        Parameters(params): Parameters<SetTaskRepetitionParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = set_task_repetition(
+            self.runner.as_ref(),
+            &params.task_id,
+            params.rule_string.as_deref(),
+            params.schedule_type.as_deref().unwrap_or("regularly"),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 

@@ -147,6 +147,45 @@ describe("tool happy paths", () => {
     expect(script).toContain("task.markIncomplete();");
   });
 
+  test("set_task_repetition sets repetition rule", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "t10", name: "Weekly", repetitionRule: "FREQ=WEEKLY" });
+    const handler = registeredTools.get("set_task_repetition");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_id: "t10",
+      rule_string: "FREQ=WEEKLY",
+      schedule_type: "regularly",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "t10",
+      name: "Weekly",
+      repetitionRule: "FREQ=WEEKLY",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const taskId = "t10";');
+    expect(script).toContain('const ruleString = "FREQ=WEEKLY";');
+    expect(script).toContain("Task.RepetitionScheduleType.Regularly");
+  });
+
+  test("set_task_repetition clears repetition rule when null", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "t10", name: "Weekly", repetitionRule: null });
+    const handler = registeredTools.get("set_task_repetition");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_id: "t10",
+      rule_string: null,
+      schedule_type: "regularly",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "t10",
+      name: "Weekly",
+      repetitionRule: null,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain("const ruleString = null;");
+    expect(script).toContain("task.repetitionRule = null;");
+  });
+
   test("delete_tasks_batch returns batch deletion summary payload", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       deleted_count: 2,

@@ -636,6 +636,69 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn set_task_repetition<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    rule_string: Option<&str>,
+    schedule_type: &str,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    if let Some(value) = rule_string {
+        if value.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "rule_string must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if !matches!(schedule_type, "regularly" | "from_completion" | "none") {
+        return Err(OmniFocusError::Validation(
+            "schedule_type must be one of: regularly, from_completion, none.".to_string(),
+        ));
+    }
+    if rule_string.is_some() && schedule_type == "none" {
+        return Err(OmniFocusError::Validation(
+            "schedule_type must be regularly or from_completion when rule_string is provided."
+                .to_string(),
+        ));
+    }
+
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let rule_string_value = rule_string
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let schedule_type_value = escape_for_jxa(schedule_type);
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const ruleString = {rule_string_value};
+const scheduleType = {schedule_type_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+if (ruleString === null) {{
+  task.repetitionRule = null;
+}} else {{
+  const repetitionScheduleType = (() => {{
+    if (scheduleType === "regularly") return Task.RepetitionScheduleType.Regularly;
+    if (scheduleType === "from_completion") return Task.RepetitionScheduleType.FromCompletion;
+    throw new Error(`Invalid schedule_type: ${{scheduleType}}`);
+  }})();
+  task.repetitionRule = new Task.RepetitionRule(ruleString, null, repetitionScheduleType, null, false);
+}}
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  repetitionRule: task.repetitionRule ? task.repetitionRule.ruleString : null
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn update_task<R: JxaRunner>(
     runner: &R,

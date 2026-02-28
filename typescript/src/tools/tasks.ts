@@ -414,6 +414,56 @@ return {
   );
 
   server.tool(
+    "set_task_repetition",
+    "set or clear a task repetition rule by task id.",
+    {
+      task_id: z.string().min(1),
+      rule_string: z.string().nullable().default(null),
+      schedule_type: z.enum(["regularly", "from_completion", "none"]).default("regularly"),
+    },
+    async ({ task_id, rule_string, schedule_type }) => {
+      try {
+        if (rule_string !== null && rule_string.trim() === "") {
+          throw new Error("rule_string must not be empty when provided.");
+        }
+        const taskId = escapeForJxa(task_id.trim());
+        const ruleString = rule_string === null ? "null" : escapeForJxa(rule_string);
+        const scheduleTypeInput = escapeForJxa(schedule_type);
+        const script = `
+const taskId = ${taskId};
+const ruleString = ${ruleString};
+const scheduleTypeInput = ${scheduleTypeInput};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+
+if (ruleString === null) {
+  task.repetitionRule = null;
+} else {
+  const scheduleType = (() => {
+    if (scheduleTypeInput === "regularly") return Task.RepetitionScheduleType.Regularly;
+    if (scheduleTypeInput === "from_completion") return Task.RepetitionScheduleType.FromCompletion;
+    if (scheduleTypeInput === "none") return null;
+    throw new Error(\`Invalid schedule_type: \${scheduleTypeInput}\`);
+  })();
+  task.repetitionRule = new Task.RepetitionRule(ruleString, null, scheduleType, null, false);
+}
+
+return {
+  id: task.id.primaryKey,
+  name: task.name,
+  repetitionRule: task.repetitionRule ? task.repetitionRule.ruleString : null
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "update_task",
     "update one task with partial fields and return the updated task payload.",
     {
