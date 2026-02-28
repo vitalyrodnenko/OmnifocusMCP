@@ -165,8 +165,8 @@ describe("tool happy paths", () => {
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const objectType = "task";');
     expect(script).toContain('const objectId = "task-1";');
-    expect(script).toContain('const textToAppend = "more context";');
-    expect(script).toContain("obj.appendStringToNote(textToAppend);");
+    expect(script).toContain('const textValue = "more context";');
+    expect(script).toContain("obj.appendStringToNote(textValue);");
   });
 
   test("append_to_note validates object_type, object_id, and text", async () => {
