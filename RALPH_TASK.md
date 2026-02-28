@@ -266,7 +266,7 @@ encoding GTD workflows.
         helps prioritize the day and identify top 3 items.
 48. [x] Prompt `weekly_review` — fetches all active projects, identifies
         stalled projects, guides GTD-style weekly review.
-49. [ ] Prompt `inbox_processing` — fetches inbox items, walks through each:
+49. [x] Prompt `inbox_processing` — fetches inbox items, walks through each:
         decide project, tags, dates, or delete.
 50. [ ] Prompt `project_planning` — accepts project name, fetches state,
         helps break down into actionable steps with estimates.
