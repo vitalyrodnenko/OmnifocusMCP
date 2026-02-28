@@ -185,7 +185,7 @@ parameter (default 100).
         `id`, `name`, `status`, `folderName`, `taskCount`,
         `remainingTaskCount`, `deferDate`, `dueDate`, `note`, `sequential`,
         `reviewInterval`.
-21. [ ] Tool `get_project` — accepts project `id` or `name`. Returns full
+21. [x] Tool `get_project` — accepts project `id` or `name`. Returns full
         project detail with root-level tasks.
 22. [ ] Tool `list_tags` — returns all tags: `id`, `name`, `parent` (for
         nested), `availableTaskCount`, `status`.

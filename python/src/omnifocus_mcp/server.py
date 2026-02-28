@@ -297,3 +297,70 @@ return projects.map(project => {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def get_project(project_id_or_name: str) -> str:
+    """get full details for a single project by id or name.
+
+    returns project metadata plus root-level tasks for planning and review.
+    """
+    if project_id_or_name.strip() == "":
+        raise ValueError("project_id_or_name must not be empty.")
+
+    project_filter = escape_for_jxa(project_id_or_name.strip())
+    script = f"""
+const projectFilter = {project_filter};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+
+const normalizeProjectStatus = (item) => {{
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+    return "on_hold";
+  }}
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+const allProjectTasks = document.flattenedTasks.filter(task => {{
+  return task.containingProject && task.containingProject.id.primaryKey === project.id.primaryKey;
+}});
+
+const rootTasks = project.tasks.map(task => {{
+  return {{
+    id: task.id.primaryKey,
+    name: task.name,
+    note: task.note,
+    flagged: task.flagged,
+    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    completed: task.completed,
+    tags: task.tags.map(tag => tag.name),
+    estimatedMinutes: task.estimatedMinutes
+  }};
+}});
+
+const reviewInterval = project.reviewInterval;
+return {{
+  id: project.id.primaryKey,
+  name: project.name,
+  status: normalizeProjectStatus(project),
+  folderName: project.folder ? project.folder.name : null,
+  taskCount: allProjectTasks.length,
+  remainingTaskCount: allProjectTasks.filter(task => !task.completed).length,
+  deferDate: project.deferDate ? project.deferDate.toISOString() : null,
+  dueDate: project.dueDate ? project.dueDate.toISOString() : null,
+  note: project.note,
+  sequential: project.sequential,
+  reviewInterval: reviewInterval === null || reviewInterval === undefined ? null : String(reviewInterval),
+  rootTasks: rootTasks
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
