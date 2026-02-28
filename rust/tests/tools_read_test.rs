@@ -645,7 +645,7 @@ async fn search_tasks_completion_filters_auto_set_sorting() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
-    assert!(script.contains(r#"const statusFilter = "available";"#));
+    assert!(script.contains(r#"const statusFilter = "all";"#));
     assert!(script.contains(r#"const sortBy = "completionDate";"#));
     assert!(script.contains(r#"const sortOrder = "desc";"#));
     assert!(script.contains(

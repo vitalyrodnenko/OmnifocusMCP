@@ -313,6 +313,304 @@ return tasks.map(task => {{
 
 
 @typed_tool(mcp)
+async def get_task_counts(
+    project: str | None = None,
+    tag: str | None = None,
+    tags: list[str] | None = None,
+    tagFilterMode: Literal["any", "all"] = "any",
+    flagged: bool | None = None,
+    dueBefore: str | None = None,
+    dueAfter: str | None = None,
+    deferBefore: str | None = None,
+    deferAfter: str | None = None,
+    completedBefore: str | None = None,
+    completedAfter: str | None = None,
+    maxEstimatedMinutes: int | None = None,
+) -> str:
+    """get aggregate task counts for any filter combination without listing tasks."""
+    if project is not None and project.strip() == "":
+        raise ValueError("project must not be empty when provided.")
+    if tag is not None and tag.strip() == "":
+        raise ValueError("tag must not be empty when provided.")
+    if tags is not None:
+        for tag_name in tags:
+            if tag_name.strip() == "":
+                raise ValueError("tags entries must not be empty when provided.")
+    if tagFilterMode not in ("any", "all"):
+        raise ValueError("tagFilterMode must be one of: any, all.")
+    if maxEstimatedMinutes is not None and maxEstimatedMinutes < 0:
+        raise ValueError("maxEstimatedMinutes must be greater than or equal to 0.")
+
+    project_filter = "null" if project is None else escape_for_jxa(project)
+    merged_tag_names: list[str] = []
+    seen_tag_names: set[str] = set()
+    if tag is not None:
+        normalized_tag = tag.strip()
+        if normalized_tag not in seen_tag_names:
+            merged_tag_names.append(normalized_tag)
+            seen_tag_names.add(normalized_tag)
+    if tags is not None:
+        for tag_name in tags:
+            normalized_tag = tag_name.strip()
+            if normalized_tag not in seen_tag_names:
+                merged_tag_names.append(normalized_tag)
+                seen_tag_names.add(normalized_tag)
+    tag_names_filter = (
+        "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    )
+    tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
+    flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
+    due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)
+    due_after_filter = "null" if dueAfter is None else escape_for_jxa(dueAfter)
+    defer_before_filter = "null" if deferBefore is None else escape_for_jxa(deferBefore)
+    defer_after_filter = "null" if deferAfter is None else escape_for_jxa(deferAfter)
+    completed_before_filter = (
+        "null" if completedBefore is None else escape_for_jxa(completedBefore)
+    )
+    completed_after_filter = (
+        "null" if completedAfter is None else escape_for_jxa(completedAfter)
+    )
+    max_estimated_minutes_filter = (
+        "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
+    )
+    script = f"""
+const projectFilter = {project_filter};
+const tagNames = {tag_names_filter};
+const tagFilterMode = {tag_filter_mode_filter};
+const flaggedFilter = {flagged_filter};
+const dueBeforeRaw = {due_before_filter};
+const dueAfterRaw = {due_after_filter};
+const deferBeforeRaw = {defer_before_filter};
+const deferAfterRaw = {defer_after_filter};
+const completedBeforeRaw = {completed_before_filter};
+const completedAfterRaw = {completed_after_filter};
+const maxEstimatedMinutes = {max_estimated_minutes_filter};
+const now = new Date();
+const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+const parseOptionalDate = (value, fieldName) => {{
+  if (value === null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {{
+    throw new Error(`${{fieldName}} must be a valid ISO 8601 date string.`);
+  }}
+  return parsed;
+}};
+const dueBefore = parseOptionalDate(dueBeforeRaw, "dueBefore");
+const dueAfter = parseOptionalDate(dueAfterRaw, "dueAfter");
+const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
+const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+
+const filteredTasks = document.flattenedTasks
+  .filter(task => {{
+    if (projectFilter !== null) {{
+      const projectName = task.containingProject ? task.containingProject.name : null;
+      if (projectName !== projectFilter) return false;
+    }}
+    if (tagNames !== null && tagNames.length > 0) {{
+      let tagMatches = false;
+      if (tagFilterMode === "all") {{
+        tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+      }} else {{
+        tagMatches = task.tags.some(t => tagNames.includes(t.name));
+      }}
+      if (!tagMatches) return false;
+    }}
+    if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
+    if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
+    if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
+    if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
+    if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
+    if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
+    if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
+    return true;
+  }});
+
+const counts = {{
+  total: 0,
+  available: 0,
+  completed: 0,
+  overdue: 0,
+  dueSoon: 0,
+  flagged: 0,
+  deferred: 0
+}};
+
+filteredTasks.forEach(task => {{
+  counts.total += 1;
+  if (task.completed) counts.completed += 1;
+  if (task.flagged) counts.flagged += 1;
+  if (!task.completed) {{
+    const dueDate = task.dueDate;
+    const deferDate = task.deferDate;
+    const isDeferred = deferDate !== null && deferDate > now;
+    if (!isDeferred) counts.available += 1;
+    if (isDeferred) counts.deferred += 1;
+    if (dueDate !== null && dueDate < now) counts.overdue += 1;
+    if (dueDate !== null && dueDate >= now && dueDate <= soon) counts.dueSoon += 1;
+  }}
+}});
+
+return counts;
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def get_task_counts(
+    project: str | None = None,
+    tag: str | None = None,
+    tags: list[str] | None = None,
+    tagFilterMode: Literal["any", "all"] = "any",
+    flagged: bool | None = None,
+    dueBefore: str | None = None,
+    dueAfter: str | None = None,
+    deferBefore: str | None = None,
+    deferAfter: str | None = None,
+    completedBefore: str | None = None,
+    completedAfter: str | None = None,
+    maxEstimatedMinutes: int | None = None,
+) -> str:
+    """get aggregate task counts for any filter combination without listing individual tasks.
+
+    much faster than list_tasks for answering "how many" questions.
+    """
+    if project is not None and project.strip() == "":
+        raise ValueError("project must not be empty when provided.")
+    if tag is not None and tag.strip() == "":
+        raise ValueError("tag must not be empty when provided.")
+    if tags is not None:
+        for tag_name in tags:
+            if tag_name.strip() == "":
+                raise ValueError("tags entries must not be empty when provided.")
+    if tagFilterMode not in ("any", "all"):
+        raise ValueError("tagFilterMode must be one of: any, all.")
+    if maxEstimatedMinutes is not None and maxEstimatedMinutes < 0:
+        raise ValueError("maxEstimatedMinutes must be greater than or equal to 0.")
+
+    project_filter = "null" if project is None else escape_for_jxa(project)
+    merged_tag_names: list[str] = []
+    seen_tag_names: set[str] = set()
+    if tag is not None:
+        normalized_tag = tag.strip()
+        if normalized_tag not in seen_tag_names:
+            merged_tag_names.append(normalized_tag)
+            seen_tag_names.add(normalized_tag)
+    if tags is not None:
+        for tag_name in tags:
+            normalized_tag = tag_name.strip()
+            if normalized_tag not in seen_tag_names:
+                merged_tag_names.append(normalized_tag)
+                seen_tag_names.add(normalized_tag)
+    tag_names_filter = (
+        "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
+    )
+    tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
+    flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
+    due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)
+    due_after_filter = "null" if dueAfter is None else escape_for_jxa(dueAfter)
+    defer_before_filter = "null" if deferBefore is None else escape_for_jxa(deferBefore)
+    defer_after_filter = "null" if deferAfter is None else escape_for_jxa(deferAfter)
+    completed_before_filter = (
+        "null" if completedBefore is None else escape_for_jxa(completedBefore)
+    )
+    completed_after_filter = (
+        "null" if completedAfter is None else escape_for_jxa(completedAfter)
+    )
+    max_estimated_minutes_filter = (
+        "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
+    )
+
+    script = f"""
+const projectFilter = {project_filter};
+const tagNames = {tag_names_filter};
+const tagFilterMode = {tag_filter_mode_filter};
+const flaggedFilter = {flagged_filter};
+const dueBeforeRaw = {due_before_filter};
+const dueAfterRaw = {due_after_filter};
+const deferBeforeRaw = {defer_before_filter};
+const deferAfterRaw = {defer_after_filter};
+const completedBeforeRaw = {completed_before_filter};
+const completedAfterRaw = {completed_after_filter};
+const maxEstimatedMinutes = {max_estimated_minutes_filter};
+const now = new Date();
+const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+const parseOptionalDate = (value, fieldName) => {{
+  if (value === null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {{
+    throw new Error(`${{fieldName}} must be a valid ISO 8601 date string.`);
+  }}
+  return parsed;
+}};
+const dueBefore = parseOptionalDate(dueBeforeRaw, "dueBefore");
+const dueAfter = parseOptionalDate(dueAfterRaw, "dueAfter");
+const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
+const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+
+const counts = {{
+  total: 0,
+  available: 0,
+  completed: 0,
+  overdue: 0,
+  dueSoon: 0,
+  flagged: 0,
+  deferred: 0
+}};
+
+for (const task of document.flattenedTasks) {{
+  if (projectFilter !== null) {{
+    const projectName = task.containingProject ? task.containingProject.name : null;
+    if (projectName !== projectFilter) continue;
+  }}
+
+  if (tagNames !== null && tagNames.length > 0) {{
+    let tagMatches = false;
+    if (tagFilterMode === "all") {{
+      tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+    }} else {{
+      tagMatches = task.tags.some(t => tagNames.includes(t.name));
+    }}
+    if (!tagMatches) continue;
+  }}
+
+  if (flaggedFilter !== null && task.flagged !== flaggedFilter) continue;
+  if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) continue;
+  if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) continue;
+  if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) continue;
+  if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) continue;
+  if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) continue;
+  if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) continue;
+  if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) continue;
+
+  counts.total += 1;
+  if (task.flagged) counts.flagged += 1;
+
+  if (task.completed) {{
+    counts.completed += 1;
+    continue;
+  }}
+
+  const isAvailable = task.deferDate === null || task.deferDate <= now;
+  if (isAvailable) counts.available += 1;
+
+  if (task.deferDate !== null && task.deferDate > now) counts.deferred += 1;
+  if (task.dueDate !== null && task.dueDate < now) counts.overdue += 1;
+  if (task.dueDate !== null && task.dueDate >= now && task.dueDate <= soon) counts.dueSoon += 1;
+}}
+
+return counts;
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def get_task(task_id: str) -> str:
     """get full details for a single task by id.
 
