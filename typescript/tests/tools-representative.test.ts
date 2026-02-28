@@ -84,6 +84,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain(".slice(0, 5)");
     expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
     expect(script).toContain("hasChildren: task.hasChildren");
+    expect(script).toContain("taskStatus: (() => {");
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-1", name: "inbox item" }]);
   });
 
@@ -111,6 +112,7 @@ describe("representative read and write tool handlers", () => {
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
     expect(script).toContain("hasChildren: task.hasChildren");
+    expect(script).toContain('if (s.includes("Available")) return "available";');
   });
 
   test("get_forecast includes deferred, dueThisWeek, counts, and enriched task fields", async () => {
@@ -136,6 +138,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("counts.deferredCount += 1;");
     expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
     expect(script).toContain("hasChildren: task.hasChildren");
+    expect(script).toContain('if (s.includes("Dropped")) return "dropped";');
     expect(JSON.parse(result.content[0].text)).toEqual({
       overdue: [{ id: "t-over", name: "Overdue", completionDate: null, hasChildren: false }],
       dueToday: [{ id: "t-today", name: "Today", completionDate: null, hasChildren: true }],
@@ -510,6 +513,7 @@ describe("representative read and write tool handlers", () => {
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const taskId = "parent-1";');
     expect(script).toContain("const subtasks = task.children.slice(0, 2);");
+    expect(script).toContain("taskStatus: (() => {");
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "sub-1", name: "child" }]);
   });
 
@@ -520,6 +524,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const queryFilter = "shape".toLowerCase();');
     expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
     expect(script).toContain("hasChildren: task.hasChildren");
+    expect(script).toContain('if (s.includes("Overdue")) return "overdue";');
   });
 
   test("search_tasks supports project filter and status/sort filters", async () => {
