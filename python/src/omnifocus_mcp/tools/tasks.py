@@ -109,7 +109,9 @@ async def list_tasks(
 
     effective_sort_by = sortBy
     effective_sort_order = sortOrder
-    if (completedBefore is not None or completedAfter is not None) and effective_sort_by is None:
+    if (
+        completedBefore is not None or completedAfter is not None
+    ) and effective_sort_by is None:
         effective_sort_by = "completionDate"
         effective_sort_order = "desc"
 
@@ -146,7 +148,9 @@ async def list_tasks(
     max_estimated_minutes_filter = (
         "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
     )
-    sort_by_filter = "null" if effective_sort_by is None else escape_for_jxa(effective_sort_by)
+    sort_by_filter = (
+        "null" if effective_sort_by is None else escape_for_jxa(effective_sort_by)
+    )
     sort_order_filter = escape_for_jxa(effective_sort_order)
 
     script = f"""

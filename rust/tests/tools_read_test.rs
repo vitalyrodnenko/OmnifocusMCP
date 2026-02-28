@@ -193,6 +193,7 @@ async fn read_task_tools_happy_path() {
         None,
         None,
         None,
+        None,
         100,
     )
     .await
@@ -323,6 +324,7 @@ async fn empty_results_return_empty_vec() {
         None,
         None,
         None,
+        None,
         100,
     )
     .await
@@ -365,6 +367,7 @@ async fn malformed_json_from_jxa_produces_json_parse_error() {
         None,
         None,
         None,
+        None,
         100,
     )
     .await
@@ -395,6 +398,7 @@ async fn validation_errors_for_read_tools() {
             None,
             None,
             None,
+            None,
             0,
         )
         .await,
@@ -409,6 +413,7 @@ async fn validation_errors_for_read_tools() {
             "invalid",
             None,
             "available",
+            None,
             None,
             None,
             None,
@@ -508,6 +513,7 @@ async fn list_tasks_date_filter_script_contains_expected_logic() {
         Some("2026-02-25T00:00:00Z"),
         Some("2026-03-09T00:00:00Z"),
         Some("2026-02-20T00:00:00Z"),
+        None,
         9,
     )
     .await
@@ -546,6 +552,13 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         5,
     )
     .await
@@ -567,6 +580,13 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -594,10 +614,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
-        None,
         5,
     )
     .await
@@ -618,12 +634,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
         None,
         None,
         None,
@@ -650,9 +660,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
         5,
     )
     .await
@@ -666,6 +673,106 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
 }
 
 #[tokio::test]
+async fn list_tasks_sorting_script_contains_expected_logic() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-sort", "sorted task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed_due = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("dueDate"),
+        "asc",
+        5,
+    )
+    .await
+    .expect("dueDate asc sort should parse");
+    assert_eq!(listed_due.len(), 1);
+    let script_due = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_due.contains(r#"const sortBy = "dueDate";"#));
+    assert!(script_due.contains(r#"const sortOrder = "asc";"#));
+    assert!(script_due.contains(r#"if (sortBy === "dueDate") {"#));
+
+    let listed_name = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("name"),
+        "desc",
+        5,
+    )
+    .await
+    .expect("name desc sort should parse");
+    assert_eq!(listed_name.len(), 1);
+    let script_name = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_name.contains(r#"const sortBy = "name";"#));
+    assert!(script_name.contains(r#"const sortOrder = "desc";"#));
+    assert!(script_name.contains("left = String(aValue).toLowerCase();"));
+
+    let listed_auto = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-03-01T00:00:00Z"),
+        None,
+        None,
+        "asc",
+        5,
+    )
+    .await
+    .expect("completion filter auto-sort should parse");
+    assert_eq!(listed_auto.len(), 1);
+    let script_auto = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script_auto.contains(r#"const sortBy = "completionDate";"#));
+    assert!(script_auto.contains(r#"const sortOrder = "desc";"#));
+    assert!(script_auto.contains("if (aValue === null) return 1;"));
+    assert!(script_auto.contains("if (bValue === null) return -1;"));
+}
+
+#[tokio::test]
 async fn list_tasks_duration_filter_script_contains_expected_logic() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
@@ -673,7 +780,7 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         last_script: last_script.clone(),
     };
 
-    let listed_15 = list_tasks_with_duration(
+    let listed_15 = list_tasks_with_max(
         &runner,
         None,
         None,
@@ -702,7 +809,7 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         "if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;"
     ));
 
-    let listed_60 = list_tasks_with_duration(
+    let listed_60 = list_tasks_with_max(
         &runner,
         None,
         None,
@@ -733,6 +840,164 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
 }
 
 #[tokio::test]
+async fn list_tasks_sort_due_date_asc_is_included_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-sort-due", "sorted task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("dueDate"),
+        "asc",
+        5,
+    )
+    .await
+    .expect("due date sort should parse");
+
+    assert_eq!(listed.len(), 1);
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const sortBy = "dueDate";"#));
+    assert!(script.contains(r#"const sortOrder = "asc";"#));
+    assert!(script.contains(r#"if (sortBy === "dueDate") {"#));
+}
+
+#[tokio::test]
+async fn list_tasks_sort_name_desc_is_included_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-sort-name", "sorted task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("name"),
+        "desc",
+        5,
+    )
+    .await
+    .expect("name sort should parse");
+
+    assert_eq!(listed.len(), 1);
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const sortBy = "name";"#));
+    assert!(script.contains(r#"const sortOrder = "desc";"#));
+    assert!(script.contains("left = String(aValue).toLowerCase();"));
+}
+
+#[tokio::test]
+async fn list_tasks_sort_auto_defaults_for_completion_date_filters() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-sort-auto", "sorted task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-03-01T00:00:00Z"),
+        None,
+        None,
+        "asc",
+        5,
+    )
+    .await
+    .expect("completion-date auto sort should parse");
+
+    assert_eq!(listed.len(), 1);
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const sortBy = "completionDate";"#));
+    assert!(script.contains(r#"const sortOrder = "desc";"#));
+}
+
+#[tokio::test]
+async fn list_tasks_sort_nulls_last_logic_is_included_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-sort-nulls", "sorted task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("project"),
+        "desc",
+        5,
+    )
+    .await
+    .expect("null ordering sort should parse");
+
+    assert_eq!(listed.len(), 1);
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("if (aValue === null) return 1;"));
+    assert!(script.contains("if (bValue === null) return -1;"));
+}
+
+#[tokio::test]
 async fn list_tasks_invalid_date_error_bubbles_up() {
     let runner = ErrorRunner {
         message: "dueBefore must be a valid ISO 8601 date string.".to_string(),
@@ -747,8 +1012,6 @@ async fn list_tasks_invalid_date_error_bubbles_up() {
         None,
         "available",
         Some("bad-date"),
-        None,
-        None,
         None,
         None,
         None,
@@ -787,7 +1050,6 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         None,
         None,
         None,
-        None,
         5,
     )
     .await
@@ -809,7 +1071,6 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         "any",
         None,
         "available",
-        None,
         None,
         None,
         None,
