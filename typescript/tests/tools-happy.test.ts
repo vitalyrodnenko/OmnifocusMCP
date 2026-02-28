@@ -137,6 +137,33 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("search_tags returns matched tag summaries", async () => {
+    runOmniJsMock.mockResolvedValueOnce([
+      { id: "g7", name: "Errands", status: "active", parent: "Personal" },
+    ]);
+    const handler = registeredTools.get("search_tags");
+    expect(handler).toBeDefined();
+    const result = await handler!({ query: "err", limit: 6 });
+    expect(JSON.parse(result.content[0].text)).toEqual([
+      { id: "g7", name: "Errands", status: "active", parent: "Personal" },
+    ]);
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const queryValue = "err";');
+    expect(script).toContain("return tagsMatching(queryValue)");
+    expect(script).toContain(".slice(0, 6)");
+    expect(script).toContain("parent: tag.parent ? tag.parent.name : null");
+  });
+
+  test("search_tags returns error for empty query", async () => {
+    const handler = registeredTools.get("search_tags");
+    expect(handler).toBeDefined();
+    const result = await handler!({ query: "   ", limit: 6 });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "query must not be empty.",
+    });
+  });
+
   test("create_task returns created task summary", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "n1", name: "New task" });
     const handler = registeredTools.get("create_task");

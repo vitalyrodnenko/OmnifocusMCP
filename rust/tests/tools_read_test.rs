@@ -8,7 +8,7 @@ use omnifocus_mcp::{
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{get_project, list_projects, search_projects},
-        tags::list_tags,
+        tags::{list_tags, search_tags},
         tasks::{get_inbox, get_task, list_subtasks, list_tasks, search_tasks},
     },
 };
@@ -125,6 +125,14 @@ async fn read_non_task_tools_happy_path() {
         .await
         .expect("tags should load");
     assert!(tags.is_array());
+
+    let search_tags_runner = MockRunner {
+        payload: json!([{"id": "g7", "name": "errands", "status": "active", "parent": "personal"}]),
+    };
+    let searched_tags = search_tags(&search_tags_runner, "err", 100)
+        .await
+        .expect("tag search should load");
+    assert!(searched_tags.is_array());
 
     let folders_runner = MockRunner {
         payload: json!([{"id": "f1", "name": "work"}]),
@@ -247,6 +255,14 @@ async fn validation_errors_for_read_tools() {
     ));
     assert!(matches!(
         search_projects(&runner, "admin", 0).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        search_tags(&runner, "   ", 100).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        search_tags(&runner, "err", 0).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
