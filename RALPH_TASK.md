@@ -280,7 +280,7 @@ patterns as `python/tests/test_integration.py`.
 32. [x] Smoke test passes against real OmniFocus with zero failures.
         Any bugs discovered are documented with `// BUG:` and fixed
         before proceeding.
-33. [ ] Create `rust/tests/integration_test.rs` gated by
+33. [x] Create `rust/tests/integration_test.rs` gated by
         `#[cfg(feature = "integration")]`. Tests:
         - `test_jxa_bridge_connectivity` — basic run_omnijs call
         - `test_read_tools_return_valid_json` — calls each read tool,

@@ -600,6 +600,13 @@ This is how Ralph maintains continuity across iterations.
 - added a new guardrail sign to prevent duplicate-definition regressions after large file rewrites
 - next focus: criterion 33 (`rust/tests/integration_test.rs` behind `integration` feature)
 
+### 2026-02-28 12:20:00
+- completed criterion 33 by adding `rust/tests/integration_test.rs` gated with `#![cfg(feature = "integration")]`
+- implemented five real-OmniFocus integration tests: bridge connectivity, read-tool JSON shape checks, task lifecycle, search, and project lifecycle
+- added explicit cleanup helper that removes `[TEST-MCP]` tasks/projects/tags at test boundaries
+- reran rust validation command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing, integration tests excluded by default)
+- next focus: criterion 34 (`cd rust && cargo test --features integration`)
+
 ### 2026-02-28 11:31:21
 **Session 18 ended** - 🔄 Context rotation (token limit reached)
 
