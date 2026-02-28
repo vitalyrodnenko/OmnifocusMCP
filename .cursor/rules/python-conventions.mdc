@@ -1,0 +1,91 @@
+---
+description: Python coding conventions for the FastMCP OmniFocus server
+globs: python/**/*.py
+alwaysApply: false
+---
+
+# Python Conventions
+
+## Quality Tooling
+
+- **Lint + format:** `ruff check src/` and `ruff format --check src/`. Fix with `ruff check --fix` and `ruff format`.
+- **Type check:** `mypy src/ --strict`. All functions must have type annotations. No `Any` unless explicitly justified with a comment.
+- **Test:** `pytest tests/ -v`. Use `pytest-asyncio` for async tests.
+- **Full check before marking any criterion done:** `ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+
+## Project Setup
+
+- `pyproject.toml` for all project config (not `setup.py`, not `setup.cfg`).
+- Use `uv` as the package manager. `uv pip install -e ".[dev]"` for development.
+- `"type": "module"` equivalent: all imports use the package name (`from omnifocus_mcp.jxa import run_omnijs`).
+- `python -m omnifocus_mcp` must start the server.
+
+## Type Annotations
+
+- All function signatures must have full type annotations — parameters and return types.
+- Use `TypedDict` for structured return values from JXA queries (e.g., `TaskDict`, `ProjectDict`).
+- Use `Literal` for constrained string parameters (e.g., `status: Literal["available", "due_soon", "overdue", "completed", "all"]`).
+- Prefer `str | None` over `Optional[str]`. Use the modern union syntax.
+- No `Any` without a `# type: ignore` comment explaining why.
+
+## Async Patterns
+
+- All functions that call osascript must be `async def` — these are I/O-bound operations.
+- Use `asyncio.create_subprocess_exec()` for spawning osascript. Never `subprocess.run()` or `subprocess.Popen()` in async code.
+- Never use `shell=True`. Pass command and arguments as a list.
+- Use `asyncio.wait_for()` for timeout handling, not manual timer logic.
+
+## FastMCP Patterns
+
+```python
+from mcp.server.fastmcp import FastMCP
+
+mcp = FastMCP("omnifocus")
+
+@mcp.tool()
+async def get_inbox(limit: int = 100) -> str:
+    """get inbox tasks from omnifocus.
+
+    returns unprocessed tasks that haven't been assigned to a project.
+    each task includes id, name, note, flagged status, dates, and tags.
+    """
+    result = await run_omnijs(GET_INBOX_SCRIPT)
+    return json.dumps(result)
+```
+
+- Use `@mcp.tool()` decorator for tools, `@mcp.resource()` for resources, `@mcp.prompt()` for prompts.
+- Tool functions return `str` (JSON-serialized). FastMCP wraps it in the MCP content format.
+- Docstrings on tool functions become the tool description the LLM sees. Make them clear and complete.
+- Never capitalize comments or docstrings per user preference.
+
+## Code Organization
+
+```
+python/src/omnifocus_mcp/
+  __init__.py          — package init, version
+  __main__.py          — entry point for `python -m omnifocus_mcp`
+  server.py            — FastMCP server setup, imports all tools
+  jxa.py               — osascript execution helpers
+  tools/
+    __init__.py        — re-exports for clean imports
+    tasks.py           — get_inbox, list_tasks, get_task, search_tasks, create_task, etc.
+    projects.py        — list_projects, get_project, create_project, complete_project
+    tags.py            — list_tags, create_tag
+    folders.py         — list_folders
+    forecast.py        — get_forecast
+    perspectives.py    — list_perspectives
+  resources.py         — MCP resource definitions
+  prompts.py           — MCP prompt templates
+```
+
+- One file per OmniFocus entity type in `tools/`.
+- Each file registers its tools with the shared `mcp` server instance.
+- JXA script strings live as module-level constants in the tool files, named in UPPER_SNAKE_CASE (e.g., `GET_INBOX_SCRIPT`).
+
+## What NOT to Do
+
+- Never use `os.system()` or `subprocess.call()`. Use `asyncio.create_subprocess_exec()`.
+- Never use f-strings to interpolate user input into JXA scripts. Always use `escape_for_jxa()`.
+- Never use `print()` for logging. Use the `logging` module if needed.
+- Never use bare `except:`. Always catch specific exceptions.
+- Never import with wildcard (`from module import *`).

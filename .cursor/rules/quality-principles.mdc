@@ -1,0 +1,78 @@
+---
+description: Core quality, design, and architecture principles for the OmniFocus MCP server
+alwaysApply: true
+---
+
+# Quality & Design Principles
+
+## Change Discipline
+
+- Small, incremental diffs. One concern per commit. No refactors unless required by the current task.
+- No new dependencies without an explicit note explaining why. Always update lockfiles (`uv.lock`, `package-lock.json`).
+- Verify before marking done: lint, typecheck, and tests must all pass.
+- Read existing code before modifying any file. Understand the context first.
+
+## Architecture: Monorepo with Two Independent Implementations
+
+```
+python/       — Python implementation (FastMCP)
+typescript/   — TypeScript implementation (@modelcontextprotocol/sdk)
+```
+
+- Both implementations must expose **identical** tool names, input schemas, and response shapes.
+- If you change a tool in one implementation, the other must be updated to match.
+- JXA script strings are the shared core — if you fix a JXA bug in Python, apply the same fix in TypeScript.
+- Each implementation is fully self-contained: own deps, own tests, own README.
+- Never import across implementation boundaries.
+- Shared knowledge lives in `RALPH_TASK.md` and `.cursor/rules/`, not in code.
+
+## MCP Protocol Conventions
+
+- Every tool must have a **descriptive name** using `snake_case`. Names must be identical in both implementations.
+- Every tool must have a **comprehensive description** explaining what it does, what parameters it accepts, and what it returns. The LLM reads this description to decide whether to call the tool — make it count.
+- All tool responses use the MCP content format: `{ content: [{ type: "text", text: JSON.stringify(result) }] }`.
+- Errors use `isError: true` in the MCP tool result. Never throw unhandled exceptions through the MCP layer.
+- Never expose internal implementation details in tool responses — no stack traces, no JXA script source, no file paths.
+- All list tools support a `limit` parameter with default of 100.
+- Tool input schemas must be strict — use enums for constrained string values, explicit types for everything.
+
+## Error Handling
+
+- No silent failures. Every error must surface through the MCP response with a user-friendly message.
+- Error messages must be actionable: "OmniFocus is not running. Please open OmniFocus and try again." not "osascript exited with code 1".
+- Categorize errors:
+  - **OmniFocus not running** → tell user to open it
+  - **Task/project/tag not found** → include the ID/name that was searched
+  - **Invalid input** → explain what's wrong and what's expected
+  - **macOS permissions** → explain how to grant automation permission in System Settings
+  - **Timeout** → suggest the database may be large, try with a smaller limit
+- Never crash the server on a tool error. Catch, format, return.
+
+## Security
+
+- All user-supplied strings interpolated into JXA must go through the escape function. No exceptions.
+- Never use `shell=True` (Python) or `child_process.exec` (Node) for osascript calls. Use `asyncio.create_subprocess_exec` / `child_process.execFile`.
+- Never embed secrets, API keys, or credentials in code. This project has no secrets, but enforce the habit.
+
+## Data Conventions
+
+- All date/time values use ISO 8601 format (`2026-02-28T10:00:00Z`). No other formats.
+- All OmniFocus object IDs use `id.primaryKey` for stable cross-session references.
+- All text fields (task names, notes) are returned as-is — no truncation, no HTML escaping.
+- Null/missing values are represented as `null` in JSON, not empty strings or sentinel values.
+
+## Development Environment
+
+- Everything runs on the macOS host. No Docker, no VMs.
+- Python: use `uv` for package management. Virtual env in `python/.venv/`.
+- TypeScript: use `npm`. Dependencies in `typescript/node_modules/`.
+- OmniFocus must be running for integration tests.
+- macOS Automation permission must be granted for the terminal running the server.
+
+## What NOT to Do
+
+- Never add `console.log` / `print` statements for debugging and leave them in. Use structured logging if needed.
+- Never commit `.env` files, `node_modules/`, `dist/`, `__pycache__/`, or `.venv/`.
+- Never use `eval()`, `exec()`, or `Function()` in any context.
+- Never hardcode OmniFocus database paths or internal identifiers.
+- Never add TODO comments without a corresponding RALPH_TASK.md criterion. Track work in the task file, not in code.

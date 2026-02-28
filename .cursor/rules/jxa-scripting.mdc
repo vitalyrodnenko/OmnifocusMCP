@@ -1,0 +1,193 @@
+---
+description: JXA (JavaScript for Automation) scripting rules for OmniFocus communication
+alwaysApply: true
+---
+
+# JXA Scripting Rules
+
+JXA scripts are the core of this project. They are JavaScript strings executed
+via `osascript -l JavaScript` that communicate with OmniFocus. Getting these
+wrong means data corruption, injection vulnerabilities, or silent failures.
+
+## The evaluateJavaScript Pattern
+
+OmniFocus exposes two scripting surfaces:
+1. **External JXA** (via `Application('OmniFocus')`) — limited SPI, missing many Omni Automation features
+2. **Omni Automation** (internal JS engine) — full API: `flattenedTasks`, `Task.Status`, `new Task()`, etc.
+
+We use **both** via the `evaluateJavaScript` bridge:
+
+```javascript
+// outer JXA (runs in osascript context)
+const app = Application('OmniFocus');
+const result = app.evaluateJavaScript(`
+  // inner OmniJS (runs inside OmniFocus — full Omni Automation API)
+  const tasks = document.flattenedTasks;
+  JSON.stringify(tasks.map(t => ({ id: t.id.primaryKey, name: t.name })));
+`);
+result; // returned to stdout
+```
+
+The outer script is JXA. The inner script (string passed to `evaluateJavaScript`) is OmniJS.
+Always use this pattern for data access. Direct external JXA (`app.defaultDocument.flattenedTasks()`)
+works for some things but lacks the full API.
+
+## Input Sanitization — CRITICAL
+
+**Every** user-supplied string interpolated into a JXA script MUST be escaped.
+
+```python
+# python
+escaped = json.dumps(user_input)  # wraps in quotes, escapes special chars
+script = f'const name = {escaped};'
+```
+
+```typescript
+// typescript
+const escaped = JSON.stringify(userInput);
+const script = `const name = ${escaped};`;
+```
+
+This handles: quotes, backslashes, newlines, unicode, null bytes. `json.dumps()` / `JSON.stringify()`
+produce valid JS string literals because JSON string syntax is a subset of JS string syntax.
+
+**Never** use raw f-strings or template literals with user input:
+
+```python
+# WRONG — injection vulnerability
+script = f'const name = "{user_input}";'
+
+# RIGHT — safe
+script = f'const name = {json.dumps(user_input)};'
+```
+
+## JXA Script Structure
+
+Every JXA script that returns data must follow this pattern:
+
+```javascript
+const app = Application('OmniFocus');
+const result = app.evaluateJavaScript(`
+  (function() {
+    try {
+      // ... actual logic ...
+      return JSON.stringify({ ok: true, data: result });
+    } catch (e) {
+      return JSON.stringify({ ok: false, error: e.message });
+    }
+  })()
+`);
+result;
+```
+
+Key rules:
+- Wrap the inner OmniJS code in an IIFE `(function() { ... })()`
+- Always wrap in try/catch — OmniJS errors are hard to debug from outside
+- Always return via `JSON.stringify()` — the only reliable way to get structured data out
+- The outer JXA must end with the expression to return (no `return` keyword at top level)
+- The result of `evaluateJavaScript()` is always a string
+
+## OmniFocus API Patterns
+
+### Accessing Data
+
+```javascript
+// all tasks (flat list, regardless of hierarchy)
+document.flattenedTasks
+
+// inbox tasks only
+inbox
+
+// all projects
+document.flattenedProjects
+
+// all tags
+document.flattenedTags
+
+// all folders
+document.flattenedFolders
+
+// find by name
+document.flattenedProjects.byName("My Project")
+
+// find by ID
+const task = document.flattenedTasks.find(t => t.id.primaryKey === taskId);
+```
+
+### Task Properties
+
+```javascript
+{
+  id:               task.id.primaryKey,        // stable string ID
+  name:             task.name,                 // string
+  note:             task.note,                 // string
+  flagged:          task.flagged,              // boolean
+  completed:        task.completed,            // boolean (read-only)
+  dueDate:          task.dueDate ? task.dueDate.toISOString() : null,
+  deferDate:        task.deferDate ? task.deferDate.toISOString() : null,
+  completionDate:   task.completionDate ? task.completionDate.toISOString() : null,
+  estimatedMinutes: task.estimatedMinutes,     // number or null
+  sequential:       task.sequential,           // boolean
+  inInbox:          task.inInbox,              // boolean
+  projectName:      task.containingProject ? task.containingProject.name : null,
+  tags:             task.tags.map(t => t.name),
+  hasChildren:      task.hasChildren,          // boolean
+}
+```
+
+### Creating Tasks
+
+```javascript
+// inbox task
+const task = new Task("Buy groceries", inbox.ending);
+
+// task in a project
+const project = document.flattenedProjects.byName("Errands");
+const task = new Task("Buy groceries", project.ending);
+
+// set properties
+task.note = "Milk, eggs, bread";
+task.dueDate = new Date("2026-03-01");
+task.flagged = true;
+
+// add tags
+const tag = document.flattenedTags.byName("Home");
+if (tag) task.addTag(tag);
+```
+
+### Completing Tasks
+
+```javascript
+const task = document.flattenedTasks.find(t => t.id.primaryKey === taskId);
+if (task) {
+  task.markComplete();
+  // for repeating tasks, markComplete() creates the next occurrence
+}
+```
+
+### Date Handling
+
+```javascript
+// dates come from user as ISO 8601 strings
+// parse them in JXA:
+const d = new Date("2026-03-15T10:00:00Z");
+task.dueDate = d;
+
+// dates go out as ISO 8601:
+task.dueDate ? task.dueDate.toISOString() : null
+```
+
+## Performance Rules
+
+- **Filter inside JXA, not after.** Don't fetch all 10,000 tasks and filter in Python/TS. Apply filters in the OmniJS script.
+- **Limit inside JXA.** Use `.slice(0, limit)` after filtering, before serializing.
+- **Minimize property access.** Each `.property` access on an OmniFocus object may trigger IPC. Map once, not repeatedly.
+- **Single script per tool call.** Don't spawn multiple osascript processes for one tool invocation.
+
+## What NOT to Do
+
+- Never use `Application('OmniFocus').defaultDocument.flattenedTasks()` for bulk access — it returns AppleScript object specifiers, not Omni Automation objects. Use `evaluateJavaScript` instead.
+- Never use `eval()` or `Function()` inside JXA scripts.
+- Never assume a task/project/tag exists — always check for null after `byName()` or `find()`.
+- Never use `document.flattenedTasks` without a filter or limit for production tools — large databases will time out.
+- Never return Date objects directly from JSON.stringify — they serialize as strings already, but only if you call `.toISOString()` explicitly. Raw Date objects in JSON.stringify produce locale-dependent strings.

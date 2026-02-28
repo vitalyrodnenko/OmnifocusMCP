@@ -1,0 +1,110 @@
+---
+description: TypeScript coding conventions for the MCP SDK OmniFocus server
+globs: typescript/**/*.ts
+alwaysApply: false
+---
+
+# TypeScript Conventions
+
+## Quality Tooling
+
+- **Build + type check:** `npx tsc --noEmit` (strict mode enabled in tsconfig).
+- **Lint:** `npm run lint` (ESLint with TypeScript rules).
+- **Test:** `npm test` (vitest or Node test runner).
+- **Full check before marking any criterion done:** `npx tsc --noEmit && npm run lint && npm test`
+
+## Project Setup
+
+- `package.json` with `"type": "module"`. ESM only — no CommonJS.
+- `tsconfig.json`: `target: "ES2022"`, `module: "NodeNext"`, `moduleResolution: "NodeNext"`, `strict: true`, `outDir: "dist"`.
+- Use `node:` prefix for all built-in imports: `import { execFile } from "node:child_process"`.
+- Entry point: `src/index.ts` → compiled to `dist/index.js`.
+- `"bin"` field in `package.json` for CLI usage.
+
+## Type Safety
+
+- `strict: true` in tsconfig — no exceptions, no overrides.
+- No `any` type. Use `unknown` and narrow with type guards.
+- Use `z.infer<typeof schema>` to derive types from zod schemas — single source of truth.
+- Use `interface` for object shapes, `type` for unions and computed types.
+- All function signatures must have explicit return types.
+
+## MCP SDK Patterns
+
+```typescript
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { z } from "zod";
+
+const server = new McpServer({
+  name: "omnifocus",
+  version: "1.0.0",
+});
+
+server.tool(
+  "get_inbox",
+  "get inbox tasks from omnifocus. returns unprocessed tasks that haven't been assigned to a project.",
+  { limit: z.number().default(100).describe("max number of tasks to return") },
+  async ({ limit }) => ({
+    content: [{ type: "text", text: JSON.stringify(await getInbox(limit)) }],
+  })
+);
+```
+
+- Use `z.object()` for tool input schemas. Add `.describe()` to every field.
+- Tool handler returns `{ content: [{ type: "text", text: string }] }`.
+- Error responses return `{ content: [...], isError: true }`.
+- Register tools in topical groups (tasks, projects, tags, etc.) imported into `index.ts`.
+
+## Subprocess Patterns
+
+```typescript
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
+
+async function runJxa(script: string): Promise<string> {
+  const { stdout } = await execFileAsync("osascript", ["-l", "JavaScript", "-e", script], {
+    timeout: 30_000,
+  });
+  return stdout.trim();
+}
+```
+
+- Use `execFile` (not `exec`) — no shell interpretation, no injection vector.
+- Use `promisify` for clean async/await.
+- Set `timeout` on every subprocess call.
+- Handle `ExecFileException` with error code checking.
+
+## Code Organization
+
+```
+typescript/src/
+  index.ts            — server setup, transport, imports all tool registrations
+  jxa.ts              — runJxa, runJxaJson, runOmniJs, escapeForJxa
+  tools/
+    tasks.ts          — task tools (read + write)
+    projects.ts       — project tools
+    tags.ts           — tag tools
+    folders.ts        — folder tools
+    forecast.ts       — forecast tool
+    perspectives.ts   — perspectives tool
+  resources.ts        — MCP resource definitions
+  prompts.ts          — MCP prompt templates
+  types.ts            — shared interfaces and type definitions
+```
+
+- Each tool file exports a `register(server: McpServer)` function that registers its tools.
+- `index.ts` calls each register function.
+- JXA script strings live as module-level `const` values, named in UPPER_SNAKE_CASE.
+- Shared types (TaskResult, ProjectResult, etc.) live in `types.ts`.
+
+## What NOT to Do
+
+- Never use `require()`. ESM imports only.
+- Never use `child_process.exec()` or `child_process.execSync()`. Use `execFile`.
+- Never use template literals to interpolate user input into JXA. Always use `escapeForJxa()`.
+- Never use `as any` type assertions. Use proper type narrowing.
+- Never use `@ts-ignore` or `@ts-expect-error` without a justifying comment.
+- Never leave `console.log` in production code. Remove after debugging.
