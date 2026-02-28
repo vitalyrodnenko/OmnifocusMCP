@@ -140,15 +140,18 @@ log_error() {
 }
 
 # Log to progress.md (called by the loop, not the agent)
+# NOTE: Session start/end markers are now logged ONLY to activity.log,
+# not progress.md. The agent updates progress.md with substantive entries.
+# This prevents progress.md from growing unboundedly with empty session markers.
 log_progress() {
   local workspace="$1"
   local message="$2"
   local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-  local progress_file="$workspace/.ralph/progress.md"
+  local activity_file="$workspace/.ralph/activity.log"
   
-  echo "" >> "$progress_file"
-  echo "### $timestamp" >> "$progress_file"
-  echo "$message" >> "$progress_file"
+  echo "" >> "$activity_file"
+  echo "### $timestamp" >> "$activity_file"
+  echo "$message" >> "$activity_file"
 }
 
 # =============================================================================
@@ -426,7 +429,11 @@ If you get rotated, the next agent picks up from your last commit. Your commits 
 3. **Mark completed criteria**: Edit RALPH_TASK.md and change \`[ ]\` to \`[x]\`
    - Example: \`- [ ] Implement parser\` becomes \`- [x] Implement parser\`
    - This is how progress is tracked - YOU MUST update the file
-4. Update \`.ralph/progress.md\` with what you accomplished
+4. Update \`.ralph/progress.md\` with what you accomplished.
+   **CRITICAL: keep progress.md under 100 lines total.** Update the Summary
+   and Phase Overview sections in-place. In Session History, keep only the
+   last 3 substantive entries — delete older ones. NEVER just append endlessly.
+   This file is read every session; if it grows large, it eats the context budget.
 5. When ALL criteria show \`[x]\`: output \`<ralph>COMPLETE</ralph>\`
 6. If stuck 3+ times on same issue: output \`<ralph>GUTTER</ralph>\`
 

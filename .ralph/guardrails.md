@@ -130,3 +130,8 @@
 - **Instruction**: Run `rg` for the symbol in Python/TypeScript/Rust tool modules and keep exactly one canonical exported implementation name per module before rerunning tests
 - **Added after**: full gate for criterion 14 failed on duplicated `get_task_counts`/`getTaskCountsData` definitions across all 3 implementations
 
+### Sign: Patch Signature Changes With Function-Scoped Context
+- **Trigger**: When adding/removing parameters in `tasks.rs` and multiple functions share similar argument blocks
+- **Instruction**: Use `@@ pub async fn <name>` scoped patches and immediately verify with `rg` that the target signature changed exactly once; shared context patches can silently modify a different function and cause cascading arg-count compile errors
+- **Added after**: criterion 26 rust parity fix accidentally inserted planned params into `get_task_counts` instead of `list_tasks_with_planned`, producing repeated `E0061`/`E0425` failures
+
