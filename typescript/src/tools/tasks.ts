@@ -403,6 +403,150 @@ return {
   );
 
   server.tool(
+    "duplicate_task",
+    "duplicate a task with all its properties. if the task has subtasks, they are cloned too by default.",
+    { task_id: z.string().min(1), includeChildren: z.boolean().default(true) },
+    async ({ task_id, includeChildren }) => {
+      try {
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        const taskId = escapeForJxa(normalizedTaskId);
+        const includeChildrenValue = includeChildren ? "true" : "false";
+        const script = `
+const taskId = ${taskId};
+const includeChildren = ${includeChildrenValue};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+const insertionLocation = task.containingProject ? task.containingProject.ending : inbox.ending;
+const clonedTask = (() => {
+  if (includeChildren) {
+    const duplicates = duplicateTasks([task], insertionLocation);
+    return duplicates && duplicates.length > 0 ? duplicates[0] : null;
+  }
+  const manualClone = new Task(task.name, insertionLocation);
+  manualClone.note = task.note;
+  manualClone.flagged = task.flagged;
+  manualClone.dueDate = task.dueDate;
+  manualClone.deferDate = task.deferDate;
+  manualClone.estimatedMinutes = task.estimatedMinutes;
+  task.tags.forEach(tag => {
+    manualClone.addTag(tag);
+  });
+  return manualClone;
+})();
+if (!clonedTask) {
+  throw new Error(\`Failed to duplicate task: \${taskId}\`);
+}
+return {
+  id: clonedTask.id.primaryKey,
+  name: clonedTask.name,
+  note: clonedTask.note,
+  flagged: clonedTask.flagged,
+  dueDate: clonedTask.dueDate ? clonedTask.dueDate.toISOString() : null,
+  deferDate: clonedTask.deferDate ? clonedTask.deferDate.toISOString() : null,
+  completed: clonedTask.completed,
+  completionDate: clonedTask.completionDate ? clonedTask.completionDate.toISOString() : null,
+  projectName: clonedTask.containingProject ? clonedTask.containingProject.name : null,
+  tags: clonedTask.tags.map(tag => tag.name),
+  estimatedMinutes: clonedTask.estimatedMinutes,
+  hasChildren: clonedTask.hasChildren,
+  taskStatus: (() => {
+    const s = String(clonedTask.taskStatus);
+    if (s.includes("Available")) return "available";
+    if (s.includes("Blocked")) return "blocked";
+    if (s.includes("Next")) return "next";
+    if (s.includes("DueSoon")) return "due_soon";
+    if (s.includes("Overdue")) return "overdue";
+    if (s.includes("Completed")) return "completed";
+    if (s.includes("Dropped")) return "dropped";
+    return "unknown";
+  })()
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
+    "duplicate_task",
+    "duplicate a task with all its properties. if the task has subtasks, they are cloned too by default.",
+    { task_id: z.string().min(1), includeChildren: z.boolean().default(true) },
+    async ({ task_id, includeChildren }) => {
+      try {
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        const taskId = escapeForJxa(normalizedTaskId);
+        const includeChildrenValue = includeChildren ? "true" : "false";
+        const script = `
+const taskId = ${taskId};
+const includeChildren = ${includeChildrenValue};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+const insertionLocation = task.containingProject ? task.containingProject.ending : inbox.ending;
+const clonedTask = (() => {
+  if (includeChildren) {
+    const duplicates = duplicateTasks([task], insertionLocation);
+    return duplicates && duplicates.length > 0 ? duplicates[0] : null;
+  }
+  const manualClone = new Task(task.name, insertionLocation);
+  manualClone.note = task.note;
+  manualClone.flagged = task.flagged;
+  manualClone.dueDate = task.dueDate;
+  manualClone.deferDate = task.deferDate;
+  manualClone.estimatedMinutes = task.estimatedMinutes;
+  task.tags.forEach(tag => {
+    manualClone.addTag(tag);
+  });
+  return manualClone;
+})();
+if (!clonedTask) {
+  throw new Error(\`Failed to duplicate task: \${taskId}\`);
+}
+return {
+  id: clonedTask.id.primaryKey,
+  name: clonedTask.name,
+  note: clonedTask.note,
+  flagged: clonedTask.flagged,
+  dueDate: clonedTask.dueDate ? clonedTask.dueDate.toISOString() : null,
+  deferDate: clonedTask.deferDate ? clonedTask.deferDate.toISOString() : null,
+  completed: clonedTask.completed,
+  completionDate: clonedTask.completionDate ? clonedTask.completionDate.toISOString() : null,
+  projectName: clonedTask.containingProject ? clonedTask.containingProject.name : null,
+  tags: clonedTask.tags.map(tag => tag.name),
+  estimatedMinutes: clonedTask.estimatedMinutes,
+  hasChildren: clonedTask.hasChildren,
+  taskStatus: (() => {
+    const s = String(clonedTask.taskStatus);
+    if (s.includes("Available")) return "available";
+    if (s.includes("Blocked")) return "blocked";
+    if (s.includes("Next")) return "next";
+    if (s.includes("DueSoon")) return "due_soon";
+    if (s.includes("Overdue")) return "overdue";
+    if (s.includes("Completed")) return "completed";
+    if (s.includes("Dropped")) return "dropped";
+    return "unknown";
+  })()
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "search_tasks",
     "search tasks by case-insensitive query across name and note.",
     {
@@ -614,6 +758,71 @@ return {
   name: task.name,
   parentTaskId: parentTask.id.primaryKey,
   parentTaskName: parentTask.name
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
+    "duplicate_task",
+    "duplicate a task with all its properties. if the task has subtasks, they are cloned too by default.",
+    {
+      task_id: z.string().min(1),
+      includeChildren: z.boolean().default(true),
+    },
+    async ({ task_id, includeChildren }) => {
+      try {
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        const taskId = escapeForJxa(normalizedTaskId);
+        const includeChildrenValue = includeChildren ? "true" : "false";
+        const script = `
+const taskId = ${taskId};
+const includeChildren = ${includeChildrenValue};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+
+const insertionLocation = task.containingProject ? task.containingProject.ending : inbox.ending;
+let duplicatedTask = null;
+
+if (includeChildren) {
+  const duplicatedTasks = duplicateTasks([task], insertionLocation);
+  if (duplicatedTasks && duplicatedTasks.length > 0) {
+    duplicatedTask = duplicatedTasks[0];
+  }
+} else {
+  duplicatedTask = new Task(task.name, insertionLocation);
+  duplicatedTask.note = task.note;
+  duplicatedTask.flagged = task.flagged;
+  if (task.dueDate !== null) duplicatedTask.dueDate = new Date(task.dueDate);
+  if (task.deferDate !== null) duplicatedTask.deferDate = new Date(task.deferDate);
+  if (task.estimatedMinutes !== null) duplicatedTask.estimatedMinutes = task.estimatedMinutes;
+  task.tags.forEach(tag => duplicatedTask.addTag(tag));
+}
+
+if (!duplicatedTask) {
+  throw new Error(\`Failed to duplicate task: \${taskId}\`);
+}
+
+return {
+  id: duplicatedTask.id.primaryKey,
+  name: duplicatedTask.name,
+  note: duplicatedTask.note,
+  flagged: duplicatedTask.flagged,
+  dueDate: duplicatedTask.dueDate ? duplicatedTask.dueDate.toISOString() : null,
+  deferDate: duplicatedTask.deferDate ? duplicatedTask.deferDate.toISOString() : null,
+  completed: duplicatedTask.completed,
+  projectName: duplicatedTask.containingProject ? duplicatedTask.containingProject.name : null,
+  tags: duplicatedTask.tags.map(tag => tag.name),
+  estimatedMinutes: duplicatedTask.estimatedMinutes
 };
 `.trim();
         return textResult(await runOmniJs(script));

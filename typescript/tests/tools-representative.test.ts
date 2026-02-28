@@ -686,6 +686,52 @@ describe("representative read and write tool handlers", () => {
     });
   });
 
+  test("duplicate_task clones full subtree by default", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "copy-1",
+      name: "Copied task",
+      taskStatus: "available",
+    });
+    const result = await getTool("duplicate_task")({ task_id: "task-9" });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const taskId = "task-9";');
+    expect(script).toContain("const includeChildren = true;");
+    expect(script).toContain("const duplicates = duplicateTasks([task], insertionLocation);");
+    expect(script).toContain("taskStatus: (() => {");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "copy-1",
+      name: "Copied task",
+      taskStatus: "available",
+    });
+  });
+
+  test("duplicate_task supports includeChildren=false manual clone", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "copy-2",
+      name: "Copied task flat",
+    });
+    const result = await getTool("duplicate_task")({
+      task_id: "task-9",
+      includeChildren: false,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("const includeChildren = false;");
+    expect(script).toContain("const manualClone = new Task(task.name, insertionLocation);");
+    expect(script).toContain("manualClone.addTag(tag);");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "copy-2",
+      name: "Copied task flat",
+    });
+  });
+
+  test("duplicate_task validates required task id", async () => {
+    const result = await getTool("duplicate_task")({ task_id: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "task_id must not be empty.",
+    });
+  });
+
   test("get_task includes native taskStatus field mapping", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       id: "task-9",
@@ -968,6 +1014,50 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const projectName = "Errands";');
     expect(script).toContain("const task = new Task(taskName, parent);");
     expect(JSON.parse(result.content[0].text)).toEqual({ id: "task-3", name: "created" });
+  });
+
+  test("duplicate_task duplicates without children when requested", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-7",
+      name: "copy",
+      note: "copied",
+      flagged: true,
+      dueDate: null,
+      deferDate: null,
+      completed: false,
+      projectName: "Errands",
+      tags: ["Home"],
+      estimatedMinutes: 20,
+    });
+    const result = await getTool("duplicate_task")({
+      task_id: "task-6",
+      includeChildren: false,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const taskId = "task-6";');
+    expect(script).toContain("const includeChildren = false;");
+    expect(script).toContain("const duplicatedTasks = duplicateTasks([task], insertionLocation);");
+    expect(script).toContain("duplicatedTask = new Task(task.name, insertionLocation);");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "task-7",
+      name: "copy",
+      note: "copied",
+      flagged: true,
+      dueDate: null,
+      deferDate: null,
+      completed: false,
+      projectName: "Errands",
+      tags: ["Home"],
+      estimatedMinutes: 20,
+    });
+  });
+
+  test("duplicate_task validates task id", async () => {
+    const result = await getTool("duplicate_task")({ task_id: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "task_id must not be empty.",
+    });
   });
 
   test("update_task only sends provided fields", async () => {
