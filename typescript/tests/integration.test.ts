@@ -78,7 +78,7 @@ document.flattenedTasks
   .filter(task => (task.name || "").startsWith(prefix))
   .forEach(task => {
     try {
-      task.drop(false);
+      deleteObject(task);
     } catch {
       return;
     }
@@ -89,7 +89,7 @@ document.flattenedProjects
   .forEach(project => {
     try {
       if (project.task) {
-        project.task.drop(false);
+        deleteObject(project.task);
       }
     } catch {
       return;

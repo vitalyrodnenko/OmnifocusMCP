@@ -341,7 +341,7 @@ describe("tool happy paths", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const taskIds = ["t1", "t2"];');
-    expect(script).toContain("task.drop(false);");
+    expect(script).toContain("deleteObject(task);");
     expect(script).toContain("deleted_count");
   });
 

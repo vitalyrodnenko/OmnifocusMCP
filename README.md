@@ -40,7 +40,7 @@ This project is not affiliated with, endorsed by, or associated with The Omni Gr
 
 ### tools (38)
 
-API parity is complete across Python, TypeScript, and Rust for all tool names, input schemas, and response shapes.
+API parity is complete across Python, TypeScript, and Rust for all tool names, input schemas, and response shapes, expanding the surface from the original 20 tools to the current 38.
 
 | Type | Name | Description |
 | --- | --- | --- |

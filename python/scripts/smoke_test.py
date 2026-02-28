@@ -286,7 +286,6 @@ class SmokeTest:
                 raise ValueError("complete_task did not mark task complete")
 
             deleted = self.parse_json("delete_task", await delete_task(task_id=created_task_id))
-            # BUG: task.drop() required explicit allOccurrences boolean in Omni Automation; fixed delete scripts to call task.drop(false).
             if not isinstance(deleted, dict):
                 raise ValueError("delete_task did not return an object")
             if deleted.get("deleted") is not True:

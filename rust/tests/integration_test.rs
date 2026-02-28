@@ -80,7 +80,7 @@ impl Drop for CleanupRegistry {
         if (!task.completed) task.markComplete();
       }} catch (_) {{}}
       try {{
-        task.drop(false);
+        deleteObject(task);
       }} catch (_) {{}}
     }});
 
