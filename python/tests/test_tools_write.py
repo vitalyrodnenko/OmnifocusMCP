@@ -82,6 +82,50 @@ async def test_create_task_happy_path(mock_server_run_omnijs: Callable[[Any], di
 
 
 @pytest.mark.asyncio
+async def test_create_task_optional_field_matrix(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs({"id": "full1", "name": "Full task"})
+    state = configured["state"]
+    server = configured["server"]
+
+    full_result = await server.create_task(
+        name="Full task",
+        project="Errands",
+        note="all fields",
+        dueDate="2026-03-01T10:00:00Z",
+        deferDate="2026-02-28T10:00:00Z",
+        flagged=True,
+        tags=["home"],
+        estimatedMinutes=25,
+    )
+
+    mock_server_run_omnijs({"id": "req1", "name": "Required only"})
+    required_result = await server.create_task(name="Required only")
+
+    assert json.loads(full_result) == {"id": "full1", "name": "Full task"}
+    assert json.loads(required_result) == {"id": "req1", "name": "Required only"}
+    assert len(state["calls"]) == 2
+
+    full_script = state["calls"][0]["script"]
+    required_script = state["calls"][1]["script"]
+
+    assert full_script != required_script
+    assert 'const projectName = "Errands";' in full_script
+    assert "const projectName = null;" in required_script
+    assert 'const noteValue = "all fields";' in full_script
+    assert "const noteValue = null;" in required_script
+    assert 'const dueDateValue = "2026-03-01T10:00:00Z";' in full_script
+    assert "const dueDateValue = null;" in required_script
+    assert "const flaggedValue = true;" in full_script
+    assert "const flaggedValue = null;" in required_script
+    assert 'const tagNames = ["home"];' in full_script
+    assert "const tagNames = null;" in required_script
+    assert "const estimatedMinutesValue = 25;" in full_script
+    assert "const estimatedMinutesValue = null;" in required_script
+
+
+@pytest.mark.asyncio
 async def test_create_tasks_batch_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -463,3 +507,44 @@ async def test_create_tag_happy_path(mock_server_run_omnijs: Callable[[Any], dic
     assert 'const tagName = "home";' in script
     assert 'const parentName = "areas";' in script
     assert "return new Tag(tagName, parentTag.ending);" in script
+
+
+@pytest.mark.asyncio
+async def test_create_task_optional_fields_vs_required_only(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs({"id": "t8", "name": "Full task"})
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.create_task(
+        name="Full task",
+        project="Errands",
+        note="details",
+        dueDate="2026-03-04T10:00:00Z",
+        deferDate="2026-03-03T10:00:00Z",
+        flagged=True,
+        tags=["home", "quick"],
+        estimatedMinutes=25,
+    )
+    full_script = state["calls"][0]["script"]
+
+    state["result"] = {"id": "t9", "name": "Required only"}
+    await server.create_task(name="Required only")
+    required_only_script = state["calls"][1]["script"]
+
+    assert 'const projectName = "Errands";' in full_script
+    assert 'const noteValue = "details";' in full_script
+    assert 'const dueDateValue = "2026-03-04T10:00:00Z";' in full_script
+    assert 'const deferDateValue = "2026-03-03T10:00:00Z";' in full_script
+    assert "const flaggedValue = true;" in full_script
+    assert 'const tagNames = ["home", "quick"];' in full_script
+    assert "const estimatedMinutesValue = 25;" in full_script
+
+    assert "const projectName = null;" in required_only_script
+    assert "const noteValue = null;" in required_only_script
+    assert "const dueDateValue = null;" in required_only_script
+    assert "const deferDateValue = null;" in required_only_script
+    assert "const flaggedValue = null;" in required_only_script
+    assert "const tagNames = null;" in required_only_script
+    assert "const estimatedMinutesValue = null;" in required_only_script
