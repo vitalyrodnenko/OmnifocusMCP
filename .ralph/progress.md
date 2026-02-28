@@ -386,3 +386,10 @@ This is how Ralph maintains continuity across iterations.
 - ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - marked criterion 17 complete in `RALPH_TASK.md`
 - next focus: criterion 18 (`rust/src/tools/forecast.rs`)
+
+### 2026-02-28 11:07:12
+- completed criterion 18 by implementing `rust/src/tools/forecast.rs` with `get_forecast(limit)` and Python-parity OmniJS sections (`overdue`, `dueToday`, `flagged`)
+- preserved required validation parity (`limit > 0`) and ensured the parameter contract is `limit` (not `days`)
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 18 complete in `RALPH_TASK.md`
+- next focus: criterion 19 (`rust/src/tools/perspectives.rs`)
