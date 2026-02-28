@@ -319,7 +319,7 @@ identical — only the server framework and subprocess calls change.
 62. [x] `typescript/src/jxa.ts` — JXA execution layer ported: `runJxa`,
         `runJxaJson`, `runOmniJs`, `escapeForJxa`. Same error handling +
         timeout. Uses `child_process.execFile`.
-63. [ ] All 10 read tools ported and `npm run build` passes with no errors.
+63. [x] All 10 read tools ported and `npm run build` passes with no errors.
 64. [ ] All 9 write tools ported and build passes.
 65. [ ] Resources (3) and prompts (4) ported.
 66. [ ] `typescript/README.md` with install instructions, MCP client config
