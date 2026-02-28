@@ -488,6 +488,15 @@ This is how Ralph maintains continuity across iterations.
 - marked criterion 26 complete in `RALPH_TASK.md`
 - next focus: criterion 27 (`echo '{}' | cargo run`)
 
+### 2026-02-28 11:23:42
+- hardened `rust/src/main.rs` connection-close handling so `echo '{}' | cargo run` exits cleanly with status 0 for invalid JSON-RPC startup probes
+- validated criterion 27 and 28 commands:
+  - `cd rust && echo '{}' | cargo run` exits cleanly
+  - `cd rust && cargo run -- --version` prints `omnifocus-mcp 0.1.0`
+- added missing criterion 29 test files: `rust/tests/resources_test.rs` and `rust/tests/prompts_test.rs` with mocked `JxaRunner` payload routing and prompt validation coverage, including non-empty `project_planning` validation
+- reran criterion 30 command exactly: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- next focus: criterion 31 (`rust/examples/smoke_test.rs`)
+
 ### 2026-02-28 11:29:00
 - completed criterion 27 by validating `echo '{}' | cargo run` exits cleanly with no crash path in `rust/src/main.rs`
 - completed criterion 29 by adding `rust/tests/resources_test.rs` and `rust/tests/prompts_test.rs` using mocked `JxaRunner` responses, including `project_planning` empty-input validation
@@ -532,3 +541,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 11:23:35
 **Session 13 started** (model: auto)
+
+### 2026-02-28 11:23:59
+**Session 13 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 11:24:01
+**Session 14 started** (model: auto)
