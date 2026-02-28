@@ -345,3 +345,11 @@ This is how Ralph maintains continuity across iterations.
 - reran rust validation command `cd rust && cargo test && cargo clippy -- -D warnings && cargo fmt --check` (all passing)
 - marked criterion 12 complete in `RALPH_TASK.md`
 - next focus: criterion 13 (`rust/src/tools/tasks.rs` read tools with python-parity jxa scripts)
+
+### 2026-02-28 11:38:00
+- completed criterion 13 in `rust/src/tools/tasks.rs` with read tools: `get_inbox`, `list_tasks`, `get_task`, `search_tasks`, including strict validation and python-parity omnijs scripts
+- completed criterion 14 in `rust/src/tools/tasks.rs` with write tools: `create_task`, `create_tasks_batch`, `complete_task`, `update_task`, `delete_task`, `move_task`, plus `CreateTaskInput` for batch input
+- updated `rust/src/types.rs` task serde mappings so camelCase omnijs payloads deserialize into rust field names
+- reran rust validation command `cd rust && cargo test && cargo clippy -- -D warnings && cargo fmt --check` after implementation and formatting (all passing)
+- marked criteria 13 and 14 complete in `RALPH_TASK.md`
+- next focus: criterion 15 (`rust/src/tools/projects.rs`)

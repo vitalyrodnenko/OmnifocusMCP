@@ -4,17 +4,29 @@ use serde::{Deserialize, Serialize};
 pub struct TaskResult {
     pub id: String,
     pub name: String,
+    #[serde(default)]
     pub note: Option<String>,
+    #[serde(default)]
     pub flagged: bool,
+    #[serde(default)]
     pub completed: bool,
+    #[serde(rename = "projectName", alias = "project", default)]
     pub project: Option<String>,
+    #[serde(rename = "dueDate", alias = "due_date", default)]
     pub due_date: Option<String>,
+    #[serde(rename = "deferDate", alias = "defer_date", default)]
     pub defer_date: Option<String>,
+    #[serde(rename = "completionDate", alias = "completion_date", default)]
     pub completion_date: Option<String>,
+    #[serde(default)]
     pub tags: Vec<String>,
+    #[serde(rename = "estimatedMinutes", alias = "estimated_minutes", default)]
     pub estimated_minutes: Option<i32>,
+    #[serde(rename = "inInbox", alias = "in_inbox", default)]
     pub in_inbox: bool,
+    #[serde(rename = "hasChildren", alias = "has_children", default)]
     pub has_children: bool,
+    #[serde(default)]
     pub sequential: bool,
 }
 

@@ -153,7 +153,7 @@ Use the trait-based approach: tool functions accept `&dyn JxaRunner`
 ### Success Criteria
 
 12. [x] Create `rust/src/tools/mod.rs` re-exporting all tool modules.
-13. [ ] Create `rust/src/tools/tasks.rs` with read tools — **signatures
+13. [x] Create `rust/src/tools/tasks.rs` with read tools — **signatures
         must match Python exactly** (read `python/src/omnifocus_mcp/tools/tasks.py`):
         - `get_inbox(limit: i32 = 100)`
         - `list_tasks(project?: String, tag?: String, flagged?: bool,
@@ -162,7 +162,7 @@ Use the trait-based approach: tool functions accept `&dyn JxaRunner`
         - `search_tasks(query: String, limit: i32 = 100)` — NO status param
         JXA scripts copied from the Python file.
         Input validation: limit > 0, non-empty task_id, non-empty query.
-14. [ ] Add write tools to `rust/src/tools/tasks.rs`:
+14. [x] Add write tools to `rust/src/tools/tasks.rs`:
         - `create_task(name, project?, note?, due_date?, defer_date?,
           flagged?, tags?: Vec<String>, estimated_minutes?: i32)`
         - `create_tasks_batch(tasks: Vec<CreateTaskInput>)`
