@@ -5,7 +5,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 RUN npm install -g npm@latest \
-    && python3 -m pip install --no-cache-dir uv
+    && curl -LsSf https://astral.sh/uv/install.sh | sh \
+    && ln -s /root/.local/bin/uv /usr/local/bin/uv
 
 WORKDIR /workspace
 

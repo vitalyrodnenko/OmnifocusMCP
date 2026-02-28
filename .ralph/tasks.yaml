@@ -3,203 +3,245 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772293242
-generated_at: 2026-02-28T15:43:00Z
+source_mtime: 1772297351
+generated_at: 2026-02-28T16:49:37Z
 
 tasks:
-  - id: "line_32"
-    line_number: 32
+  - id: "line_30"
+    line_number: 30
     status: completed
     parallel_group: 999999
     description: Create `python/scripts/smoke_test.py` — a standalone async script
     indent_level: 0
     raw_marker: 1.
-  - id: "line_37"
-    line_number: 37
+  - id: "line_35"
+    line_number: 35
     status: completed
     parallel_group: 999999
     description: Smoke test verifies JXA bridge basics: `run_omnijs` can execute
     indent_level: 0
     raw_marker: 2.
-  - id: "line_39"
-    line_number: 39
+  - id: "line_37"
+    line_number: 37
     status: completed
     parallel_group: 999999
     description: Smoke test calls every read tool function and verifies each returns
     indent_level: 0
     raw_marker: 3.
-  - id: "line_44"
-    line_number: 44
+  - id: "line_42"
+    line_number: 42
     status: completed
     parallel_group: 999999
     description: Smoke test runs a full task CRUD lifecycle:
     indent_level: 0
     raw_marker: 4.
-  - id: "line_52"
-    line_number: 52
+  - id: "line_50"
+    line_number: 50
     status: completed
     parallel_group: 999999
     description: Smoke test runs successfully against real OmniFocus with zero
     indent_level: 0
     raw_marker: 5.
-  - id: "line_65"
-    line_number: 65
+  - id: "line_63"
+    line_number: 63
     status: completed
     parallel_group: 999999
     description: Every `# BUG:` documented in Phase 1 has a corresponding fix
     indent_level: 0
     raw_marker: 6.
-  - id: "line_67"
-    line_number: 67
+  - id: "line_65"
+    line_number: 65
     status: completed
     parallel_group: 999999
     description: The same fixes are applied to the TypeScript source
     indent_level: 0
     raw_marker: 7.
-  - id: "line_69"
-    line_number: 69
+  - id: "line_67"
+    line_number: 67
     status: completed
     parallel_group: 999999
     description: All existing mocked unit tests still pass after fixes:
     indent_level: 0
     raw_marker: 8.
-  - id: "line_72"
-    line_number: 72
+  - id: "line_70"
+    line_number: 70
     status: completed
     parallel_group: 999999
     description: Smoke test (`python/scripts/smoke_test.py`) passes cleanly
     indent_level: 0
     raw_marker: 9.
-  - id: "line_124"
-    line_number: 124
+  - id: "line_122"
+    line_number: 122
     status: completed
     parallel_group: 999999
     description: Python: `server.py` refactored to < 50 lines. Creates FastMCP
     indent_level: 0
     raw_marker: 10.
-  - id: "line_127"
-    line_number: 127
+  - id: "line_125"
+    line_number: 125
     status: completed
     parallel_group: 999999
     description: Python: `tools/` directory created with separate files per entity.
     indent_level: 0
     raw_marker: 11.
-  - id: "line_130"
-    line_number: 130
+  - id: "line_128"
+    line_number: 128
     status: completed
     parallel_group: 999999
     description: Python: `resources.py` and `prompts.py` created with their
     indent_level: 0
     raw_marker: 12.
-  - id: "line_132"
-    line_number: 132
+  - id: "line_130"
+    line_number: 130
     status: completed
     parallel_group: 999999
     description: Python: `ruff check src/ && ruff format --check src/ && mypy src/
     indent_level: 0
     raw_marker: 13.
-  - id: "line_134"
-    line_number: 134
+  - id: "line_132"
+    line_number: 132
     status: completed
     parallel_group: 999999
     description: TypeScript: `index.ts` refactored to < 50 lines. Creates
     indent_level: 0
     raw_marker: 14.
-  - id: "line_137"
-    line_number: 137
+  - id: "line_135"
+    line_number: 135
     status: completed
     parallel_group: 999999
     description: TypeScript: `tools/` directory created with separate files.
     indent_level: 0
     raw_marker: 15.
-  - id: "line_140"
-    line_number: 140
+  - id: "line_138"
+    line_number: 138
     status: completed
     parallel_group: 999999
     description: TypeScript: `npx tsc --noEmit && npm test` passes. Zero failures.
     indent_level: 0
     raw_marker: 16.
-  - id: "line_141"
-    line_number: 141
+  - id: "line_139"
+    line_number: 139
     status: completed
     parallel_group: 999999
     description: Smoke test still passes against real OmniFocus after refactor.
     indent_level: 0
     raw_marker: 17.
-  - id: "line_152"
-    line_number: 152
+  - id: "line_150"
+    line_number: 150
     status: completed
     parallel_group: 999999
     description: `python/pyproject.toml` has pytest marker config:
     indent_level: 0
     raw_marker: 18.
-  - id: "line_156"
-    line_number: 156
+  - id: "line_154"
+    line_number: 154
     status: completed
     parallel_group: 999999
     description: `python/tests/test_integration.py` created with
     indent_level: 0
     raw_marker: 19.
-  - id: "line_165"
-    line_number: 165
+  - id: "line_163"
+    line_number: 163
     status: completed
     parallel_group: 999999
     description: Python integration tests pass when run explicitly:
     indent_level: 0
     raw_marker: 20.
-  - id: "line_167"
-    line_number: 167
+  - id: "line_165"
+    line_number: 165
     status: completed
     parallel_group: 999999
     description: Python integration tests skip cleanly when run normally:
     indent_level: 0
     raw_marker: 21.
-  - id: "line_169"
-    line_number: 169
+  - id: "line_167"
+    line_number: 167
     status: completed
     parallel_group: 999999
     description: TypeScript: `typescript/tests/integration.test.ts` created with
     indent_level: 0
     raw_marker: 22.
-  - id: "line_172"
-    line_number: 172
+  - id: "line_170"
+    line_number: 170
     status: completed
     parallel_group: 999999
     description: TypeScript integration tests pass when run explicitly.
     indent_level: 0
     raw_marker: 23.
-  - id: "line_173"
-    line_number: 173
+  - id: "line_171"
+    line_number: 171
     status: completed
     parallel_group: 999999
     description: No test data leaks — all `[TEST-MCP]` items are cleaned up by
     indent_level: 0
     raw_marker: 24.
-  - id: "line_184"
-    line_number: 184
+  - id: "line_189"
+    line_number: 189
     status: completed
+    parallel_group: 999999
+    description: Create `docs/install-python.md` with:
+    indent_level: 0
+    raw_marker: 25.
+  - id: "line_200"
+    line_number: 200
+    status: completed
+    parallel_group: 999999
+    description: Create `docs/install-typescript.md` with:
+    indent_level: 0
+    raw_marker: 26.
+  - id: "line_210"
+    line_number: 210
+    status: completed
+    parallel_group: 999999
+    description: Create `docs/development-docker.md` with:
+    indent_level: 0
+    raw_marker: 27.
+  - id: "line_219"
+    line_number: 219
+    status: completed
+    parallel_group: 999999
+    description: Update the top-level `README.md`:
+    indent_level: 0
+    raw_marker: 28.
+  - id: "line_224"
+    line_number: 224
+    status: completed
+    parallel_group: 999999
+    description: Verify each guide by following its steps on this machine:
+    indent_level: 0
+    raw_marker: 29.
+  - id: "line_229"
+    line_number: 229
+    status: completed
+    parallel_group: 999999
+    description: All existing tests still pass after guide changes:
+    indent_level: 0
+    raw_marker: 30.
+  - id: "line_241"
+    line_number: 241
+    status: pending
     parallel_group: 999999
     description: Both servers start and stop cleanly:
     indent_level: 0
-    raw_marker: 25.
-  - id: "line_187"
-    line_number: 187
-    status: completed
+    raw_marker: 31.
+  - id: "line_244"
+    line_number: 244
+    status: pending
     parallel_group: 999999
     description: Full test commands pass for both implementations (mocked tests):
     indent_level: 0
-    raw_marker: 26.
-  - id: "line_191"
-    line_number: 191
-    status: completed
+    raw_marker: 32.
+  - id: "line_248"
+    line_number: 248
+    status: pending
     parallel_group: 999999
     description: Git status is clean — no untracked source files, no uncommitted
     indent_level: 0
-    raw_marker: 27.
-  - id: "line_193"
-    line_number: 193
-    status: completed
+    raw_marker: 33.
+  - id: "line_250"
+    line_number: 250
+    status: pending
     parallel_group: 999999
-    description: Tag the repo as `v1.0.0` (if not already tagged).
+    description: Tag the repo as `v1.1.0`.
     indent_level: 0
-    raw_marker: 28.
+    raw_marker: 34.

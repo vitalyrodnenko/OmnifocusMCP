@@ -27,7 +27,7 @@ Mount the repository into `/workspace` and run the same checks used in local val
 
 ```bash
 docker run --rm -v "$PWD:/workspace" -w /workspace omnifocus-mcp-dev \
-  bash -lc "cd python && uv sync && ruff check src/ && mypy src/ --strict && pytest tests/ -v"
+  bash -lc "cd python && uv sync --extra dev && uv run ruff check src/ && uv run mypy src/ --strict && uv run pytest tests/ -v"
 ```
 
 ### typescript checks
@@ -41,7 +41,7 @@ docker run --rm -v "$PWD:/workspace" -w /workspace omnifocus-mcp-dev \
 
 ```bash
 docker run --rm -v "$PWD:/workspace" -w /workspace omnifocus-mcp-dev \
-  bash -lc "cd python && uv sync && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npm install && npx tsc --noEmit && npm test"
+  bash -lc "cd python && uv sync --extra dev && uv run ruff check src/ && uv run mypy src/ --strict && uv run pytest tests/ -v && cd ../typescript && npm install && npx tsc --noEmit && npm test"
 ```
 
 ## ci example (github actions)
@@ -61,7 +61,7 @@ jobs:
       - name: build dev image
         run: docker build -t omnifocus-mcp-dev .
       - name: run python checks
-        run: docker run --rm -v "$PWD:/workspace" -w /workspace omnifocus-mcp-dev bash -lc "cd python && uv sync && ruff check src/ && mypy src/ --strict && pytest tests/ -v"
+        run: docker run --rm -v "$PWD:/workspace" -w /workspace omnifocus-mcp-dev bash -lc "cd python && uv sync --extra dev && uv run ruff check src/ && uv run mypy src/ --strict && uv run pytest tests/ -v"
       - name: run typescript checks
         run: docker run --rm -v "$PWD:/workspace" -w /workspace omnifocus-mcp-dev bash -lc "cd typescript && npm install && npx tsc --noEmit && npm test"
 ```

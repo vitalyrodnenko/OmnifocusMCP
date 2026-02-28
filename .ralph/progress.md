@@ -279,3 +279,19 @@ This is how Ralph maintains continuity across iterations.
 - preserved required MCP config/switching documentation sections and reran the Ralph test command; both implementations' checks/tests passed
 - marked criterion 28 complete in `RALPH_TASK.md`
 - next focus: execute criterion 29 guide validation steps (python startup, TypeScript startup, docker build/run checks)
+
+### 2026-02-28 10:50:00
+- completed criterion 29 by validating guide steps on this machine:
+  - python clone-fresh path: `uv sync` and `uv run python -m omnifocus_mcp` start/stop with SIGINT returned cleanly
+  - typescript clone-fresh path: `npm install`, `npm run build`, and `node dist/index.js` start/stop with SIGINT returned cleanly
+  - docker path: `docker build` succeeded and in-container combined checks passed
+- during docker validation, fixed root `Dockerfile` to install `uv` via the official installer (PEP 668 blocked `pip install uv`) and updated `docs/development-docker.md` commands to use `uv sync --extra dev` plus `uv run ...` for Python dev tools
+- completed criterion 30 by rerunning the Ralph full local test command after guide and Docker fixes; python and TypeScript checks/tests passed
+- marked criteria 29 and 30 complete in `RALPH_TASK.md`
+- next focus: begin Phase 6 criterion 31 (server start/stop probes)
+
+### 2026-02-28 10:49:38
+**Session 1 ended** - Agent finished naturally (4 criteria remaining)
+
+### 2026-02-28 10:49:40
+**Session 2 started** (model: auto)

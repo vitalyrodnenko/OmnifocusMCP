@@ -221,12 +221,12 @@ running mocked tests). The Docker guide must explain this clearly.
         - List all 19 tools, 3 resources, and 4 prompts with one-line
           descriptions in a features table
         - Add badges or status indicators if appropriate
-29. [ ] Verify each guide by following its steps on this machine:
+29. [x] Verify each guide by following its steps on this machine:
         - Python: clone-fresh install → server starts → Ctrl-C clean exit
         - TypeScript: clone-fresh install → build → server starts → clean exit
         - Docker: `docker build` → `docker run <lint+test command>` →
           all tests pass inside container
-30. [ ] All existing tests still pass after guide changes:
+30. [x] All existing tests still pass after guide changes:
         `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
         `cd typescript && npx tsc --noEmit && npm test`
 
