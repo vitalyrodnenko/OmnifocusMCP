@@ -71,6 +71,10 @@ const projects = document.flattenedProjects
 return projects.map(project => {{
   const projectId = project.id.primaryKey;
   const counts = projectCounts.get(projectId) || {{ taskCount: 0, remainingTaskCount: 0 }};
+  const nextTask = project.nextTask;
+  const isStalled = normalizeProjectStatus(project) === "active"
+    && project.flattenedTasks.some(t => !t.completed)
+    && nextTask === null;
   const reviewInterval = project.reviewInterval;
   return {{
     id: projectId,
@@ -81,8 +85,12 @@ return projects.map(project => {{
     remainingTaskCount: counts.remainingTaskCount,
     deferDate: project.deferDate ? project.deferDate.toISOString() : null,
     dueDate: project.dueDate ? project.dueDate.toISOString() : null,
+    completionDate: project.completionDate ? project.completionDate.toISOString() : null,
     note: project.note,
     sequential: project.sequential,
+    isStalled: isStalled,
+    nextTaskId: nextTask ? nextTask.id.primaryKey : null,
+    nextTaskName: nextTask ? nextTask.name : null,
     reviewInterval: reviewInterval === null || reviewInterval === undefined ? null : String(reviewInterval)
   }};
 }});"#
@@ -161,6 +169,10 @@ const normalizeProjectStatus = (item) => {{
 const allProjectTasks = document.flattenedTasks.filter(task => {{
   return task.containingProject && task.containingProject.id.primaryKey === project.id.primaryKey;
 }});
+const nextTask = project.nextTask;
+const isStalled = normalizeProjectStatus(project) === "active"
+  && allProjectTasks.some(task => !task.completed)
+  && nextTask === null;
 
 const rootTasks = project.tasks.map(task => {{
   return {{
@@ -184,10 +196,16 @@ return {{
   folderName: project.folder ? project.folder.name : null,
   taskCount: allProjectTasks.length,
   remainingTaskCount: allProjectTasks.filter(task => !task.completed).length,
+  completedTaskCount: allProjectTasks.filter(task => task.completed).length,
+  availableTaskCount: allProjectTasks.filter(task => !task.completed && (task.deferDate === null || task.deferDate <= new Date())).length,
   deferDate: project.deferDate ? project.deferDate.toISOString() : null,
   dueDate: project.dueDate ? project.dueDate.toISOString() : null,
+  completionDate: project.completionDate ? project.completionDate.toISOString() : null,
   note: project.note,
   sequential: project.sequential,
+  isStalled: isStalled,
+  nextTaskId: nextTask ? nextTask.id.primaryKey : null,
+  nextTaskName: nextTask ? nextTask.name : null,
   reviewInterval: reviewInterval === null || reviewInterval === undefined ? null : String(reviewInterval),
   rootTasks: rootTasks
 }};"#

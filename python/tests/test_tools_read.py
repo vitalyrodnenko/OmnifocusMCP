@@ -590,8 +590,12 @@ async def test_list_projects_happy_path(mock_server_run_omnijs: Callable[[Any], 
             "remainingTaskCount": 3,
             "deferDate": None,
             "dueDate": None,
+            "completionDate": None,
             "note": "",
             "sequential": False,
+            "isStalled": False,
+            "nextTaskId": None,
+            "nextTaskName": None,
             "reviewInterval": None,
         }
     ]
@@ -603,7 +607,12 @@ async def test_list_projects_happy_path(mock_server_run_omnijs: Callable[[Any], 
 
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
-    assert 'const statusFilter = "active";' in state["calls"][0]["script"]
+    script = state["calls"][0]["script"]
+    assert 'const statusFilter = "active";' in script
+    assert "const nextTask = project.nextTask;" in script
+    assert "const isStalled = normalizeProjectStatus(project) === \"active\"" in script
+    assert "completionDate: project.completionDate ? project.completionDate.toISOString() : null," in script
+    assert "nextTaskId: nextTask ? nextTask.id.primaryKey : null," in script
 
 
 @pytest.mark.asyncio
@@ -636,10 +645,16 @@ async def test_get_project_happy_path(mock_server_run_omnijs: Callable[[Any], di
         "folderName": "Work",
         "taskCount": 2,
         "remainingTaskCount": 1,
+        "completedTaskCount": 1,
+        "availableTaskCount": 1,
         "deferDate": None,
         "dueDate": None,
+        "completionDate": None,
         "note": "",
         "sequential": True,
+        "isStalled": False,
+        "nextTaskId": None,
+        "nextTaskName": None,
         "reviewInterval": None,
         "rootTasks": [],
     }
@@ -651,7 +666,12 @@ async def test_get_project_happy_path(mock_server_run_omnijs: Callable[[Any], di
 
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
-    assert 'const projectFilter = "p2";' in state["calls"][0]["script"]
+    script = state["calls"][0]["script"]
+    assert 'const projectFilter = "p2";' in script
+    assert "const nextTask = project.nextTask;" in script
+    assert "const isStalled = normalizeProjectStatus(project) === \"active\"" in script
+    assert "completedTaskCount: allProjectTasks.filter(task => task.completed).length," in script
+    assert "availableTaskCount: allProjectTasks.filter(task => !task.completed && (task.deferDate === null || task.deferDate <= new Date())).length," in script
 
 
 @pytest.mark.asyncio
