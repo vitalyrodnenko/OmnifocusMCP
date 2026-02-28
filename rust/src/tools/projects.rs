@@ -5,6 +5,9 @@ use crate::{
     jxa::{escape_for_jxa, JxaRunner},
 };
 
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
+#[allow(clippy::too_many_arguments)]
 pub async fn list_projects<R: JxaRunner>(
     runner: &R,
     folder: Option<&str>,
@@ -34,7 +37,10 @@ pub async fn list_projects<R: JxaRunner>(
         ));
     }
     if let Some(sort_field) = sort_by {
-        if !matches!(sort_field, "name" | "dueDate" | "completionDate" | "taskCount") {
+        if !matches!(
+            sort_field,
+            "name" | "dueDate" | "completionDate" | "taskCount"
+        ) {
             return Err(OmniFocusError::Validation(
                 "sortBy must be one of: name, dueDate, completionDate, taskCount.".to_string(),
             ));

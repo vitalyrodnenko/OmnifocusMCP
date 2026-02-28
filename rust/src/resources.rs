@@ -19,6 +19,7 @@ pub async fn today_resource<R: JxaRunner>(runner: &R) -> Result<String> {
 }
 
 pub async fn projects_resource<R: JxaRunner>(runner: &R) -> Result<String> {
-    let projects = list_projects(runner, None, "active", None, None, false, None, "asc", 100).await?;
+    let projects =
+        list_projects(runner, None, "active", None, None, false, None, "asc", 100).await?;
     Ok(serde_json::to_string(&projects)?)
 }

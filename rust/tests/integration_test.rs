@@ -232,7 +232,8 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
         assert!(!first.name.is_empty());
     }
 
-    let projects = list_projects(&runner, None, "active", None, None, false, None, "asc", 20).await?;
+    let projects =
+        list_projects(&runner, None, "active", None, None, false, None, "asc", 20).await?;
     let projects_array = require_array(&projects, "list_projects result");
     if let Some(first) = projects_array.first() {
         assert_has_keys(

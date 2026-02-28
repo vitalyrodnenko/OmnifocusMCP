@@ -202,8 +202,8 @@ async fn read_non_task_tools_happy_path() {
         "asc",
         100,
     )
-        .await
-        .expect("projects should load");
+    .await
+    .expect("projects should load");
     assert!(projects.is_array());
 
     let project_runner = MockRunner {
@@ -416,6 +416,21 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
+        list_projects(
+            &runner,
+            None,
+            "active",
+            None,
+            None,
+            false,
+            Some("invalid"),
+            "asc",
+            10
+        )
+        .await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
         get_project(&runner, "").await,
         Err(OmniFocusError::Validation(_))
     ));
@@ -481,6 +496,75 @@ async fn list_projects_script_includes_stalled_and_next_task_fields() {
     ));
     assert!(script.contains("nextTaskId: nextTask ? nextTask.id.primaryKey : null,"));
     assert!(script.contains("nextTaskName: nextTask ? nextTask.name : null,"));
+}
+
+#[tokio::test]
+async fn list_projects_completion_filters_auto_set_completed_and_sorting() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{"id": "p2", "name": "completed project"}]),
+        last_script: last_script.clone(),
+    };
+
+    let projects = list_projects(
+        &runner,
+        None,
+        "active",
+        None,
+        Some("2026-03-01T00:00:00Z"),
+        false,
+        None,
+        "asc",
+        5,
+    )
+    .await
+    .expect("projects should parse");
+    assert!(projects.is_array());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const statusFilter = "completed";"#));
+    assert!(script.contains(r#"const sortBy = "completionDate";"#));
+    assert!(script.contains(r#"const sortOrder = "desc";"#));
+    assert!(script.contains(
+        "if (completedAfter !== null && !(project.completionDate !== null && project.completionDate > completedAfter)) return false;"
+    ));
+}
+
+#[tokio::test]
+async fn list_projects_stalled_only_and_explicit_sort_are_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{"id": "p3", "name": "stalled project"}]),
+        last_script: last_script.clone(),
+    };
+
+    let projects = list_projects(
+        &runner,
+        None,
+        "completed",
+        None,
+        None,
+        true,
+        Some("taskCount"),
+        "desc",
+        5,
+    )
+    .await
+    .expect("projects should parse");
+    assert!(projects.is_array());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const statusFilter = "active";"#));
+    assert!(script.contains("const stalledOnly = true;"));
+    assert!(script.contains("if (stalledOnly && !isStalled) return false;"));
+    assert!(script.contains(r#"const sortBy = "taskCount";"#));
+    assert!(script.contains(r#"const sortOrder = "desc";"#));
 }
 
 #[tokio::test]

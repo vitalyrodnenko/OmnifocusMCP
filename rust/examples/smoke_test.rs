@@ -158,10 +158,10 @@ impl SmokeTest {
 
         let projects_value =
             list_projects(runner, None, "active", None, None, false, None, "asc", 10)
-            .await
-            .map_err(|error| {
-                OmniFocusError::Validation(format!("list_projects failed: {error}"))
-            })?;
+                .await
+                .map_err(|error| {
+                    OmniFocusError::Validation(format!("list_projects failed: {error}"))
+                })?;
         let projects = require_array(&projects_value, "list_projects result")?;
         let project_id = if let Some(first) = projects.first() {
             require_string_key(first, "id", "list_projects item")?.to_string()

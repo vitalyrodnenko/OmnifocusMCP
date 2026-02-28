@@ -28,7 +28,12 @@ async def list_projects(
         raise ValueError("folder must not be empty when provided.")
     if status not in ("active", "on_hold", "completed", "dropped"):
         raise ValueError("status must be one of: active, on_hold, completed, dropped.")
-    if sortBy is not None and sortBy not in ("name", "dueDate", "completionDate", "taskCount"):
+    if sortBy is not None and sortBy not in (
+        "name",
+        "dueDate",
+        "completionDate",
+        "taskCount",
+    ):
         raise ValueError(
             "sortBy must be one of: name, dueDate, completionDate, taskCount."
         )
