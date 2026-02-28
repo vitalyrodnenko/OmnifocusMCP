@@ -125,3 +125,8 @@
 - **Instruction**: Read the full file once to catch duplicated blocks/stray braces introduced by partial edits, then repair the canonical single-definition structure before rerunning gates
 - **Added after**: `rust/tests/tools_read_test.rs` had duplicated `CapturingRunner`/brace fragments causing alternating `unexpected closing delimiter` and `unclosed delimiter` failures during criterion 6 validation
 
+### Sign: Deduplicate Tool Symbols Before Cross-Implementation Gates
+- **Trigger**: When mypy/tsc/rustc reports function redefinition for tool helpers during full gate runs
+- **Instruction**: Run `rg` for the symbol in Python/TypeScript/Rust tool modules and keep exactly one canonical exported implementation name per module before rerunning tests
+- **Added after**: full gate for criterion 14 failed on duplicated `get_task_counts`/`getTaskCountsData` definitions across all 3 implementations
+

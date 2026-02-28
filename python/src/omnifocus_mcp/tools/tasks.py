@@ -623,7 +623,7 @@ async def get_task_counts(
     completedAfter: str | None = None,
     maxEstimatedMinutes: int | None = None,
 ) -> str:
-    """get aggregate task counts for any filter combination without listing tasks."""
+    """get aggregate task counts for any filter combination without listing individual tasks. much faster than list_tasks for answering 'how many' questions."""
     if project is not None and project.strip() == "":
         raise ValueError("project must not be empty when provided.")
     if tag is not None and tag.strip() == "":

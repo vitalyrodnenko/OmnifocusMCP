@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phase 1, Phase 2, and Phase 3 complete; moving to Phase 4.
-- Next criterion: **14** — add new `get_task_counts` tool across all 3 implementations
-- Remaining: criteria 14-36 (23 criteria across Phases 4-11)
+- Current status: Phase 1, Phase 2, and Phase 3 complete; Phase 4 criterion 14 complete.
+- Next criterion: **15** — add new `get_project_counts` tool across all 3 implementations
+- Remaining: criteria 15-36 (22 criteria across Phases 4-11)
 
 ## How This Works
 
@@ -22,7 +22,7 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Enhanced list_tasks                | 1–6      | 6/6  |
 | 2     | Enhanced list_projects/get_project | 7–9      | 3/3  |
 | 3     | Enhanced get_inbox/list_tags/search| 10–13    | 4/4  |
-| 4     | Aggregate Count Tools              | 14–16    | 0/3  |
+| 4     | Aggregate Count Tools              | 14–16    | 1/3  |
 | 5     | Enhanced get_forecast              | 17–18    | 0/2  |
 | 6     | Tests and Parity Verification      | 19–20    | 0/2  |
 | 7     | Documentation                      | 21–22    | 0/2  |
@@ -31,7 +31,7 @@ This is how Ralph maintains continuity across iterations.
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 13 / 36 criteria complete**
+**Total: 14 / 36 criteria complete**
 
 ## Key Context
 
@@ -322,8 +322,26 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-28 15:13:02
 **Session 36 started** (model: auto)
 
+### 2026-02-28 15:13:40
+- completed criterion 14 (`get_task_counts`) validation across python/typescript/rust
+- normalized `search_tasks` status default parity to `available` in python/typescript
+- fixed pre-existing duplicate definitions that blocked gates (`get_task_counts` duplicates in python/typescript/rust)
+- fixed a TypeScript representative test assertion to parse tool result directly
+- ran full required gate successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- marked criterion 14 complete in `RALPH_TASK.md`
+- next: criterion 15 (`get_project_counts` in all 3 implementations)
+
 ### 2026-02-28 15:13:31
 **Session 36 ended** - 🔄 Context rotation (token limit reached)
 
 ### 2026-02-28 15:13:33
 **Session 37 started** (model: auto)
+
+### 2026-02-28 15:14:05
+**Session 37 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 15:14:07
+**Session 38 started** (model: auto)
