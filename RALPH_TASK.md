@@ -41,7 +41,7 @@ This is the foundation everything else builds on.
 
 ### Success Criteria
 
-1. [ ] Research the `rmcp` crate (official Rust MCP SDK at
+1. [x] Research the `rmcp` crate (official Rust MCP SDK at
        https://github.com/modelcontextprotocol/rust-sdk). Use the
        `context7` MCP tool to fetch up-to-date documentation. Determine:
        - How to register tools (derive macro, trait impl, or builder)

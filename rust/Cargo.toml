@@ -1,0 +1,13 @@
+# criterion 1 research notes (rmcp v0.17.0, source: docs.rs + rust-sdk README/FEATURES)
+# - tools registration: define tool methods in an impl annotated with `#[tool_router]`,
+#   annotate each method with `#[tool(...)]`, store `ToolRouter<Self>` in server state,
+#   and add `#[tool_handler] impl ServerHandler for ...` to auto-wire call/list handlers
+# - prompts registration: use `#[prompt_router]` + `#[prompt(...)]` methods and
+#   `#[prompt_handler] impl ServerHandler` to wire get_prompt/list_prompts
+# - resources registration: implement `ServerHandler::list_resources`,
+#   `ServerHandler::read_resource`, and optional `list_resource_templates` manually
+#   (resource routing is trait-method based in rmcp docs)
+# - stdio transport: `let service = server.serve(stdio()).await?; service.waiting().await?;`
+# - tool parameter schemas: use `Parameters<T>` wrapper and derive
+#   `Serialize`, `Deserialize`, and `JsonSchema` on `T`; rmcp generates tool schema from `T`
+

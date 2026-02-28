@@ -320,3 +320,10 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 10:54:07
 **Session 1 started** (model: auto)
+
+### 2026-02-28 11:05:00
+- read required Ralph state files (`RALPH_TASK.md`, `.ralph/guardrails.md`, `.ralph/progress.md`, `.ralph/errors.log`) before edits
+- completed criterion 1 by researching `rmcp` v0.17 docs and recording findings in the required top comment block at `rust/Cargo.toml`
+- findings captured: tool registration (`#[tool_router]` + `#[tool_handler]`), prompt registration (`#[prompt_router]` + `#[prompt_handler]`), resource registration via `ServerHandler` trait methods, stdio wiring (`serve(stdio())` + `waiting()`), and typed tool params via `Parameters<T>`
+- marked criterion 1 complete in `RALPH_TASK.md`
+- next focus: criterion 2 (`.cursor/rules/rust-conventions.mdc`)
