@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772297351
-generated_at: 2026-02-28T16:49:37Z
+source_mtime: 1772297461
+generated_at: 2026-02-28T16:51:36Z
 
 tasks:
   - id: "line_30"
@@ -219,28 +219,28 @@ tasks:
     raw_marker: 30.
   - id: "line_241"
     line_number: 241
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Both servers start and stop cleanly:
     indent_level: 0
     raw_marker: 31.
   - id: "line_244"
     line_number: 244
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Full test commands pass for both implementations (mocked tests):
     indent_level: 0
     raw_marker: 32.
   - id: "line_248"
     line_number: 248
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Git status is clean — no untracked source files, no uncommitted
     indent_level: 0
     raw_marker: 33.
   - id: "line_250"
     line_number: 250
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tag the repo as `v1.1.0`.
     indent_level: 0
