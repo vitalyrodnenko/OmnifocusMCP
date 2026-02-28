@@ -345,6 +345,16 @@ Reading even two full files will blow your budget and trigger rotation.
 ### 2026-02-28 14:41:39
 **Session 29 started** (model: auto)
 
+### 2026-02-28 14:45:00
+- completed criterion 5 validation for `completionDate` and `hasChildren` on `list_tasks` and `search_tasks` across python/typescript/rust
+- verified mapper presence via targeted symbol/script checks and representative tests in all three implementations
+- ran full `test_command` gates successfully:
+  - python: `ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - typescript: `npx tsc --noEmit && npm test`
+  - rust: `cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- updated `RALPH_TASK.md` criterion 5 to `[x]`
+- next criterion: 6 (phase 1 full lint/test gate confirmation)
+
 ### 2026-02-28 14:42:35
 **Session 29 ended** - 🔄 Context rotation (token limit reached)
 

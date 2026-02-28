@@ -178,7 +178,7 @@ See individual phase criteria below.
          on completion filters, nulls-last behavior.
        - All lint/test commands pass.
 
-5. [ ] **Add `completionDate` and `hasChildren` to list_tasks response** —
+5. [x] **Add `completionDate` and `hasChildren` to list_tasks response** —
        all 3 implementations.
        - Add to the task object mapper in the JXA script:
          `completionDate: task.completionDate ? task.completionDate.toISOString() : null`
