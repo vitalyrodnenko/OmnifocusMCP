@@ -318,7 +318,7 @@ distribution.
           compute SHA256 (`shasum -a 256`)
         - Create GitHub Release with both tarballs attached
         - Output SHA256 values in release notes for Homebrew formula
-39. [ ] Create `homebrew/omnifocus-mcp.rb` — Homebrew formula template:
+39. [x] Create `homebrew/omnifocus-mcp.rb` — Homebrew formula template:
         - `desc`, `homepage`, `version`, `license`
         - `depends_on :macos`
         - `on_arm` / `on_intel` blocks with URL and sha256 placeholders

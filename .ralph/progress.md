@@ -673,3 +673,15 @@ This is how Ralph maintains continuity across iterations.
 - completed criterion 38 by adding `.github/workflows/release-rust.yml` for `rust-v*` tags, dual macOS builds (arm64 + x86_64), tarball packaging, SHA256 generation, and GitHub Release publishing
 - marked criterion 38 complete in `RALPH_TASK.md`
 - next focus: criterion 39 (`homebrew/omnifocus-mcp.rb`)
+
+### 2026-02-28 12:13:00
+- completed criterion 39 by adding `homebrew/omnifocus-mcp.rb` with required metadata fields, `depends_on :macos`, architecture-specific release URL/SHA placeholders, `bin.install`, and a `--version` test block
+- included a formula header describing tap creation and release SHA update workflow
+- marked criterion 39 complete in `RALPH_TASK.md`
+- next focus: criterion 40 (`docs/install-rust.md`)
+
+### 2026-02-28 11:42:28
+**Session 24 ended** - Agent finished naturally (8 criteria remaining)
+
+### 2026-02-28 11:42:30
+**Session 25 started** (model: auto)

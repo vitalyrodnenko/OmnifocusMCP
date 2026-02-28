@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772300170
-generated_at: 2026-02-28T17:37:16Z
+source_mtime: 1772300526
+generated_at: 2026-02-28T17:42:26Z
 
 tasks:
   - id: "line_44"
@@ -240,42 +240,42 @@ tasks:
     raw_marker: 33.
   - id: "line_292"
     line_number: 292
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Integration tests pass: `cargo test --features integration`
     indent_level: 0
     raw_marker: 34.
   - id: "line_294"
     line_number: 294
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Integration tests are excluded from normal `cargo test`.
     indent_level: 0
     raw_marker: 35.
   - id: "line_295"
     line_number: 295
-    status: pending
+    status: completed
     parallel_group: 999999
     description: No test data leaks — all `[TEST-MCP]` items cleaned up by
     indent_level: 0
     raw_marker: 36.
   - id: "line_308"
     line_number: 308
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `cargo build --release` produces a working binary at
     indent_level: 0
     raw_marker: 37.
   - id: "line_311"
     line_number: 311
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `.github/workflows/release-rust.yml`:
     indent_level: 0
     raw_marker: 38.
   - id: "line_321"
     line_number: 321
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Create `homebrew/omnifocus-mcp.rb` — Homebrew formula template:
     indent_level: 0

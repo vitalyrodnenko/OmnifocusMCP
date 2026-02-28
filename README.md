@@ -7,20 +7,30 @@ OmniFocus MCP is a Model Context Protocol server for OmniFocus automation on mac
 | Indicator | Value |
 | --- | --- |
 | Stability | ✅ validated with mocked test suites in both implementations |
-| Tooling parity | ✅ Python and TypeScript expose matching tool/resource/prompt surfaces |
+| Tooling parity | ✅ Python, TypeScript, and Rust expose matching tool/resource/prompt surfaces |
 | Platform support | ✅ macOS host runtime (OmniFocus + Apple Events) |
 
 ## Quick Start
 
+- Rust install and runtime guide (homebrew recommended): [`docs/install-rust.md`](docs/install-rust.md)
 - Python install and runtime guide: [`docs/install-python.md`](docs/install-python.md)
 - TypeScript install and runtime guide: [`docs/install-typescript.md`](docs/install-typescript.md)
 - Docker development and CI guide: [`docs/development-docker.md`](docs/development-docker.md)
+
+## Implementations
+
+| implementation | language | install | status |
+| --- | --- | --- | --- |
+| rust | rust | homebrew (preferred) or source build | ✅ active |
+| python | python 3.11+ | `uv` from source | ✅ active |
+| typescript | node.js 20+ | `npm` from source | ✅ active |
 
 ## Prerequisites
 
 - macOS with OmniFocus installed
 - OmniFocus running when tools are used
 - Automation permission granted to the terminal/editor process
+- Rust toolchain for source builds (Homebrew install does not require Rust)
 - Python 3.11+ and `uv` (Python server)
 - Node.js 20+ and npm (TypeScript server)
 
@@ -130,19 +140,21 @@ TypeScript:
 }
 ```
 
-### switching between Python and TypeScript
+### switching between Rust, Python, and TypeScript
 
+- use the Rust config when you want the native `omnifocus-mcp` binary
 - use the Python config when you want `uv` or `python` execution from `python/`
 - use the TypeScript config when you want `node` execution from `typescript/dist/index.js`
 - keep only one OmniFocus server entry enabled to avoid duplicate tool sets
 
 ## switching implementations
 
-1. choose either the Python or TypeScript command block for your MCP client
+1. choose one command block (Rust, Python, or TypeScript) for your MCP client
 2. replace your existing OmniFocus server entry with the other implementation command
 3. restart the MCP client so it reloads the server command
 
 ## Additional Docs
 
+- Rust implementation details: `rust/README.md`
 - Python implementation details: `python/README.md`
 - TypeScript implementation details: `typescript/README.md`
