@@ -152,7 +152,7 @@ Use the trait-based approach: tool functions accept `&dyn JxaRunner`
 
 ### Success Criteria
 
-12. [ ] Create `rust/src/tools/mod.rs` re-exporting all tool modules.
+12. [x] Create `rust/src/tools/mod.rs` re-exporting all tool modules.
 13. [ ] Create `rust/src/tools/tasks.rs` with read tools — **signatures
         must match Python exactly** (read `python/src/omnifocus_mcp/tools/tasks.py`):
         - `get_inbox(limit: i32 = 100)`

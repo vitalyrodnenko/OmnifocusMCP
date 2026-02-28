@@ -338,3 +338,10 @@ This is how Ralph maintains continuity across iterations.
 - completed criterion 11 with `cd rust && cargo test && cargo clippy -- -D warnings && cargo fmt --check` passing
 - marked criteria 2-11 complete in `RALPH_TASK.md`
 - next focus: begin phase 2 criterion 12 (`rust/src/tools/mod.rs` full re-exports + tool module implementation)
+
+### 2026-02-28 11:26:00
+- completed criterion 12 by replacing inline tool module stubs with canonical `pub mod ...;` exports in `rust/src/tools/mod.rs`
+- added phase-2 scaffold files for each tool domain under `rust/src/tools/` (`tasks.rs`, `projects.rs`, `tags.rs`, `folders.rs`, `forecast.rs`, `perspectives.rs`) to keep module structure consistent with Ralph requirements
+- reran rust validation command `cd rust && cargo test && cargo clippy -- -D warnings && cargo fmt --check` (all passing)
+- marked criterion 12 complete in `RALPH_TASK.md`
+- next focus: criterion 13 (`rust/src/tools/tasks.rs` read tools with python-parity jxa scripts)
