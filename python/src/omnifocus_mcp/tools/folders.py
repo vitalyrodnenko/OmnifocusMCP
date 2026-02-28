@@ -182,6 +182,42 @@ return {{
 
 @typed_tool(mcp)
 async def delete_folder(folder_name_or_id: str) -> str:
+    """delete a folder by id or name. warning: this permanently removes the folder. contained projects may be moved to top level by omnifocus, so confirm with the user before proceeding."""
+    folder_filter = folder_name_or_id.strip()
+    if folder_filter == "":
+        raise ValueError("folder_name_or_id must not be empty.")
+
+    escaped_folder_filter = escape_for_jxa(folder_filter)
+    script = f"""
+const folderFilter = {escaped_folder_filter};
+
+const folder = document.flattenedFolders.find(item => {{
+  return item.id.primaryKey === folderFilter || item.name === folderFilter;
+}});
+if (!folder) {{
+  throw new Error(`Folder not found: ${{folderFilter}}`);
+}}
+
+const folderId = folder.id.primaryKey;
+const folderName = folder.name;
+const projectCount = folder.projects.length;
+const subfolderCount = folder.folders.length;
+deleteObject(folder);
+
+return {{
+  id: folderId,
+  name: folderName,
+  deleted: true,
+  projectCount: projectCount,
+  subfolderCount: subfolderCount
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def delete_folder(folder_name_or_id: str) -> str:
     """delete a folder by id or name. warning: deleting a folder may move contained projects and subfolders to top level in omnifocus."""
     if folder_name_or_id.strip() == "":
         raise ValueError("folder_name_or_id must not be empty.")

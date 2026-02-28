@@ -651,6 +651,42 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("delete_folder deletes folder and returns deletion summary", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "folder-1",
+      name: "Areas",
+      deleted: true,
+      projectCount: 2,
+      subfolderCount: 1,
+    });
+    const handler = registeredTools.get("delete_folder");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_name_or_id: "folder-1" });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "folder-1",
+      name: "Areas",
+      deleted: true,
+      projectCount: 2,
+      subfolderCount: 1,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const folderFilter = "folder-1";');
+    expect(script).toContain("const projectCount = document.flattenedProjects.filter");
+    expect(script).toContain("const subfolderCount = document.flattenedFolders.filter");
+    expect(script).toContain("deleteObject(folder);");
+    expect(script).toContain("subfolderCount: subfolderCount");
+  });
+
+  test("delete_folder returns error for empty folder id or name", async () => {
+    const handler = registeredTools.get("delete_folder");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_name_or_id: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "folder_name_or_id must not be empty.",
+    });
+  });
+
   test("set_project_status returns error for unsupported status value", async () => {
     const handler = registeredTools.get("set_project_status");
     expect(handler).toBeDefined();
