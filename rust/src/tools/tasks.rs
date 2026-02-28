@@ -772,6 +772,12 @@ pub async fn list_tasks_with_planned<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let sort_order_filter = escape_for_jxa(effective_sort_order);
+    let planned_before_filter = planned_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let planned_after_filter = planned_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
 
     let script = format!(
         r#"const projectFilter = {project_filter};
