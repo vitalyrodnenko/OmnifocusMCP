@@ -71,7 +71,7 @@ Reference:
 
 ### Success Criteria
 
-5. [ ] Read `typescript/src/tools/tasks.ts` to understand the existing
+5. [x] Read `typescript/src/tools/tasks.ts` to understand the existing
        `delete_task` and `create_tasks_batch` implementations.
 6. [ ] Add `delete_tasks_batch` tool to `typescript/src/tools/tasks.ts`:
        - **Tool name:** `delete_tasks_batch` (must match Python exactly)
