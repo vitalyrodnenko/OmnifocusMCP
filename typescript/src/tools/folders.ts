@@ -237,13 +237,8 @@ if (!folder) {
 
 const folderId = folder.id.primaryKey;
 const folderName = folder.name;
-const projectCount = document.flattenedProjects.filter(project => {
-  return project.folder && project.folder.id.primaryKey === folderId;
-}).length;
-const subfolderCount = document.flattenedFolders.filter(item => {
-  return item.parent && item.parent.id.primaryKey === folderId;
-}).length;
-
+const projectCount = folder.projects.length;
+const subfolderCount = folder.folders.length;
 deleteObject(folder);
 
 return {

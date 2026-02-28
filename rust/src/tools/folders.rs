@@ -138,15 +138,13 @@ pub async fn update_folder<R: JxaRunner>(
             "folder_name_or_id must not be empty.".to_string(),
         ));
     }
-    if let Some(value) = new_name_value {
-        if value.is_empty() {
-            return Err(OmniFocusError::Validation(
-                "name must not be empty when provided.".to_string(),
-            ));
-        }
+    if matches!(new_name_value, Some("")) {
+        return Err(OmniFocusError::Validation(
+            "name must not be empty when provided.".to_string(),
+        ));
     }
-    if let Some(value) = status {
-        if !matches!(value, "active" | "dropped") {
+    if let Some(status_value) = status {
+        if status_value != "active" && status_value != "dropped" {
             return Err(OmniFocusError::Validation(
                 "status must be one of: active, dropped.".to_string(),
             ));
@@ -209,15 +207,16 @@ return {{
 }
 
 pub async fn delete_folder<R: JxaRunner>(runner: &R, folder_name_or_id: &str) -> Result<Value> {
-    if folder_name_or_id.trim().is_empty() {
+    let folder_filter = folder_name_or_id.trim();
+    if folder_filter.is_empty() {
         return Err(OmniFocusError::Validation(
             "folder_name_or_id must not be empty.".to_string(),
         ));
     }
 
-    let folder_filter = escape_for_jxa(folder_name_or_id.trim());
+    let escaped_folder_filter = escape_for_jxa(folder_filter);
     let script = format!(
-        r#"const folderFilter = {folder_filter};
+        r#"const folderFilter = {escaped_folder_filter};
 
 const folder = document.flattenedFolders.find(item => {{
   return item.id.primaryKey === folderFilter || item.name === folderFilter;
@@ -228,13 +227,8 @@ if (!folder) {{
 
 const folderId = folder.id.primaryKey;
 const folderName = folder.name;
-const projectCount = document.flattenedProjects.filter(project => {{
-  return project.folder && project.folder.id.primaryKey === folderId;
-}}).length;
-const subfolderCount = document.flattenedFolders.filter(item => {{
-  return item.parent && item.parent.id.primaryKey === folderId;
-}}).length;
-
+const projectCount = folder.projects.length;
+const subfolderCount = folder.folders.length;
 deleteObject(folder);
 
 return {{

@@ -8,7 +8,7 @@ use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
-        folders::{create_folder, get_folder, update_folder},
+        folders::{create_folder, delete_folder, get_folder, update_folder},
         projects::{
             complete_project, create_project, delete_project, move_project, set_project_status,
             uncomplete_project, update_project,
@@ -251,6 +251,11 @@ async fn write_project_and_tag_tools_happy_path() {
         .await
         .expect("update_folder should succeed");
     assert_eq!(updated_folder["id"], "p1");
+
+    let deleted_folder = delete_folder(&runner, "Areas")
+        .await
+        .expect("delete_folder should succeed");
+    assert_eq!(deleted_folder["id"], "p1");
 }
 
 #[tokio::test]
@@ -326,6 +331,10 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         update_folder(&runner, "folder-id", None, None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_folder(&runner, "   ").await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -887,6 +896,37 @@ async fn update_folder_script_sets_name_and_status() {
     assert!(captured.contains("const statusValue = \"dropped\";"));
     assert!(captured.contains("Folder.Status.Dropped"));
     assert!(captured.contains("folder.status = targetStatus;"));
+}
+
+#[tokio::test]
+async fn delete_folder_script_captures_counts_before_deletion() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "id": "folder-1",
+            "name": "Areas",
+            "deleted": true,
+            "projectCount": 2,
+            "subfolderCount": 1
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = delete_folder(&runner, "folder-1").await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const folderFilter = \"folder-1\";"));
+    assert!(captured.contains("const projectCount = document.flattenedProjects.filter"));
+    assert!(captured.contains("const subfolderCount = document.flattenedFolders.filter"));
+    assert!(captured.contains("deleteObject(folder);"));
+    assert!(captured.contains("subfolderCount: subfolderCount"));
 }
 
 #[tokio::test]
