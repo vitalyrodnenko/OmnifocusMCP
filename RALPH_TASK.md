@@ -36,12 +36,12 @@ few tasks, projects, and tags.
        from within `python/`.
 2. [x] Smoke test verifies JXA bridge basics: `run_omnijs` can execute
        `return document.flattenedTasks.length;` and return a number.
-3. [ ] Smoke test calls every read tool function and verifies each returns
+3. [x] Smoke test calls every read tool function and verifies each returns
        valid JSON with expected field names: `get_inbox`, `list_tasks`,
        `get_task` (using an ID from list_tasks), `search_tasks`,
        `list_projects`, `get_project`, `list_tags`, `list_folders`,
        `get_forecast`, `list_perspectives`.
-4. [ ] Smoke test runs a full task CRUD lifecycle:
+4. [x] Smoke test runs a full task CRUD lifecycle:
        - `create_task` with name `[TEST-MCP] Smoke Test Task`, flagged,
          with a due date of tomorrow
        - `get_task` on the created ID — verify fields match
@@ -49,7 +49,7 @@ few tasks, projects, and tags.
        - `complete_task` on that task
        - `delete_task` to clean up
        Prints clear pass/fail for each step.
-5. [ ] Smoke test runs successfully against real OmniFocus with zero
+5. [x] Smoke test runs successfully against real OmniFocus with zero
        failures. Any bugs discovered are documented as comments in the
        smoke test script with `# BUG:` prefix.
 
@@ -62,14 +62,14 @@ mark all criteria as complete with a note.
 
 ### Success Criteria
 
-6. [ ] Every `# BUG:` documented in Phase 1 has a corresponding fix
+6. [x] Every `# BUG:` documented in Phase 1 has a corresponding fix
        in the Python source (`python/src/omnifocus_mcp/`).
-7. [ ] The same fixes are applied to the TypeScript source
+7. [x] The same fixes are applied to the TypeScript source
        (`typescript/src/`). JXA strings must be identical.
-8. [ ] All existing mocked unit tests still pass after fixes:
+8. [x] All existing mocked unit tests still pass after fixes:
        `cd python && pytest tests/ -v` (64 pass) and
        `cd typescript && npm test` (25 pass).
-9. [ ] Smoke test (`python/scripts/smoke_test.py`) passes cleanly
+9. [x] Smoke test (`python/scripts/smoke_test.py`) passes cleanly
        with zero failures after all fixes.
 
 ---
