@@ -5,7 +5,7 @@ Python implementation of the OmniFocus Model Context Protocol (MCP) server for O
 ## Prerequisites
 
 - macOS with OmniFocus installed and running
-- Python 3.10+
+- Python 3.11+
 - automation permission granted for your terminal/editor to control OmniFocus
 
 ## Install
@@ -104,7 +104,7 @@ Once connected from your MCP client, try:
 
 ## Development Checks
 
-Run the Phase 6 Python checks:
+Run the Python checks:
 
 ```bash
 cd python

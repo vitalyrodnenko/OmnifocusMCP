@@ -179,7 +179,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
 
 ### Success Criteria
 
-10. [ ] Fix `python/README.md`:
+10. [x] Fix `python/README.md`:
         - Change Python version requirement from "3.10+" to "3.11+"
           (matches `docs/install-python.md` and `pyproject.toml`).
         - Remove the "Phase 6" reference in the development checks
