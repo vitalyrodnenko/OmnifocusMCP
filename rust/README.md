@@ -5,7 +5,9 @@ compiled binary (`omnifocus-mcp`) distributable via Homebrew.
 
 ## Features
 
-- 38 tools, 3 resources, 4 prompts — full API parity with Python and TypeScript
+- 40 tools, 3 resources, 4 prompts — full API parity with Python and TypeScript
+- Advanced read-side filtering and sorting on tasks/projects (date ranges, multi-tag modes, stalled detection)
+- Aggregate count tools (`get_task_counts`, `get_project_counts`) for fast "how many" queries
 - Single binary, zero runtime dependencies
 - ~5 MB release build
 - Homebrew-installable (`brew install omnifocus-mcp`)

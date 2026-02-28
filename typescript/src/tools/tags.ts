@@ -9,7 +9,7 @@ export function register(server: Server): void {
     "list tags with availability counts and optional status filter.",
     {
       statusFilter: z.enum(["active", "on_hold", "dropped", "all"]).default("all"),
-      sortBy: z.enum(["name", "availableTaskCount", "totalTaskCount"]).nullable().optional(),
+      sortBy: z.enum(["name", "availableTaskCount", "totalTaskCount"]).optional(),
       sortOrder: z.enum(["asc", "desc"]).default("asc"),
       limit: z.number().int().min(1).default(100),
     },
