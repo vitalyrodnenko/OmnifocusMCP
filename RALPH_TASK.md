@@ -201,7 +201,7 @@ Use the trait-based approach: tool functions accept `&dyn JxaRunner`
         - Validation errors (empty name, empty project when provided)
         - JXA error propagation
         - `create_task` JXA script contains expected escaped values
-22. [ ] `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
+22. [x] `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
         all pass.
 
 ---
