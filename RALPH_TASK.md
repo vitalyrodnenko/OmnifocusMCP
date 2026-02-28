@@ -128,19 +128,19 @@ depends on. Validate it works against real OmniFocus.
        metadata, Python >=3.10 requirement, and dev deps (`pytest`,
        `pytest-asyncio`, `ruff`, `mypy`). Installable via
        `uv pip install -e ".[dev]"` or `pip install -e ".[dev]"`.
-5. [ ] `python/src/omnifocus_mcp/jxa.py` exports `async def run_jxa(script: str) -> str`
+5. [x] `python/src/omnifocus_mcp/jxa.py` exports `async def run_jxa(script: str) -> str`
        that spawns `osascript -l JavaScript -e <script>` via asyncio subprocess
        and returns stdout. Raises on non-zero exit with stderr.
-6. [ ] `python/src/omnifocus_mcp/jxa.py` exports `async def run_jxa_json(script: str) -> Any`
+6. [x] `python/src/omnifocus_mcp/jxa.py` exports `async def run_jxa_json(script: str) -> Any`
        that parses stdout as JSON.
-7. [ ] `python/src/omnifocus_mcp/jxa.py` exports `async def run_omnijs(script: str) -> Any`
+7. [x] `python/src/omnifocus_mcp/jxa.py` exports `async def run_omnijs(script: str) -> Any`
        that wraps the script in `Application('OmniFocus').evaluateJavaScript()`
        for full Omni Automation API access from external context.
-8. [ ] Error handling covers: OmniFocus not running (clear error message),
+8. [x] Error handling covers: OmniFocus not running (clear error message),
        script syntax errors, and timeout (30 s default).
-9. [ ] `python/src/omnifocus_mcp/jxa.py` exports `def escape_for_jxa(value: str) -> str`
+9. [x] `python/src/omnifocus_mcp/jxa.py` exports `def escape_for_jxa(value: str) -> str`
        that sanitizes user input via `json.dumps()` to prevent injection.
-10. [ ] `python/src/omnifocus_mcp/server.py` creates a FastMCP server with a
+10. [x] `python/src/omnifocus_mcp/server.py` creates a FastMCP server with a
        `ping` health-check tool. Running `python -m omnifocus_mcp` starts
        the server over stdio.
 

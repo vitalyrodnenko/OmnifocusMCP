@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 1
-- Current status: Phase 2 started; criterion 4 completed (python packaging scaffold).
+- Current status: Phase 2 core JXA layer completed through criterion 10.
 
 ## How This Works
 
@@ -18,7 +18,7 @@ This is how Ralph maintains continuity across iterations.
 | Phase | Description                       | Criteria  | Done |
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
-| 2     | Python: JXA Layer + Tests         | 4–15      | 1/12 |
+| 2     | Python: JXA Layer + Tests         | 4–15      | 7/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 0/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
@@ -26,7 +26,7 @@ This is how Ralph maintains continuity across iterations.
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 4 / 75 criteria complete**
+**Total: 10 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -62,3 +62,20 @@ This is how Ralph maintains continuity across iterations.
   - `python/src/omnifocus_mcp/__init__.py`
   - `python/README.md` (for packaging metadata)
 - next up: phase 2 criterion 5 (`run_jxa`)
+
+### 2026-02-27 22:49:40
+**Session 1 update**
+- completed phase 2 criteria 5-10
+- implemented python jxa execution layer in `python/src/omnifocus_mcp/jxa.py`:
+  - `run_jxa` with asyncio subprocess + 30s timeout default
+  - `run_jxa_json` JSON parsing with malformed/empty output handling
+  - `run_omnijs` bridge using `Application('OmniFocus').evaluateJavaScript(...)`
+  - `escape_for_jxa` using `json.dumps` for safe string interpolation
+  - friendly error normalization for OmniFocus-not-running, syntax, permissions
+- added minimal FastMCP server + module entrypoint:
+  - `python/src/omnifocus_mcp/server.py` (`ping` tool)
+  - `python/src/omnifocus_mcp/__main__.py` (`python -m omnifocus_mcp`)
+- check status:
+  - `ruff` and strict `mypy` pass
+  - pytest exits with "no tests ran" (phase 2 test files not created yet)
+- next up: phase 2 criterion 11 (test setup / `conftest.py`)
