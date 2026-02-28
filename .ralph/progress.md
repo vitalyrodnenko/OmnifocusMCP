@@ -6,8 +6,8 @@
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
 - Current status: Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 complete. Phase 8 is in progress.
-- Next criterion: **24** — add `effectiveDueDate`, `effectiveDeferDate`, and `effectiveFlagged` to `get_task` across all 3 implementations
-- Remaining: criteria 24-36 (13 criteria across Phases 8-11)
+- Next criterion: **25** — add `modified` timestamp to `get_task` and `get_project` across all 3 implementations
+- Remaining: criteria 25-36 (12 criteria across Phases 8-11)
 
 ## How This Works
 
@@ -639,6 +639,16 @@ This is how Ralph maintains continuity across iterations.
 - confirmed `RALPH_TASK.md` criterion 23 is checked
 - next: criterion 24 (`effectiveDueDate`, `effectiveDeferDate`, `effectiveFlagged` on `get_task` across all 3 implementations)
 
+### 2026-02-28 15:33:10
+- confirmed criterion 24 implementation parity across python/typescript/rust `get_task` mappers (`effectiveDueDate`, `effectiveDeferDate`, `effectiveFlagged`)
+- confirmed criterion-24 test coverage is present in all 3 implementations for `get_task` payload/script assertions
+- reused fresh full gate pass from this session:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- marked criterion 24 complete in `RALPH_TASK.md`
+- next: criterion 25 (`modified` timestamp on `get_task` and `get_project` across all 3 implementations)
+
 ### 2026-02-28 15:30:01
 **Session 60 started** (model: auto)
 
@@ -653,3 +663,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 15:31:04
 **Session 62 started** (model: auto)
+
+### 2026-02-28 15:31:38
+**Session 62 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 15:31:40
+**Session 63 started** (model: auto)

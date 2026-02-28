@@ -632,7 +632,6 @@ async def test_get_task_happy_path(
     assert "effectiveFlagged: task.effectiveFlagged," in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Overdue")) return "overdue";' in state["calls"][0]["script"]
-    assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("Completed")) return "completed";' in state["calls"][0]["script"]
 
 

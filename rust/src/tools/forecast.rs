@@ -42,18 +42,7 @@ const toTaskSummary = (task) => {{
     projectName: task.containingProject ? task.containingProject.name : null,
     tags: task.tags.map(tag => tag.name),
     estimatedMinutes: task.estimatedMinutes,
-    hasChildren: task.hasChildren,
-    taskStatus: (() => {{
-      const s = String(task.taskStatus);
-      if (s.includes("Available")) return "available";
-      if (s.includes("Blocked")) return "blocked";
-      if (s.includes("Next")) return "next";
-      if (s.includes("DueSoon")) return "due_soon";
-      if (s.includes("Overdue")) return "overdue";
-      if (s.includes("Completed")) return "completed";
-      if (s.includes("Dropped")) return "dropped";
-      return "unknown";
-    }})()
+    hasChildren: task.hasChildren
   }};
 }};
 

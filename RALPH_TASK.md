@@ -447,7 +447,7 @@ availability that OmniFocus shows in its UI.
           of the expected enum values.
         - All lint/test commands pass.
 
-24. [ ] **Add effective dates and flags to `get_task` response** — all 3
+24. [x] **Add effective dates and flags to `get_task` response** — all 3
         implementations.
         - New response fields on `get_task` only (not on list tools,
           to avoid performance overhead on bulk queries):

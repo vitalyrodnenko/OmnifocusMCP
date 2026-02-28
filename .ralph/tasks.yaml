@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772314141
-generated_at: 2026-02-28T21:29:57Z
+source_mtime: 1772314284
+generated_at: 2026-02-28T21:31:36Z
 
 tasks:
   - id: "line_108"
@@ -170,7 +170,7 @@ tasks:
     raw_marker: 23.
   - id: "line_450"
     line_number: 450
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Add effective dates and flags to `get_task` response** — all 3
     indent_level: 0

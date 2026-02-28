@@ -542,6 +542,7 @@ describe("representative read and write tool handlers", () => {
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const taskId = "task-9";');
     expect(script).toContain("effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null,");
+    expect(script).toContain("effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null,");
     expect(script).toContain("effectiveFlagged: task.effectiveFlagged,");
     expect(script).toContain("taskStatus: (() => {");
     expect(script).toContain('if (s.includes("Overdue")) return "overdue";');
