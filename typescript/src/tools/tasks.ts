@@ -357,6 +357,63 @@ return {
   );
 
   server.tool(
+    "set_task_repetition",
+    "set or clear a task repetition rule by id.",
+    {
+      task_id: z.string().min(1),
+      rule_string: z.string().min(1).nullable(),
+      schedule_type: z.enum(["regularly", "from_completion", "none"]).default("regularly"),
+    },
+    async ({ task_id, rule_string, schedule_type }) => {
+      try {
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        if (rule_string !== null && rule_string.trim() === "") {
+          throw new Error("rule_string must not be empty when provided.");
+        }
+        if (rule_string !== null && schedule_type === "none") {
+          throw new Error(
+            "schedule_type must be regularly or from_completion when rule_string is provided."
+          );
+        }
+        const taskId = escapeForJxa(normalizedTaskId);
+        const ruleString = rule_string === null ? "null" : escapeForJxa(rule_string.trim());
+        const scheduleType = escapeForJxa(schedule_type);
+        const script = `
+const taskId = ${taskId};
+const ruleString = ${ruleString};
+const scheduleType = ${scheduleType};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+if (ruleString === null) {
+  task.repetitionRule = null;
+} else {
+  const repetitionScheduleType = (() => {
+    if (scheduleType === "regularly") return Task.RepetitionScheduleType.Regularly;
+    if (scheduleType === "from_completion") return Task.RepetitionScheduleType.FromCompletion;
+    throw new Error(\`Invalid schedule_type: \${scheduleType}\`);
+  })();
+  task.repetitionRule = new Task.RepetitionRule(ruleString, null, repetitionScheduleType, null, false);
+}
+
+return {
+  id: task.id.primaryKey,
+  name: task.name,
+  repetitionRule: task.repetitionRule ? task.repetitionRule.ruleString : null
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "update_task",
     "update one task with partial fields and return the updated task payload.",
     {

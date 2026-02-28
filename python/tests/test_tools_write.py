@@ -490,6 +490,46 @@ async def test_uncomplete_task_happy_path(mock_server_run_omnijs: Callable[[Any]
 
 
 @pytest.mark.asyncio
+async def test_set_task_repetition_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "t5", "name": "Weekly task", "repetitionRule": "FREQ=WEEKLY"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.set_task_repetition(
+        task_id="t5",
+        rule_string="FREQ=WEEKLY",
+        schedule_type="regularly",
+    )
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t5";' in script
+    assert 'const ruleString = "FREQ=WEEKLY";' in script
+    assert "Task.RepetitionScheduleType.Regularly" in script
+    assert "new Task.RepetitionRule(ruleString, null, scheduleType, null, false);" in script
+
+
+@pytest.mark.asyncio
+async def test_set_task_repetition_clear_rule_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "t5", "name": "Weekly task", "repetitionRule": None}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.set_task_repetition(task_id="t5", rule_string=None)
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert "const ruleString = null;" in script
+    assert "task.repetitionRule = null;" in script
+
+
+@pytest.mark.asyncio
 async def test_update_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {
         "id": "t5",
@@ -710,6 +750,19 @@ async def test_create_subtask_empty_parent_validation_error(server_module: Any) 
     tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
     with pytest.raises(ValueError, match="parent_task_id must not be empty."):
         await tasks_mod.create_subtask("Task", parent_task_id="   ")
+
+
+@pytest.mark.asyncio
+async def test_set_task_repetition_invalid_schedule_type_validation_error(server_module: Any) -> None:
+    with pytest.raises(
+        ValueError,
+        match="schedule_type must be one of: regularly, from_completion, none.",
+    ):
+        await server_module.set_task_repetition(
+            task_id="task-1",
+            rule_string="FREQ=DAILY",
+            schedule_type="invalid",
+        )
 
 
 @pytest.mark.asyncio
