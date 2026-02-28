@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 1
-- Current status: Phase 1 criteria 1-3 completed (repo scaffold baseline done).
+- Current status: Phase 2 started; criterion 4 completed (python packaging scaffold).
 
 ## How This Works
 
@@ -18,7 +18,7 @@ This is how Ralph maintains continuity across iterations.
 | Phase | Description                       | Criteria  | Done |
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
-| 2     | Python: JXA Layer + Tests         | 4–15      | 0/12 |
+| 2     | Python: JXA Layer + Tests         | 4–15      | 1/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 0/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
@@ -26,7 +26,7 @@ This is how Ralph maintains continuity across iterations.
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 3 / 75 criteria complete**
+**Total: 4 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -49,3 +49,16 @@ This is how Ralph maintains continuity across iterations.
   - expanded `.gitignore` to include required python/node artifacts
 - verified existing git history includes initial commit(s)
 - next up: phase 2 criterion 4 (`python/pyproject.toml`)
+
+### 2026-02-27 22:46:10
+**Session 1 update**
+- completed phase 2 criterion 4
+- added `python/pyproject.toml` with:
+  - `mcp` runtime dependency
+  - dev dependencies: `pytest`, `pytest-asyncio`, `ruff`, `mypy`
+  - python requirement `>=3.10`
+  - setuptools `src/` package layout config
+- added initial python package skeleton:
+  - `python/src/omnifocus_mcp/__init__.py`
+  - `python/README.md` (for packaging metadata)
+- next up: phase 2 criterion 5 (`run_jxa`)

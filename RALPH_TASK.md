@@ -124,7 +124,7 @@ depends on. Validate it works against real OmniFocus.
 
 ### Success Criteria
 
-4. [ ] `python/pyproject.toml` exists with `mcp` dependency, project
+4. [x] `python/pyproject.toml` exists with `mcp` dependency, project
        metadata, Python >=3.10 requirement, and dev deps (`pytest`,
        `pytest-asyncio`, `ruff`, `mypy`). Installable via
        `uv pip install -e ".[dev]"` or `pip install -e ".[dev]"`.
