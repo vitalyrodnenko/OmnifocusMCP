@@ -34,6 +34,10 @@ impl JxaRunner for MockRunner {
         Box::pin(async move { Ok(self.payload.clone()) })
     }
 }
+    }
+}
+}
+}
 
 #[derive(Clone)]
 struct CapturingRunner {
@@ -1072,6 +1076,7 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
+    assert!(script.contains("const tagNames = [\"Home\",\"Deep\"];"));
     assert!(script.contains("const tagFilterMode = \"any\";"));
     assert!(script.contains("task.tags.some(t => tagNames.includes(t.name))"));
 
@@ -1099,14 +1104,6 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script.contains("const tagNames = null;"));
-}
-}
-}
-}
-}
-}
-}
-
 #[tokio::test]
 async fn list_tasks_tags_filter_modes_and_merging_are_in_script() {
     let last_script = Arc::new(Mutex::new(String::new()));
@@ -1177,3 +1174,4 @@ async fn list_tasks_empty_tags_array_is_ignored() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script.contains("const tagNames = null;"));
+}
