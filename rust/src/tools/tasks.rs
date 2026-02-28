@@ -47,6 +47,8 @@ pub async fn list_tasks<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
     tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
     flagged: Option<bool>,
     status: &str,
     due_before: Option<&str>,
@@ -76,6 +78,20 @@ pub async fn list_tasks<R: JxaRunner>(
             ));
         }
     }
+    if let Some(tag_names) = &tags {
+        for tag_name in tag_names {
+            if tag_name.trim().is_empty() {
+                return Err(OmniFocusError::Validation(
+                    "tags entries must not be empty when provided.".to_string(),
+                ));
+            }
+        }
+    }
+    if !matches!(tag_filter_mode, "any" | "all") {
+        return Err(OmniFocusError::Validation(
+            "tagFilterMode must be one of: any, all.".to_string(),
+        ));
+    }
     if !matches!(
         status,
         "available" | "due_soon" | "overdue" | "completed" | "all"
@@ -88,9 +104,27 @@ pub async fn list_tasks<R: JxaRunner>(
     let project_filter = project
         .map(|value| escape_for_jxa(value.trim()))
         .unwrap_or_else(|| "null".to_string());
-    let tag_filter = tag
-        .map(|value| escape_for_jxa(value.trim()))
-        .unwrap_or_else(|| "null".to_string());
+    let mut merged_tag_names: Vec<String> = Vec::new();
+    if let Some(tag_name) = tag {
+        let normalized_tag = tag_name.trim().to_string();
+        if !merged_tag_names.contains(&normalized_tag) {
+            merged_tag_names.push(normalized_tag);
+        }
+    }
+    if let Some(tag_names) = tags {
+        for tag_name in tag_names {
+            let normalized_tag = tag_name.trim().to_string();
+            if !merged_tag_names.contains(&normalized_tag) {
+                merged_tag_names.push(normalized_tag);
+            }
+        }
+    }
+    let tag_names_filter = if merged_tag_names.is_empty() {
+        "null".to_string()
+    } else {
+        serde_json::to_string(&merged_tag_names)?
+    };
+    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
@@ -122,7 +156,8 @@ pub async fn list_tasks<R: JxaRunner>(
 
     let script = format!(
         r#"const projectFilter = {project_filter};
-const tagFilter = {tag_filter};
+const tagNames = {tag_names_filter};
+const tagFilterMode = {tag_filter_mode_filter};
 const flaggedFilter = {flagged_filter};
 const statusFilter = {status_filter};
 const dueBeforeRaw = {due_before_filter};
@@ -156,9 +191,14 @@ const tasks = document.flattenedTasks
       if (projectName !== projectFilter) return false;
     }}
 
-    if (tagFilter !== null) {{
-      const hasTag = task.tags.some(taskTag => taskTag.name === tagFilter);
-      if (!hasTag) return false;
+    if (tagNames !== null && tagNames.length > 0) {{
+      let tagMatches = false;
+      if (tagFilterMode === "all") {{
+        tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+      }} else {{
+        tagMatches = task.tags.some(t => tagNames.includes(t.name));
+      }}
+      if (!tagMatches) return false;
     }}
 
     if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
