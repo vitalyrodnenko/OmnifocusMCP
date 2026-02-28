@@ -294,3 +294,169 @@ return {{
 
     runner.run_omnijs(&script).await
 }
+
+#[allow(clippy::too_many_arguments)]
+pub async fn update_project<R: JxaRunner>(
+    runner: &R,
+    project_id_or_name: &str,
+    name: Option<&str>,
+    note: Option<&str>,
+    due_date: Option<&str>,
+    defer_date: Option<&str>,
+    flagged: Option<bool>,
+    tags: Option<Vec<String>>,
+    sequential: Option<bool>,
+    completed_by_children: Option<bool>,
+    review_interval: Option<&str>,
+) -> Result<Value> {
+    if project_id_or_name.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "project_id_or_name must not be empty.".to_string(),
+        ));
+    }
+    if let Some(value) = name {
+        if value.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "name must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if let Some(values) = &tags {
+        if values.iter().any(|value| value.trim().is_empty()) {
+            return Err(OmniFocusError::Validation(
+                "tags must not contain empty values.".to_string(),
+            ));
+        }
+    }
+    if let Some(value) = review_interval {
+        if value.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "reviewInterval must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+
+    let mut updates = serde_json::Map::new();
+    if let Some(value) = name {
+        updates.insert("name".to_string(), Value::String(value.trim().to_string()));
+    }
+    if let Some(value) = note {
+        updates.insert("note".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = due_date {
+        updates.insert("dueDate".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = defer_date {
+        updates.insert("deferDate".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = flagged {
+        updates.insert("flagged".to_string(), Value::Bool(value));
+    }
+    if let Some(values) = tags {
+        updates.insert(
+            "tags".to_string(),
+            Value::Array(
+                values
+                    .into_iter()
+                    .map(|value| Value::String(value.trim().to_string()))
+                    .collect(),
+            ),
+        );
+    }
+    if let Some(value) = sequential {
+        updates.insert("sequential".to_string(), Value::Bool(value));
+    }
+    if let Some(value) = completed_by_children {
+        updates.insert("completedByChildren".to_string(), Value::Bool(value));
+    }
+    if let Some(value) = review_interval {
+        updates.insert(
+            "reviewInterval".to_string(),
+            Value::String(value.trim().to_string()),
+        );
+    }
+
+    let project_filter = escape_for_jxa(project_id_or_name.trim());
+    let updates_value = serde_json::to_string(&updates)?;
+    let script = format!(
+        r#"const projectFilter = {project_filter};
+const updates = {updates_value};
+const project = document.flattenedProjects.find(item => {{
+  return item.id.primaryKey === projectFilter || item.name === projectFilter;
+}});
+if (!project) {{
+  throw new Error(`Project not found: ${{projectFilter}}`);
+}}
+
+const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
+const normalizeProjectStatus = (item) => {{
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+    return "on_hold";
+  }}
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+const parseReviewInterval = (value) => {{
+  const match = String(value).trim().match(/^(\d+)\s+([a-zA-Z_]+)$/);
+  if (!match) {{
+    throw new Error(`Invalid reviewInterval format: ${{value}}. Expected 'N unit'.`);
+  }}
+  const steps = Number(match[1]);
+  if (!Number.isInteger(steps) || steps < 1) {{
+    throw new Error(`Invalid reviewInterval steps: ${{match[1]}}`);
+  }}
+  let unit = match[2].toLowerCase();
+  if (unit.endsWith("s")) unit = unit.slice(0, -1);
+  const allowed = new Set(["minute", "hour", "day", "week", "month", "year"]);
+  if (!allowed.has(unit)) {{
+    throw new Error(`Invalid reviewInterval unit: ${{match[2]}}`);
+  }}
+  return {{ steps, unit }};
+}};
+
+if (has("name")) project.name = updates.name;
+if (has("note")) project.note = updates.note;
+if (has("dueDate")) project.dueDate = new Date(updates.dueDate);
+if (has("deferDate")) project.deferDate = new Date(updates.deferDate);
+if (has("flagged")) project.flagged = updates.flagged;
+if (has("sequential")) project.sequential = updates.sequential;
+if (has("completedByChildren")) project.completedByChildren = updates.completedByChildren;
+if (has("reviewInterval")) {{
+  project.reviewInterval = parseReviewInterval(updates.reviewInterval);
+}}
+if (has("tags")) {{
+  const existingTags = project.tags.slice();
+  existingTags.forEach(tag => {{
+    project.removeTag(tag);
+  }});
+  updates.tags.forEach(tagName => {{
+    const tag = document.flattenedTags.byName(tagName);
+    if (tag) project.addTag(tag);
+  }});
+}}
+
+const allProjectTasks = document.flattenedTasks.filter(task => {{
+  return task.containingProject && task.containingProject.id.primaryKey === project.id.primaryKey;
+}});
+const reviewIntervalValue = project.reviewInterval;
+return {{
+  id: project.id.primaryKey,
+  name: project.name,
+  status: normalizeProjectStatus(project),
+  folderName: project.folder ? project.folder.name : null,
+  taskCount: allProjectTasks.length,
+  remainingTaskCount: allProjectTasks.filter(task => !task.completed).length,
+  deferDate: project.deferDate ? project.deferDate.toISOString() : null,
+  dueDate: project.dueDate ? project.dueDate.toISOString() : null,
+  note: project.note,
+  flagged: project.flagged,
+  sequential: project.sequential,
+  completedByChildren: project.completedByChildren,
+  tags: project.tags.map(tag => tag.name),
+  reviewInterval: reviewIntervalValue === null || reviewIntervalValue === undefined ? null : String(reviewIntervalValue)
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
