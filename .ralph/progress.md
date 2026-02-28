@@ -2124,3 +2124,25 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 13:34:55
 **Session 16 started** (model: auto)
+
+### 2026-02-28 13:34:49
+- completed criterion 22 (`search_tags`) across all three implementations:
+  - python: added `search_tags(query, limit=100)` to `python/src/omnifocus_mcp/tools/tags.py` using `tagsMatching(queryValue)` and tag summary mapping (`id`, `name`, `status`, `parent`)
+  - typescript: added `search_tags` tool registration in `typescript/src/tools/tags.ts` with matching validation, script shape, and response fields
+  - rust: added `search_tags` in `rust/src/tools/tags.rs` and wired server registration in `rust/src/server.rs`
+- added criterion-22 test coverage:
+  - python: `python/tests/test_tools_read.py` (`test_search_tags_happy_path_criterion22`, validation errors)
+  - typescript: `typescript/tests/tools-happy.test.ts` (`search_tags` happy/error tests)
+  - rust: `rust/tests/tools_read_test.rs` (happy-path invocation + validation assertions)
+- cleaned duplicate in-progress definitions encountered during parity work to keep active modules single-definition (`python/src/omnifocus_mcp/tools/tags.py`, `rust/src/tools/tags.rs`)
+- ran full `test_command` from `RALPH_TASK.md` successfully:
+  - python: `ruff check`, `ruff format --check`, `mypy --strict`, `pytest` (`116 passed, 5 skipped`)
+  - typescript: `npx tsc --noEmit`, `npm test` (`65 passed, 5 skipped`)
+  - rust: `cargo fmt --check`, `cargo clippy -- -D warnings`, `cargo test` (all passing)
+- criteria 22 and 23 are confirmed complete in `RALPH_TASK.md`; next focus is criterion 24 (expand `rust/examples/smoke_test.rs` for all new tools)
+
+### 2026-02-28 13:35:08
+**Session 16 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 13:35:10
+**Session 17 started** (model: auto)
