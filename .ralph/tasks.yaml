@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772316749
-generated_at: 2026-02-28T22:12:51Z
+source_mtime: 1772316923
+generated_at: 2026-02-28T22:15:25Z
 
 tasks:
   - id: "line_108"
@@ -212,14 +212,14 @@ tasks:
     raw_marker: 29.
   - id: "line_528"
     line_number: 528
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **`remove_notification`** — all 3 implementations (NEW TOOL).
     indent_level: 0
     raw_marker: 30.
   - id: "line_537"
     line_number: 537
-    status: pending
+    status: completed
     parallel_group: 999999
     description: All lint and test commands pass for Phase 9 (same as criterion 6).
     indent_level: 0

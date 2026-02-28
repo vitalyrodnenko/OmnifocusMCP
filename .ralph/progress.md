@@ -6,9 +6,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phases 1-8 complete, criterion 30 done, and Phase 9 gate pending (30/36 criteria done).
-- Next criterion: **31** — run full lint/typecheck/test gate for Phase 9
-- Remaining: criteria 31-36 (6 criteria across Phases 9-11)
+- Current status: Phases 1-9 complete; moving to Phase 10 (31/36 criteria done).
+- Next criterion: **32** — implement `duplicate_task` across all 3 implementations
+- Remaining: criteria 32-36 (5 criteria across Phases 10-11)
 
 ## Phase Overview
 
@@ -22,29 +22,21 @@
 | 6     | Tests and Parity Verification      | 19–20    | 2/2  |
 | 7     | Documentation                      | 21–22    | 2/2  |
 | 8     | Native Properties & Effective Vals | 23–27    | 5/5  |
-| 9     | Notifications                      | 28–31    | 3/4  |
+| 9     | Notifications                      | 28–31    | 4/4  |
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 30 / 36 criteria complete**
+**Total: 31 / 36 criteria complete**
 
 ## Key Context
 
 - Python tools: `python/src/omnifocus_mcp/tools/*.py`
 - TypeScript tools: `typescript/src/tools/*.ts`
 - Rust tools: `rust/src/tools/*.rs`
-- Criteria 23-30 complete: taskStatus/effective fields/modified/plannedDate and notification list/add/remove tools
-- Next: criterion 31 (Phase 9 full lint/typecheck/test gate)
+- Criteria 23-31 complete: taskStatus/effective fields/modified/plannedDate and full notifications phase
+- Next: criterion 32 (`duplicate_task`)
 
 ## Session History (keep only last 3 substantive entries)
-
-### 2026-02-28 16:08
-- verified criterion 28 is implemented in Python/TypeScript/Rust with matching JXA mapping and task-not-found behavior
-- ran focused notification tests:
-  - `cd python && pytest tests/test_tools_read.py -k list_notifications -v`
-  - `cd typescript && npm test -- tools-representative.test.ts -t list_notifications`
-  - `cd rust && cargo test --test tools_read_test list_notifications_script_maps_notification_fields`
-- next: criterion 29 (`add_notification`)
 
 ### 2026-02-28 16:11
 - completed criterion 29 by wiring `add_notification` tool registration in TypeScript to match existing Python/Rust behavior
@@ -61,3 +53,10 @@
   - `cd typescript && npm test -- tools-representative.test.ts -t remove_notification`
   - `cd rust && cargo test --test tools_read_test remove_notification`
 - next: criterion 31 (phase 9 full gate)
+
+### 2026-02-28 16:15
+- completed criterion 31 by running full cross-implementation gate with zero failures
+- full gate command:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test && cd ../rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- result: all python/typescript/rust checks passed (integration tests skipped as expected)
+- next: criterion 32 (`duplicate_task`)
