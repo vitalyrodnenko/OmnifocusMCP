@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 2
-- Current status: Phase 3 in progress (criteria 16-18 complete).
+- Current status: Phase 3 in progress (criteria 16-19 complete).
 
 ## How This Works
 
@@ -19,14 +19,14 @@ This is how Ralph maintains continuity across iterations.
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
-| 3     | Python: Read Tools + Tests        | 16–28     | 3/13 |
+| 3     | Python: Read Tools + Tests        | 16–28     | 4/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 18 / 75 criteria complete**
+**Total: 19 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -151,3 +151,13 @@ This is how Ralph maintains continuity across iterations.
   - throws clear not-found error from OmniJS when task id is missing
 - re-ran full command from `RALPH_TASK.md`; all checks passed
 - next up: phase 3 criterion 19 (`search_tasks`)
+
+### 2026-02-27 22:50:17
+**Session 2 update**
+- completed phase 3 criterion 19 (`search_tasks`)
+- extended `python/src/omnifocus_mcp/server.py` with `search_tasks(query, limit)`:
+  - validates non-empty query and positive limit
+  - performs case-insensitive matching against task `name` and `note`
+  - returns list_tasks-compatible task fields
+- re-ran full command from `RALPH_TASK.md`; all checks passed
+- next up: phase 3 criterion 20 (`list_projects`)

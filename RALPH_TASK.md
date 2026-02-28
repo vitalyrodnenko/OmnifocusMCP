@@ -178,7 +178,7 @@ parameter (default 100).
 18. [x] Tool `get_task` — accepts task `id`, returns full detail including:
         all list_tasks fields plus `children[]`, `parentName`, `sequential`,
         `repetitionRule`, `completionDate`.
-19. [ ] Tool `search_tasks` — accepts `query` string + optional `limit`.
+19. [x] Tool `search_tasks` — accepts `query` string + optional `limit`.
         Searches task names AND notes. Returns matching tasks.
 20. [ ] Tool `list_projects` — optional filters: `folder` (name), `status`
         (active | on_hold | completed | dropped, default: active). Returns:

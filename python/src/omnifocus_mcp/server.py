@@ -179,3 +179,46 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def search_tasks(query: str, limit: int = 100) -> str:
+    """search task names and notes with case-insensitive matching.
+
+    returns matching tasks with the standard list_tasks fields.
+    """
+    if query.strip() == "":
+        raise ValueError("query must not be empty.")
+    if limit < 1:
+        raise ValueError("limit must be greater than 0.")
+
+    query_filter = escape_for_jxa(query.strip())
+    script = f"""
+const query = {query_filter}.toLowerCase();
+
+const tasks = document.flattenedTasks
+  .filter(task => {{
+    const name = (task.name || "").toLowerCase();
+    const note = (task.note || "").toLowerCase();
+    return name.includes(query) || note.includes(query);
+  }})
+  .slice(0, {limit});
+
+return tasks.map(task => {{
+  const tags = task.tags.map(taskTag => taskTag.name);
+  return {{
+    id: task.id.primaryKey,
+    name: task.name,
+    note: task.note,
+    flagged: task.flagged,
+    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    completed: task.completed,
+    projectName: task.containingProject ? task.containingProject.name : null,
+    tags: tags,
+    estimatedMinutes: task.estimatedMinutes
+  }};
+}});
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
