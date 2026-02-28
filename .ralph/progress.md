@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phase 1 complete (criteria 1-6). Working on Phase 2.
-- Next criterion: **7** — add stalled detection to `list_projects` and `get_project`
-- Remaining: criteria 7-36 (30 criteria across Phases 2-11)
+- Current status: Phase 1 complete. Phase 2 criterion 7 complete; continuing Phase 2.
+- Next criterion: **8** — add completion date filters/sorting and stalledOnly to `list_projects`
+- Remaining: criteria 8-36 (29 criteria across Phases 2-11)
 
 ## How This Works
 
@@ -20,7 +20,7 @@ This is how Ralph maintains continuity across iterations.
 | Phase | Description                        | Criteria | Done |
 |-------|------------------------------------|----------|------|
 | 1     | Enhanced list_tasks                | 1–6      | 6/6  |
-| 2     | Enhanced list_projects/get_project | 7–9      | 0/3  |
+| 2     | Enhanced list_projects/get_project | 7–9      | 1/3  |
 | 3     | Enhanced get_inbox/list_tags/search| 10–13    | 0/4  |
 | 4     | Aggregate Count Tools              | 14–16    | 0/3  |
 | 5     | Enhanced get_forecast              | 17–18    | 0/2  |
@@ -31,7 +31,7 @@ This is how Ralph maintains continuity across iterations.
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 6 / 36 criteria complete**
+**Total: 7 / 36 criteria complete**
 
 ## Key Context
 
@@ -81,6 +81,12 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 14:52:25
 **Session 3 started** (model: auto)
+
+### 2026-02-28 14:53:10
+- validated criterion 7 implementation parity for `list_projects`/`get_project` across python/typescript/rust
+- ran full gate successfully: python lint+format+mypy+pytest, typescript typecheck+tests, rust fmt+clippy+tests
+- marked criterion 7 complete in `RALPH_TASK.md`
+- next: criterion 8 (project completion-date filters, sorting, stalledOnly)
 
 ### 2026-02-28 14:53:12
 **Session 3 ended** - Agent finished naturally (29 criteria remaining)
