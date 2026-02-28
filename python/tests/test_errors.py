@@ -75,3 +75,38 @@ async def test_run_jxa_permissions_error_has_user_guidance(
 
     with pytest.raises(RuntimeError, match="Grant permission in System Settings"):
         await run_jxa("ignored")
+
+
+@pytest.mark.asyncio
+async def test_run_jxa_serializes_concurrent_calls(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    active_calls = 0
+    max_active_calls = 0
+
+    class SequentialProcess:
+        returncode = 0
+
+        async def communicate(self) -> tuple[bytes, bytes]:
+            nonlocal active_calls, max_active_calls
+            active_calls += 1
+            max_active_calls = max(max_active_calls, active_calls)
+            await asyncio.sleep(0.02)
+            active_calls -= 1
+            return (b"ok", b"")
+
+        def kill(self) -> None:
+            return None
+
+        async def wait(self) -> int:
+            return 0
+
+    async def fake_create_subprocess_exec(*args: str, **kwargs: object) -> SequentialProcess:
+        return SequentialProcess()
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", fake_create_subprocess_exec)
+
+    first, second = await asyncio.gather(run_jxa("one"), run_jxa("two"))
+    assert first == "ok"
+    assert second == "ok"
+    assert max_active_calls == 1

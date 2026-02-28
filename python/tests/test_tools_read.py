@@ -570,3 +570,25 @@ async def test_project_planning_prompt_renders_structure_and_fetches_project_sta
     assert len(scripts) == 2
     assert any('const projectFilter = "Alpha";' in script for script in scripts)
     assert any('const statusFilter = "available";' in script for script in scripts)
+
+
+@pytest.mark.asyncio
+async def test_server_handles_rapid_sequential_tool_calls(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[str] = []
+
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        calls.append(script)
+        return [{"id": "t1", "name": "Task"}]
+
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+
+    responses: list[str] = []
+    for _ in range(50):
+        responses.append(await server_module.get_inbox(limit=1))
+        responses.append(await server_module.list_tasks(limit=1, status="all"))
+
+    assert len(calls) == 100
+    assert all(json.loads(response) == [{"id": "t1", "name": "Task"}] for response in responses)

@@ -297,7 +297,7 @@ Harden error handling, packaging, and MCP client integration docs.
         - Claude Desktop: `"command": "uv", "args": ["run", "omnifocus-mcp"]`
         - Cursor: `"command": "python", "args": ["-m", "omnifocus_mcp"]`
         - Generic stdio: `omnifocus-mcp` (any client that supports stdio)
-57. [ ] Server handles rapid sequential tool calls without crashing.
+57. [x] Server handles rapid sequential tool calls without crashing.
 58. [ ] `pyproject.toml` has `[project.scripts]` entry so `omnifocus-mcp`
         CLI command works after install.
 59. [ ] Full test suite passes: `ruff check src/ && ruff format --check src/

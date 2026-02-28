@@ -4,6 +4,7 @@ from typing import Any
 
 
 DEFAULT_TIMEOUT_SECONDS = 30.0
+_JXA_CALL_LOCK = asyncio.Lock()
 
 
 def escape_for_jxa(value: str) -> str:
@@ -62,33 +63,34 @@ def _friendly_omnijs_error(error: str) -> str:
 
 
 async def run_jxa(script: str, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> str:
-    process = await asyncio.create_subprocess_exec(
-        "osascript",
-        "-l",
-        "JavaScript",
-        "-e",
-        script,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-
-    try:
-        stdout_bytes, stderr_bytes = await asyncio.wait_for(
-            process.communicate(),
-            timeout=timeout_seconds,
+    async with _JXA_CALL_LOCK:
+        process = await asyncio.create_subprocess_exec(
+            "osascript",
+            "-l",
+            "JavaScript",
+            "-e",
+            script,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
-    except TimeoutError as exc:
-        process.kill()
-        await process.wait()
-        raise TimeoutError(
-            f"JXA command timed out after {timeout_seconds:.0f}s."
-        ) from exc
 
-    if process.returncode != 0:
-        stderr_text = stderr_bytes.decode("utf-8", errors="replace")
-        raise RuntimeError(_friendly_jxa_error(stderr_text))
+        try:
+            stdout_bytes, stderr_bytes = await asyncio.wait_for(
+                process.communicate(),
+                timeout=timeout_seconds,
+            )
+        except TimeoutError as exc:
+            process.kill()
+            await process.wait()
+            raise TimeoutError(
+                f"JXA command timed out after {timeout_seconds:.0f}s."
+            ) from exc
 
-    return stdout_bytes.decode("utf-8", errors="replace").strip()
+        if process.returncode != 0:
+            stderr_text = stderr_bytes.decode("utf-8", errors="replace")
+            raise RuntimeError(_friendly_jxa_error(stderr_text))
+
+        return stdout_bytes.decode("utf-8", errors="replace").strip()
 
 
 async def run_jxa_json(script: str, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> Any:
