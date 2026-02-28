@@ -14,7 +14,7 @@ use omnifocus_mcp::{
         projects::{get_project, get_project_counts, list_projects, search_projects},
         tags::{list_tags, search_tags},
         tasks::{
-            get_inbox, get_task, get_task_counts, list_subtasks,
+            get_inbox, get_task, get_task_counts, list_notifications, list_subtasks,
             list_tasks as list_tasks_with_duration, list_tasks_with_planned, search_tasks,
             search_tasks_with_planned,
         },

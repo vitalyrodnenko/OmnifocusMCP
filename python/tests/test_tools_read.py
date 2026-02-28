@@ -734,6 +734,35 @@ async def test_list_subtasks_happy_path(
 
 
 @pytest.mark.asyncio
+async def test_list_notifications_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = [
+        {
+            "id": "n1",
+            "kind": "absolute",
+            "absoluteFireDate": "2026-03-02T09:00:00Z",
+            "relativeFireOffset": None,
+            "nextFireDate": "2026-03-02T09:00:00Z",
+            "isSnoozed": False,
+        }
+    ]
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.list_notifications(task_id="t3")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskId = "t3";' in script
+    assert "return task.notifications.map(n => ({" in script
+    assert 'kind: n.initialFireDate ? "absolute" : "relative",' in script
+    assert "relativeFireOffset: n.initialFireDate ? null : n.relativeFireOffset," in script
+    assert "isSnoozed: n.isSnoozed" in script
+
+
+@pytest.mark.asyncio
 async def test_search_tasks_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -1299,6 +1328,14 @@ async def test_get_task_counts_invalid_date_error_bubbles_up(
 async def test_list_subtasks_empty_task_id_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="task_id must not be empty"):
         await server_module.list_subtasks(task_id="   ")
+
+
+@pytest.mark.asyncio
+async def test_list_notifications_empty_task_id_validation_error(
+    server_module: Any,
+) -> None:
+    with pytest.raises(ValueError, match="task_id must not be empty"):
+        await server_module.list_notifications(task_id="   ")
 
 
 @pytest.mark.asyncio

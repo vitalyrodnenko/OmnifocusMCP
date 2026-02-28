@@ -534,6 +534,36 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "sub-1", name: "child" }]);
   });
 
+  test("list_notifications maps notification fields for a task", async () => {
+    runOmniJsMock.mockResolvedValueOnce([
+      {
+        id: "n1",
+        kind: "absolute",
+        absoluteFireDate: "2026-03-02T09:00:00Z",
+        relativeFireOffset: null,
+        nextFireDate: "2026-03-02T09:00:00Z",
+        isSnoozed: false,
+      },
+    ]);
+    const result = await getTool("list_notifications")({ task_id: "task-9" });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const taskId = "task-9";');
+    expect(script).toContain("return task.notifications.map(n => ({");
+    expect(script).toContain('kind: n.initialFireDate ? "absolute" : "relative",');
+    expect(script).toContain("relativeFireOffset: n.initialFireDate ? null : n.relativeFireOffset,");
+    expect(script).toContain("isSnoozed: n.isSnoozed");
+    expect(JSON.parse(result.content[0].text)).toEqual([
+      {
+        id: "n1",
+        kind: "absolute",
+        absoluteFireDate: "2026-03-02T09:00:00Z",
+        relativeFireOffset: null,
+        nextFireDate: "2026-03-02T09:00:00Z",
+        isSnoozed: false,
+      },
+    ]);
+  });
+
   test("get_task includes native taskStatus field mapping", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       id: "task-9",
