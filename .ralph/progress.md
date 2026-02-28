@@ -702,3 +702,11 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 11:42:30
 **Session 25 started** (model: auto)
+
+### 2026-02-28 13:00:00
+- cleaned and deduplicated `docs/install-rust.md` so it contains one canonical rust install path with required homebrew/source methods, mcp client snippets, and troubleshooting details
+- verified criterion 46 prerequisites: `.gitignore` contains `rust/target/` and `rust/Cargo.lock` is tracked
+- reran rust validation command: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 46 complete in `RALPH_TASK.md`
+- completed criterion 47 by untracking `rust/target/`, committing final ralph updates, and confirming clean git status
+- all criteria in `RALPH_TASK.md` are now marked complete

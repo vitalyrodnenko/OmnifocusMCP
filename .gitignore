@@ -20,5 +20,8 @@ __pycache__/
 typescript/node_modules/
 typescript/dist/
 
+# Rust artifacts
+rust/target/
+
 # OS/editor files
 .DS_Store
