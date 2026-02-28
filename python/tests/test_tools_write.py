@@ -557,8 +557,8 @@ async def test_delete_folder_happy_path_criterion18(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert 'const folderFilter = "folder-1";' in script
-    assert "const projectCount = folder.projects.length;" in script
-    assert "const subfolderCount = folder.folders.length;" in script
+    assert "const projectCount = document.flattenedProjects.filter" in script
+    assert "const subfolderCount = document.flattenedFolders.filter" in script
     assert "deleteObject(folder);" in script
     assert "subfolderCount: subfolderCount" in script
 
