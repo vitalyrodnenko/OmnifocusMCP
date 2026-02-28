@@ -1220,8 +1220,10 @@ async def test_move_project_happy_path_criterion11(
     assert 'const folderName = "Work";' in script
     assert ("const destination = (() => {" in script) or ("let destination;" in script)
     assert "const destination = (() => {" in script
-    assert "return targetFolder;" in script
+    assert "return targetFolder.ending;" in script
     assert "moveSections([project], destination);" in script
+    assert "const movedProject = document.flattenedProjects.find(item => item.id.primaryKey === project.id.primaryKey);" in script
+    assert "folderName: movedProject && movedProject.containingFolder ? movedProject.containingFolder.name : null" in script
 
 
 @pytest.mark.asyncio
@@ -1238,7 +1240,7 @@ async def test_move_project_to_top_level_happy_path_criterion11(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert "const folderName = null;" in script
-    assert "if (folderName === null) return library;" in script
+    assert "if (folderName === null) return library.ending;" in script
 
 
 @pytest.mark.asyncio

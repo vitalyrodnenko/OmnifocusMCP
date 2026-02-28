@@ -471,10 +471,13 @@ describe("tool happy paths", () => {
       script.includes("const destination = (() => {") || script.includes("let destination;")
     ).toBe(true);
     expect(
-      script.includes("if (folderName === null) return library;") ||
-        script.includes("destination = library;")
+      script.includes("if (folderName === null) return library.ending;") ||
+        script.includes("destination = library.ending;")
     ).toBe(true);
     expect(script).toContain("moveSections([project], destination);");
+    expect(script).toContain(
+      "folderName: movedProject && movedProject.containingFolder ? movedProject.containingFolder.name : null"
+    );
   });
 
   test("move_project returns error for empty project id or name", async () => {

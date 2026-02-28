@@ -414,12 +414,10 @@ const destination = (() => {{
 
 moveSections([project], destination);
 
-const movedProject = document.flattenedProjects.find(item => item.id.primaryKey === project.id.primaryKey);
-
 return {{
   id: project.id.primaryKey,
   name: project.name,
-  folderName: movedProject && movedProject.folder ? movedProject.folder.name : null
+  folderName: folderName
 }};"#
     );
 

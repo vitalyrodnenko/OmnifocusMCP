@@ -366,15 +366,17 @@ const destination = (() => {{
   if (!targetFolder) {{
     throw new Error(`Folder not found: ${{folderName}}`);
   }}
-  return targetFolder;
+  return targetFolder.ending;
 }})();
 
 moveSections([project], destination);
 
+const movedProject = document.flattenedProjects.find(item => item.id.primaryKey === project.id.primaryKey);
+
 return {{
   id: project.id.primaryKey,
   name: project.name,
-  folderName: folderName
+  folderName: movedProject && movedProject.containingFolder ? movedProject.containingFolder.name : null
 }};
 """.strip()
     result = await run_omnijs(script)
