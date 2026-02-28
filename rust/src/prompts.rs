@@ -14,7 +14,7 @@ pub async fn daily_review<R: JxaRunner>(runner: &R) -> Result<String> {
     )
     .await?;
     let overdue = list_tasks(
-        runner, None, None, None, "any", None, "overdue", None, None, None, None, None, None, None,
+        runner, None, None, None, "any", None, "overdue", None, None, None, None, None, None,
         None, None, None, "asc", 25,
     )
     .await?;
