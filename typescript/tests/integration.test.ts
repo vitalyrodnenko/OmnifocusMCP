@@ -194,17 +194,20 @@ integrationDescribe("typescript integration", () => {
       if (tasks.length > 0) {
         expect(tasks[0]).toHaveProperty("completionDate");
         expect(tasks[0]).toHaveProperty("hasChildren");
+        expect(tasks[0]).toHaveProperty("taskStatus");
       }
 
       const task = parseToolResult(await getTask({ task_id: createdTask.id })) as Record<string, unknown>;
       expect(task.id).toBe(createdTask.id);
       expect(task).toHaveProperty("name");
+      expect(task).toHaveProperty("taskStatus");
 
       const searched = parseToolResult(await searchTasks({ query: "TS Read Tool", limit: 20 })) as unknown[];
       expect(Array.isArray(searched)).toBe(true);
       if (searched.length > 0) {
         expect(searched[0]).toHaveProperty("completionDate");
         expect(searched[0]).toHaveProperty("hasChildren");
+        expect(searched[0]).toHaveProperty("taskStatus");
       }
 
       const projects = parseToolResult(await listProjects({ status: "active", limit: 20 })) as unknown[];
@@ -226,6 +229,10 @@ integrationDescribe("typescript integration", () => {
       expect(forecast).toHaveProperty("overdue");
       expect(forecast).toHaveProperty("dueToday");
       expect(forecast).toHaveProperty("flagged");
+      const overdue = forecast.overdue as Array<Record<string, unknown>> | undefined;
+      if (overdue !== undefined && overdue.length > 0) {
+        expect(overdue[0]).toHaveProperty("taskStatus");
+      }
       expect(forecast).toHaveProperty("deferred");
       expect(forecast).toHaveProperty("dueThisWeek");
       expect(forecast).toHaveProperty("counts");

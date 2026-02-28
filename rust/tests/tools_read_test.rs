@@ -627,6 +627,7 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
+    assert!(script.contains("taskStatus: (() => {"));
 }
 
 #[tokio::test]
@@ -670,6 +671,7 @@ async fn get_forecast_script_includes_deferred_due_this_week_counts_and_enriched
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
+    assert!(script.contains("if (s.includes(\"Dropped\")) return \"dropped\";"));
 }
 
 #[tokio::test]
@@ -1150,6 +1152,7 @@ async fn list_tasks_date_filter_script_contains_expected_logic() {
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
+    assert!(script.contains("if (s.includes(\"Available\")) return \"available\";"));
     assert!(script.contains("must be a valid ISO 8601 date string."));
 }
 
@@ -1193,6 +1196,7 @@ async fn search_tasks_script_includes_completion_and_children_fields() {
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
     assert!(script.contains("hasChildren: task.hasChildren"));
+    assert!(script.contains("if (s.includes(\"Overdue\")) return \"overdue\";"));
 }
 
 #[tokio::test]
