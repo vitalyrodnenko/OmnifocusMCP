@@ -173,7 +173,9 @@ async def project_planning(project: str) -> str:
 
     project_name = project.strip()
     project_details = await get_project(project_id_or_name=project_name)
-    available_tasks = await list_tasks(project=project_name, status="available", limit=500)
+    available_tasks = await list_tasks(
+        project=project_name, status="available", limit=500
+    )
 
     return f"""plan this project into clear executable work.
 
@@ -208,7 +210,9 @@ async def list_tasks(
     project: str | None = None,
     tag: str | None = None,
     flagged: bool | None = None,
-    status: Literal["available", "due_soon", "overdue", "completed", "all"] = "available",
+    status: Literal[
+        "available", "due_soon", "overdue", "completed", "all"
+    ] = "available",
     limit: int = 100,
 ) -> str:
     """list tasks with optional project, tag, flagged, and status filters.
@@ -223,7 +227,9 @@ async def list_tasks(
     if tag is not None and tag.strip() == "":
         raise ValueError("tag must not be empty when provided.")
     if status not in ("available", "due_soon", "overdue", "completed", "all"):
-        raise ValueError("status must be one of: available, due_soon, overdue, completed, all.")
+        raise ValueError(
+            "status must be one of: available, due_soon, overdue, completed, all."
+        )
 
     project_filter = "null" if project is None else escape_for_jxa(project)
     tag_filter = "null" if tag is None else escape_for_jxa(tag)
@@ -738,7 +744,9 @@ async def create_task(
     defer_date_value = "null" if deferDate is None else escape_for_jxa(deferDate)
     flagged_value = "null" if flagged is None else ("true" if flagged else "false")
     tags_value = "null" if tags is None else json.dumps(tags)
-    estimated_minutes_value = "null" if estimatedMinutes is None else str(estimatedMinutes)
+    estimated_minutes_value = (
+        "null" if estimatedMinutes is None else str(estimatedMinutes)
+    )
 
     script = f"""
 const taskName = {task_name};
@@ -822,12 +830,16 @@ async def create_tasks_batch(
             raise ValueError("task flagged must be a boolean when provided.")
 
         estimated_minutes_value = task.get("estimatedMinutes")
-        if estimated_minutes_value is not None and not isinstance(estimated_minutes_value, int):
+        if estimated_minutes_value is not None and not isinstance(
+            estimated_minutes_value, int
+        ):
             raise ValueError("task estimatedMinutes must be an integer when provided.")
 
         tags_value = task.get("tags")
         if tags_value is not None:
-            if not isinstance(tags_value, list) or not all(isinstance(tag, str) for tag in tags_value):
+            if not isinstance(tags_value, list) or not all(
+                isinstance(tag, str) for tag in tags_value
+            ):
                 raise ValueError("task tags must be an array of strings when provided.")
 
         normalized_tasks.append(
@@ -1110,7 +1122,9 @@ async def create_project(
     note_value = "null" if note is None else escape_for_jxa(note)
     due_date_value = "null" if dueDate is None else escape_for_jxa(dueDate)
     defer_date_value = "null" if deferDate is None else escape_for_jxa(deferDate)
-    sequential_value = "null" if sequential is None else ("true" if sequential else "false")
+    sequential_value = (
+        "null" if sequential is None else ("true" if sequential else "false")
+    )
 
     script = f"""
 const projectName = {project_name};

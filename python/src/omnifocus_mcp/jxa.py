@@ -93,7 +93,9 @@ async def run_jxa(script: str, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS)
         return stdout_bytes.decode("utf-8", errors="replace").strip()
 
 
-async def run_jxa_json(script: str, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> Any:
+async def run_jxa_json(
+    script: str, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
+) -> Any:
     stdout = await run_jxa(script, timeout_seconds=timeout_seconds)
     if stdout == "":
         raise RuntimeError("JXA command returned empty output.")
@@ -104,7 +106,9 @@ async def run_jxa_json(script: str, timeout_seconds: float = DEFAULT_TIMEOUT_SEC
         raise RuntimeError("JXA command returned malformed JSON.") from exc
 
 
-async def run_omnijs(script: str, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS) -> Any:
+async def run_omnijs(
+    script: str, timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
+) -> Any:
     wrapped_omnijs = f"""
 (function() {{
   try {{

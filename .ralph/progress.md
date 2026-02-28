@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 24
-- Current status: Phase 6 in progress (criteria 54-56 complete; next 57).
+- Iterations completed: 25
+- Current status: Phase 6 in progress (criteria 54-58 complete; next 59).
 
 ## How This Works
 
@@ -22,11 +22,11 @@ This is how Ralph maintains continuity across iterations.
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
-| 6     | Python: Polish                    | 54–59     | 3/6  |
+| 6     | Python: Polish                    | 54–59     | 5/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 56 / 75 criteria complete**
+**Total: 58 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -743,8 +743,34 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-27 23:17:29
 **Session 25 started** (model: auto)
 
+### 2026-02-27 23:18:41
+**Session 25 update**
+- completed phase 6 criterion 57 (rapid sequential tool-call stability)
+- hardened `python/src/omnifocus_mcp/jxa.py` by serializing `run_jxa` calls with a shared async lock to prevent overlapping `osascript` executions
+- added `test_run_jxa_serializes_concurrent_calls` in `python/tests/test_errors.py` to verify concurrent invocations are processed one-at-a-time
+- ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 6 criterion 58 (`pyproject.toml` scripts entry for `omnifocus-mcp`)
+
 ### 2026-02-27 23:18:38
 **Session 25 ended** - 🔄 Context rotation (token limit reached)
 
 ### 2026-02-27 23:18:40
 **Session 26 started** (model: auto)
+
+### 2026-02-27 23:24:30
+**Session 26 update**
+- completed phase 6 criterion 58 by adding the Python CLI entrypoint mapping in `python/pyproject.toml`:
+  - `[project.scripts]`
+  - `omnifocus-mcp = "omnifocus_mcp.__main__:main"`
+- ran the full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 6 criterion 59 (full Python suite with `ruff format --check`)
+
+### 2026-02-27 23:19:46
+**Session 26 ended** - Agent finished naturally (16 criteria remaining)
+
+### 2026-02-27 23:19:48
+**Session 27 started** (model: auto)

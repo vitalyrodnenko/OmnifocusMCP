@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772255910
-generated_at: 2026-02-28T05:18:36Z
+source_mtime: 1772255982
+generated_at: 2026-02-28T05:19:44Z
 
 tasks:
   - id: "line_109"
@@ -408,14 +408,14 @@ tasks:
     raw_marker: 57.
   - id: "line_301"
     line_number: 301
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `pyproject.toml` has `[project.scripts]` entry so `omnifocus-mcp`
     indent_level: 0
     raw_marker: 58.
   - id: "line_303"
     line_number: 303
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Full test suite passes: `ruff check src/ && ruff format --check src/
     indent_level: 0

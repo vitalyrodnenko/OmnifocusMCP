@@ -20,6 +20,9 @@ dev = [
   "mypy",
 ]
 
+[project.scripts]
+omnifocus-mcp = "omnifocus_mcp.__main__:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
