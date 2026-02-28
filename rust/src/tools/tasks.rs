@@ -608,6 +608,298 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn set_task_repetition<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    rule_string: Option<&str>,
+    schedule_type: &str,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    if let Some(value) = rule_string {
+        if value.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "rule_string must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if !matches!(schedule_type, "regularly" | "from_completion" | "none") {
+        return Err(OmniFocusError::Validation(
+            "schedule_type must be one of: regularly, from_completion, none.".to_string(),
+        ));
+    }
+
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let rule_string_value = rule_string
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let schedule_type_value = escape_for_jxa(schedule_type);
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const ruleString = {rule_string_value};
+const scheduleTypeInput = {schedule_type_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+if (ruleString === null) {{
+  task.repetitionRule = null;
+}} else {{
+  const scheduleType = (() => {{
+    if (scheduleTypeInput === "regularly") return Task.RepetitionScheduleType.Regularly;
+    if (scheduleTypeInput === "from_completion") return Task.RepetitionScheduleType.FromCompletion;
+    if (scheduleTypeInput === "none") return Task.RepetitionScheduleType.None;
+    throw new Error(`Invalid schedule_type: ${{scheduleTypeInput}}`);
+  }})();
+  task.repetitionRule = new Task.RepetitionRule(ruleString, null, scheduleType, null, false);
+}}
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  repetitionRule: task.repetitionRule ? task.repetitionRule.ruleString : null
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn update_task<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    name: Option<&str>,
+    note: Option<&str>,
+    due_date: Option<&str>,
+    defer_date: Option<&str>,
+    flagged: Option<bool>,
+    tags: Option<Vec<String>>,
+    estimated_minutes: Option<i32>,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    if let Some(value) = name {
+        if value.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "name must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+
+    let mut updates = serde_json::Map::new();
+    if let Some(value) = name {
+        updates.insert("name".to_string(), Value::String(value.trim().to_string()));
+    }
+    if let Some(value) = note {
+        updates.insert("note".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = due_date {
+        updates.insert("dueDate".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = defer_date {
+        updates.insert("deferDate".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = flagged {
+        updates.insert("flagged".to_string(), Value::Bool(value));
+    }
+    if let Some(value) = tags {
+        updates.insert(
+            "tags".to_string(),
+            Value::Array(value.into_iter().map(Value::String).collect()),
+        );
+    }
+    if let Some(value) = estimated_minutes {
+        updates.insert("estimatedMinutes".to_string(), Value::from(value));
+    }
+
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let updates_value = serde_json::to_string(&updates)?;
+
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const updates = {updates_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
+
+if (has("name")) task.name = updates.name;
+if (has("note")) task.note = updates.note;
+if (has("dueDate")) task.dueDate = new Date(updates.dueDate);
+if (has("deferDate")) task.deferDate = new Date(updates.deferDate);
+if (has("flagged")) task.flagged = updates.flagged;
+if (has("estimatedMinutes")) task.estimatedMinutes = updates.estimatedMinutes;
+
+if (has("tags")) {{
+  const existingTags = task.tags.slice();
+  existingTags.forEach(tag => {{
+    task.removeTag(tag);
+  }});
+  updates.tags.forEach(tagName => {{
+    const tag = document.flattenedTags.byName(tagName);
+    if (tag) task.addTag(tag);
+  }});
+}}
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  note: task.note,
+  flagged: task.flagged,
+  dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+  completed: task.completed,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  tags: task.tags.map(tag => tag.name),
+  estimatedMinutes: task.estimatedMinutes
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn delete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const taskName = task.name;
+const childCount = task.children.length;
+const warning = childCount > 0
+  ? `Deleted task had ${{childCount}} child task(s).`
+  : null;
+
+task.drop(false);
+
+return {{
+  id: taskId,
+  name: taskName,
+  deleted: true,
+  warning: warning
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>) -> Result<Value> {
+    if task_ids.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_ids must contain at least one task id.".to_string(),
+        ));
+    }
+
+    let mut normalized_task_ids: Vec<String> = Vec::with_capacity(task_ids.len());
+    for task_id in task_ids {
+        let normalized_task_id = task_id.trim();
+        if normalized_task_id.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each task id must be a non-empty string.".to_string(),
+            ));
+        }
+        normalized_task_ids.push(normalized_task_id.to_string());
+    }
+
+    let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
+    let script = format!(
+        r#"const taskIds = {task_ids_value};
+const results = taskIds.map(taskId => {{
+  const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+  if (!task) {{
+    return {{
+      id: taskId,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const taskName = task.name;
+  task.drop(false);
+  return {{
+    id: taskId,
+    name: taskName,
+    deleted: true
+  }};
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const notFoundCount = results.length - deletedCount;
+
+return {{
+  deleted_count: deletedCount,
+  not_found_count: notFoundCount,
+  results: results
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn move_task<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    project: Option<&str>,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    if let Some(project_name) = project {
+        if project_name.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "project must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let project_value = project
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const projectName = {project_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const destination = (() => {{
+  if (projectName === null || projectName === "") return inbox.ending;
+  const targetProject = document.flattenedProjects.byName(projectName);
+  if (!targetProject) {{
+    throw new Error(`Project not found: ${{projectName}}`);
+  }}
+  return targetProject.ending;
+}})();
+
+moveTasks([task], destination);
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  inInbox: task.inInbox
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
 pub async fn uncomplete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Value> {
     if task_id.trim().is_empty() {
         return Err(OmniFocusError::Validation(
@@ -631,6 +923,355 @@ return {{
   id: task.id.primaryKey,
   name: task.name,
   completed: task.completed
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn append_to_note<R: JxaRunner>(
+    runner: &R,
+    object_type: &str,
+    object_id: &str,
+    text: &str,
+) -> Result<Value> {
+    if !matches!(object_type, "task" | "project") {
+        return Err(OmniFocusError::Validation(
+            "object_type must be one of: task, project.".to_string(),
+        ));
+    }
+    if object_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "object_id must not be empty.".to_string(),
+        ));
+    }
+    if text.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "text must not be empty.".to_string(),
+        ));
+    }
+
+    let object_type_value = escape_for_jxa(object_type);
+    let object_id_value = escape_for_jxa(object_id.trim());
+    let text_value = escape_for_jxa(text);
+    let script = format!(
+        r#"const objectType = {object_type_value};
+const objectId = {object_id_value};
+const textToAppend = {text_value};
+
+let obj;
+if (objectType === "task") {{
+  obj = document.flattenedTasks.find(item => item.id.primaryKey === objectId);
+  if (!obj) {{
+    throw new Error(`Task not found: ${{objectId}}`);
+  }}
+}} else if (objectType === "project") {{
+  obj = document.flattenedProjects.find(item => item.id.primaryKey === objectId);
+  if (!obj) {{
+    throw new Error(`Project not found: ${{objectId}}`);
+  }}
+}} else {{
+  throw new Error(`Invalid object_type: ${{objectType}}`);
+}}
+
+obj.appendStringToNote(textToAppend);
+
+return {{
+  id: obj.id.primaryKey,
+  name: obj.name,
+  type: objectType,
+  noteLength: obj.note.length
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn set_task_repetition<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    rule_string: Option<&str>,
+    schedule_type: &str,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    if let Some(value) = rule_string {
+        if value.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "rule_string must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if !matches!(schedule_type, "regularly" | "from_completion" | "none") {
+        return Err(OmniFocusError::Validation(
+            "schedule_type must be one of: regularly, from_completion, none.".to_string(),
+        ));
+    }
+
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let rule_string_value = rule_string
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let schedule_type_value = escape_for_jxa(schedule_type);
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const ruleString = {rule_string_value};
+const scheduleTypeInput = {schedule_type_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+if (ruleString === null) {{
+  task.repetitionRule = null;
+}} else {{
+  const scheduleType = (() => {{
+    if (scheduleTypeInput === "regularly") return Task.RepetitionScheduleType.Regularly;
+    if (scheduleTypeInput === "from_completion") return Task.RepetitionScheduleType.FromCompletion;
+    if (scheduleTypeInput === "none") return Task.RepetitionScheduleType.None;
+    throw new Error(`Invalid schedule_type: ${{scheduleTypeInput}}`);
+  }})();
+  task.repetitionRule = new Task.RepetitionRule(ruleString, null, scheduleType, null, false);
+}}
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  repetitionRule: task.repetitionRule ? task.repetitionRule.ruleString : null
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn update_task<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    name: Option<&str>,
+    note: Option<&str>,
+    due_date: Option<&str>,
+    defer_date: Option<&str>,
+    flagged: Option<bool>,
+    tags: Option<Vec<String>>,
+    estimated_minutes: Option<i32>,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    if let Some(value) = name {
+        if value.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "name must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+
+    let mut updates = serde_json::Map::new();
+    if let Some(value) = name {
+        updates.insert("name".to_string(), Value::String(value.trim().to_string()));
+    }
+    if let Some(value) = note {
+        updates.insert("note".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = due_date {
+        updates.insert("dueDate".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = defer_date {
+        updates.insert("deferDate".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = flagged {
+        updates.insert("flagged".to_string(), Value::Bool(value));
+    }
+    if let Some(value) = tags {
+        updates.insert(
+            "tags".to_string(),
+            Value::Array(value.into_iter().map(Value::String).collect()),
+        );
+    }
+    if let Some(value) = estimated_minutes {
+        updates.insert("estimatedMinutes".to_string(), Value::from(value));
+    }
+
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let updates_value = serde_json::to_string(&updates)?;
+
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const updates = {updates_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
+
+if (has("name")) task.name = updates.name;
+if (has("note")) task.note = updates.note;
+if (has("dueDate")) task.dueDate = new Date(updates.dueDate);
+if (has("deferDate")) task.deferDate = new Date(updates.deferDate);
+if (has("flagged")) task.flagged = updates.flagged;
+if (has("estimatedMinutes")) task.estimatedMinutes = updates.estimatedMinutes;
+
+if (has("tags")) {{
+  const existingTags = task.tags.slice();
+  existingTags.forEach(tag => {{
+    task.removeTag(tag);
+  }});
+  updates.tags.forEach(tagName => {{
+    const tag = document.flattenedTags.byName(tagName);
+    if (tag) task.addTag(tag);
+  }});
+}}
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  note: task.note,
+  flagged: task.flagged,
+  dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+  completed: task.completed,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  tags: task.tags.map(tag => tag.name),
+  estimatedMinutes: task.estimatedMinutes
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn delete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const taskName = task.name;
+const childCount = task.children.length;
+const warning = childCount > 0
+  ? `Deleted task had ${{childCount}} child task(s).`
+  : null;
+
+task.drop(false);
+
+return {{
+  id: taskId,
+  name: taskName,
+  deleted: true,
+  warning: warning
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>) -> Result<Value> {
+    if task_ids.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_ids must contain at least one task id.".to_string(),
+        ));
+    }
+
+    let mut normalized_task_ids: Vec<String> = Vec::with_capacity(task_ids.len());
+    for task_id in task_ids {
+        let normalized_task_id = task_id.trim();
+        if normalized_task_id.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each task id must be a non-empty string.".to_string(),
+            ));
+        }
+        normalized_task_ids.push(normalized_task_id.to_string());
+    }
+
+    let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
+    let script = format!(
+        r#"const taskIds = {task_ids_value};
+const results = taskIds.map(taskId => {{
+  const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+  if (!task) {{
+    return {{
+      id: taskId,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const taskName = task.name;
+  task.drop(false);
+  return {{
+    id: taskId,
+    name: taskName,
+    deleted: true
+  }};
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const notFoundCount = results.length - deletedCount;
+
+return {{
+  deleted_count: deletedCount,
+  not_found_count: notFoundCount,
+  results: results
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn move_task<R: JxaRunner>(
+    runner: &R,
+    task_id: &str,
+    project: Option<&str>,
+) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+    if let Some(project_name) = project {
+        if project_name.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "project must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+
+    let task_id_value = escape_for_jxa(task_id.trim());
+    let project_value = project
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let script = format!(
+        r#"const taskId = {task_id_value};
+const projectName = {project_value};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+
+const destination = (() => {{
+  if (projectName === null || projectName === "") return inbox.ending;
+  const targetProject = document.flattenedProjects.byName(projectName);
+  if (!targetProject) {{
+    throw new Error(`Project not found: ${{projectName}}`);
+  }}
+  return targetProject.ending;
+}})();
+
+moveTasks([task], destination);
+
+return {{
+  id: task.id.primaryKey,
+  name: task.name,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  inInbox: task.inInbox
 }};"#
     );
     runner.run_omnijs(&script).await

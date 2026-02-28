@@ -881,24 +881,22 @@ async def append_to_note(
     script = f"""
 const objectType = {object_type_value};
 const objectId = {object_id_value};
-const textToAppend = {text_value};
+const textValue = {text_value};
 
 let obj;
 if (objectType === "task") {{
   obj = document.flattenedTasks.find(item => item.id.primaryKey === objectId);
-  if (!obj) {{
-    throw new Error(`Task not found: ${{objectId}}`);
-  }}
 }} else if (objectType === "project") {{
   obj = document.flattenedProjects.find(item => item.id.primaryKey === objectId);
-  if (!obj) {{
-    throw new Error(`Project not found: ${{objectId}}`);
-  }}
 }} else {{
   throw new Error(`Invalid object_type: ${{objectType}}`);
 }}
 
-obj.appendStringToNote(textToAppend);
+if (!obj) {{
+  throw new Error(`${{objectType}} not found: ${{objectId}}`);
+}}
+
+obj.appendStringToNote(textValue);
 
 return {{
   id: obj.id.primaryKey,

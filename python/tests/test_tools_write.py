@@ -807,8 +807,8 @@ async def test_append_to_note_happy_path_criterion20(
     script = state["calls"][0]["script"]
     assert 'const objectType = "task";' in script
     assert 'const objectId = "t6";' in script
-    assert 'const textToAppend = "\\nfollow-up details";' in script
-    assert "obj.appendStringToNote(textToAppend);" in script
+    assert 'const textValue = "\\nfollow-up details";' in script
+    assert "obj.appendStringToNote(textValue);" in script
     assert "noteLength: obj.note.length" in script
 
 
