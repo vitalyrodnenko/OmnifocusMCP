@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 28
-- Current status: Phase 7 in progress (criterion 62 complete; next 63).
+- Current status: Phase 7 in progress (criterion 63 complete; next 64).
 
 ## How This Works
 
@@ -23,10 +23,10 @@ This is how Ralph maintains continuity across iterations.
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
 | 6     | Python: Polish                    | 54–59     | 6/6  |
-| 7     | TypeScript: Full Port + Tests     | 60–71     | 3/12 |
+| 7     | TypeScript: Full Port + Tests     | 60–71     | 4/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 62 / 75 criteria complete**
+**Total: 63 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -851,6 +851,18 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:23:40
 **Session 31 started** (model: auto)
+
+### 2026-02-27 23:24:11
+**Session 31 update**
+- completed phase 7 criterion 63 by porting all read tools into `typescript/src/index.ts`:
+  - `get_inbox`, `list_tasks`, `get_task`, `search_tasks`
+  - `list_projects`, `get_project`, `list_tags`, `list_folders`
+  - `get_forecast`, `list_perspectives`
+- wired MCP stdio server startup and standardized tool success/error responses
+- verified TypeScript build and checks:
+  - `cd typescript && npm run build`
+  - `cd typescript && npx tsc --noEmit && npm test`
+- next up: phase 7 criterion 64 (port all write tools)
 
 ### 2026-02-27 23:24:17
 **Session 31 ended** - 🔄 Context rotation (token limit reached)
