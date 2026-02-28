@@ -534,7 +534,7 @@ set reminders without the user opening OmniFocus.
         - **Error:** throw if task or notification not found.
         - Implement and test in all 3 implementations.
 
-31. [ ] All lint and test commands pass for Phase 9 (same as criterion 6).
+31. [x] All lint and test commands pass for Phase 9 (same as criterion 6).
 
 ---
 

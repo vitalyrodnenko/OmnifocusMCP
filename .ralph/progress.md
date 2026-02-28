@@ -38,20 +38,6 @@
 
 ## Session History (keep only last 3 substantive entries)
 
-### 2026-02-28 16:15
-- completed criterion 31 by running full cross-implementation gate with zero failures
-- full gate command:
-  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test && cd ../rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
-- result: all python/typescript/rust checks passed (integration tests skipped as expected)
-- next: criterion 32 (`duplicate_task`)
-
-### 2026-02-28 16:24
-- completed criterion 33 by running the full cross-language gate end-to-end
-- full gate command:
-  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test && cd ../rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
-- result: all python/typescript/rust checks passed
-- next: criterion 34 (final parity verification)
-
 ### 2026-02-28 16:23
 - completed criterion 32 by stabilizing `duplicate_task` and keeping one canonical active implementation per language
 - resolved duplicate-definition regressions introduced during iteration and reran focused duplicate_task checks
@@ -60,3 +46,15 @@
   - `cd typescript && npm test -- tools-representative.test.ts -t duplicate_task`
   - `cd rust && cargo test --test tools_write_test duplicate_task`
 - next: criterion 33 (phase 10 full gate)
+
+### 2026-02-28 16:24
+- completed criterion 33 by running the full cross-language gate end-to-end
+- full gate command:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test && cd ../rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- result: all python/typescript/rust checks passed
+- next: criterion 34 (final parity verification)
+
+### 2026-02-28 16:26
+- reconciled state tracking drift by re-running the full gate and marking criterion 31 complete in `RALPH_TASK.md`
+- aligned `duplicate_task` script shape across Python, TypeScript, and Rust plus representative assertions
+- next: criterion 34 (verify parity of all new fields/tools)
