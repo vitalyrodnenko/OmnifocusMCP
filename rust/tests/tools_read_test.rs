@@ -9,7 +9,7 @@ use omnifocus_mcp::{
         perspectives::list_perspectives,
         projects::{get_project, list_projects},
         tags::list_tags,
-        tasks::{get_inbox, get_task, list_tasks, search_tasks},
+        tasks::{get_inbox, get_task, list_subtasks, list_tasks, search_tasks},
     },
 };
 use serde_json::{json, Value};
@@ -72,6 +72,15 @@ async fn read_task_tools_happy_path() {
     };
     let single = get_task(&get_runner, "t3").await.expect("task should load");
     assert_eq!(single["id"], "t3");
+
+    let subtasks_runner = MockRunner {
+        payload: json!([task_value("st1", "child task")]),
+    };
+    let subtasks = list_subtasks(&subtasks_runner, "t3", 100)
+        .await
+        .expect("subtasks should parse");
+    assert_eq!(subtasks.len(), 1);
+    assert_eq!(subtasks[0].id, "st1");
 
     let search_runner = MockRunner {
         payload: json!([task_value("t4", "searched task")]),
@@ -190,6 +199,14 @@ async fn validation_errors_for_read_tools() {
     ));
     assert!(matches!(
         get_task(&runner, "   ").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        list_subtasks(&runner, "   ", 100).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        list_subtasks(&runner, "task-id", 0).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(

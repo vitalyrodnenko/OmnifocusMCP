@@ -33,8 +33,8 @@ use crate::{
         tags::{create_tag, list_tags},
         tasks::{
             complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
-            delete_tasks_batch, get_inbox, get_task, list_tasks, move_task, search_tasks,
-            uncomplete_task, update_task, CreateTaskInput,
+            delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks, move_task,
+            search_tasks, uncomplete_task, update_task, CreateTaskInput,
         },
     },
 };
@@ -56,6 +56,12 @@ struct ListTasksParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct TaskIdParams {
     task_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct TaskIdLimitParams {
+    task_id: String,
+    limit: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -237,6 +243,21 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = get_task(self.runner.as_ref(), &params.task_id)
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "list direct subtasks for a task id.")]
+    async fn list_subtasks(
+        &self,
+        Parameters(params): Parameters<TaskIdLimitParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = list_subtasks(
+            self.runner.as_ref(),
+            &params.task_id,
+            params.limit.unwrap_or(100),
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
