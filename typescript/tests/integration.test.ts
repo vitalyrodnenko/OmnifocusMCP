@@ -125,10 +125,9 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  try {
-    await sweepArtifacts([]);
-    const validation = (await runOmniJs(
-      `
+  await sweepArtifacts([]);
+  const validation = (await runOmniJs(
+    `
 const prefix = ${JSON.stringify(TEST_PREFIX)};
 const taskLeakCount = document.flattenedTasks.filter(task => {
   if (!(task.name || "").startsWith(prefix)) return false;
@@ -142,14 +141,11 @@ const projectLeakCount = document.flattenedProjects.filter(project => {
 }).length;
 return { taskLeakCount, projectLeakCount };
 `.trim()
-    )) as { taskLeakCount?: unknown; projectLeakCount?: unknown };
-    const taskLeakCount = Number(validation.taskLeakCount ?? 0);
-    const projectLeakCount = Number(validation.projectLeakCount ?? 0);
-    if (taskLeakCount > 0 || projectLeakCount > 0) {
-      throw new Error(`teardown leaked test artifacts: tasks=${taskLeakCount}, projects=${projectLeakCount}`);
-    }
-  } catch {
-    return;
+  )) as { taskLeakCount?: unknown; projectLeakCount?: unknown };
+  const taskLeakCount = Number(validation.taskLeakCount ?? 0);
+  const projectLeakCount = Number(validation.projectLeakCount ?? 0);
+  if (taskLeakCount > 0 || projectLeakCount > 0) {
+    throw new Error(`teardown leaked test artifacts: tasks=${taskLeakCount}, projects=${projectLeakCount}`);
   }
 });
 
