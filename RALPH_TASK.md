@@ -244,20 +244,20 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
 
 ### Success Criteria
 
-16. [ ] Run `grep -r '<your-org>\|<user>' --include='*.md'
+16. [x] Run `grep -r '<your-org>\|<user>' --include='*.md'
         --include='*.rb' --include='*.yml' --include='*.toml'
         --include='*.json'` and confirm zero results.
 
-17. [ ] Verify all lint/test commands still pass (no files were
+17. [x] Verify all lint/test commands still pass (no files were
         accidentally broken):
         - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
         - `cd typescript && npx tsc --noEmit && npm test`
         - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
 
-18. [ ] Commit all changes. Suggested commit message:
+18. [x] Commit all changes. Suggested commit message:
         "prepare project for open-source distribution"
 
-19. [ ] Delete this file (`RALPH_TASK_NEXT.md`) after all criteria
+19. [x] Delete this file (`RALPH_TASK_NEXT.md`) after all criteria
         are complete — it was a temporary task file.
 
 ---
