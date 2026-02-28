@@ -599,6 +599,58 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>) -> Result<Value> {
+    if task_ids.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_ids must contain at least one task id.".to_string(),
+        ));
+    }
+
+    let mut normalized_task_ids: Vec<String> = Vec::with_capacity(task_ids.len());
+    for task_id in task_ids {
+        let normalized_task_id = task_id.trim();
+        if normalized_task_id.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each task id must be a non-empty string.".to_string(),
+            ));
+        }
+        normalized_task_ids.push(normalized_task_id.to_string());
+    }
+
+    let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
+    let script = format!(
+        r#"const taskIds = {task_ids_value};
+const results = taskIds.map(taskId => {{
+  const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+  if (!task) {{
+    return {{
+      id: taskId,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const taskName = task.name;
+  task.drop(false);
+  return {{
+    id: taskId,
+    name: taskName,
+    deleted: true
+  }};
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const notFoundCount = results.length - deletedCount;
+
+return {{
+  deleted_count: deletedCount,
+  not_found_count: notFoundCount,
+  results: results
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
 pub async fn move_task<R: JxaRunner>(
     runner: &R,
     task_id: &str,
