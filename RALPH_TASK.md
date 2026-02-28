@@ -510,7 +510,7 @@ set reminders without the user opening OmniFocus.
         - **Error:** throw if task not found.
         - Implement and test in all 3 implementations.
 
-29. [ ] **`add_notification`** — all 3 implementations (NEW TOOL).
+29. [x] **`add_notification`** — all 3 implementations (NEW TOOL).
         - **Input:** `task_id: str` (required), plus ONE of:
           `absoluteDate: str` (ISO 8601 — fire at this exact time), OR
           `relativeOffset: number` (seconds before due date — negative
