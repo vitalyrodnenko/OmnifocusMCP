@@ -246,9 +246,9 @@ write tools return confirmation with the affected item's current state.
         (verify single `run_omnijs` invocation, not N calls).
 41. [x] Test `update_task` only modifies provided fields (omitted fields
         must NOT be nulled out in the JXA script).
-42. [ ] Error-path tests: `complete_task` with nonexistent ID → error.
+42. [x] Error-path tests: `complete_task` with nonexistent ID → error.
         `create_task` with empty name → validation error.
-43. [ ] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+43. [x] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
 
 ---
 

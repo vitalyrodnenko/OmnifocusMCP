@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 6
-- Current status: Phase 4 in progress (criterion 40 complete; next 41).
+- Iterations completed: 11
+- Current status: Phase 5 in progress (phase 4 complete; next 44).
 
 ## How This Works
 
@@ -20,13 +20,13 @@ This is how Ralph maintains continuity across iterations.
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
-| 4     | Python: Write Tools + Tests       | 29–43     | 11/15 |
+| 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 39 / 75 criteria complete**
+**Total: 43 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -485,3 +485,15 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:09:04
 **Session 11 started** (model: auto)
+
+### 2026-02-27 23:13:20
+**Session 11 update**
+- completed phase 4 criterion 42 with explicit write-tool error-path tests in `python/tests/test_tools_write.py`:
+  - `test_complete_task_nonexistent_id_error`
+  - `test_create_task_empty_name_validation_error`
+- completed phase 4 criterion 43 by rerunning and passing the phase check command
+- full command from `RALPH_TASK.md` passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- phase 4 is now complete (criteria 29-43)
+- next up: phase 5 criterion 44 (`omnifocus://inbox` resource)
