@@ -68,6 +68,8 @@ async def list_tasks(
     deferAfter: str | None = None,
     completedBefore: str | None = None,
     completedAfter: str | None = None,
+    plannedBefore: str | None = None,
+    plannedAfter: str | None = None,
     maxEstimatedMinutes: int | None = None,
     sortBy: Literal[
         "dueDate",
@@ -163,6 +165,12 @@ async def list_tasks(
     completed_after_filter = (
         "null" if completedAfter is None else escape_for_jxa(completedAfter)
     )
+    planned_before_filter = (
+        "null" if plannedBefore is None else escape_for_jxa(plannedBefore)
+    )
+    planned_after_filter = (
+        "null" if plannedAfter is None else escape_for_jxa(plannedAfter)
+    )
     max_estimated_minutes_filter = (
         "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
     )
@@ -183,6 +191,8 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
+const plannedBeforeRaw = {planned_before_filter};
+const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const sortBy = {sort_by_filter};
 const sortOrder = {sort_order_filter};
@@ -202,7 +212,17 @@ const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
 const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
+const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
+const getPlannedDate = (task) => {{
+  try {{
+    const value = task.plannedDate;
+    return value === undefined ? null : value;
+  }} catch (e) {{
+    return null;
+  }}
+}};
 
 const filteredTasks = document.flattenedTasks
   .filter(task => {{
@@ -248,6 +268,9 @@ const filteredTasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    const plannedDate = getPlannedDate(task);
+    if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
+    if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;
     if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
 
     return true;
@@ -303,6 +326,7 @@ const tasks = sortedTasks.slice(0, {limit});
 
 return tasks.map(task => {{
   const tags = task.tags.map(taskTag => taskTag.name);
+  const plannedDate = getPlannedDate(task);
   return {{
     id: task.id.primaryKey,
     name: task.name,
@@ -312,6 +336,7 @@ return tasks.map(task => {{
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
     completed: task.completed,
     completionDate: task.completionDate ? task.completionDate.toISOString() : null,
+    plannedDate: plannedDate ? plannedDate.toISOString() : null,
     projectName: task.containingProject ? task.containingProject.name : null,
     tags: tags,
     estimatedMinutes: task.estimatedMinutes,
@@ -797,6 +822,22 @@ const children = task.children.map(child => {{
 }});
 
 const repetitionRule = task.repetitionRule ? task.repetitionRule.ruleString : null;
+const plannedDate = (() => {{
+  try {{
+    const value = task.plannedDate;
+    return value === undefined ? null : value;
+  }} catch (e) {{
+    return null;
+  }}
+}})();
+const effectivePlannedDate = (() => {{
+  try {{
+    const value = task.effectivePlannedDate;
+    return value === undefined ? null : value;
+  }} catch (e) {{
+    return null;
+  }}
+}})();
 
 return {{
   id: task.id.primaryKey,
@@ -811,6 +852,8 @@ return {{
   completed: task.completed,
   completionDate: task.completionDate ? task.completionDate.toISOString() : null,
   modified: task.modified ? task.modified.toISOString() : null,
+  plannedDate: plannedDate ? plannedDate.toISOString() : null,
+  effectivePlannedDate: effectivePlannedDate ? effectivePlannedDate.toISOString() : null,
   taskStatus: (() => {{
     const s = String(task.taskStatus);
     if (s.includes("Available")) return "available";
@@ -852,6 +895,8 @@ async def search_tasks(
     deferAfter: str | None = None,
     completedBefore: str | None = None,
     completedAfter: str | None = None,
+    plannedBefore: str | None = None,
+    plannedAfter: str | None = None,
     maxEstimatedMinutes: int | None = None,
     sortBy: Literal[
         "dueDate",
@@ -943,6 +988,12 @@ async def search_tasks(
     completed_after_filter = (
         "null" if completedAfter is None else escape_for_jxa(completedAfter)
     )
+    planned_before_filter = (
+        "null" if plannedBefore is None else escape_for_jxa(plannedBefore)
+    )
+    planned_after_filter = (
+        "null" if plannedAfter is None else escape_for_jxa(plannedAfter)
+    )
     max_estimated_minutes_filter = (
         "null" if maxEstimatedMinutes is None else str(maxEstimatedMinutes)
     )
@@ -964,6 +1015,8 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
+const plannedBeforeRaw = {planned_before_filter};
+const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const sortBy = {sort_by_filter};
 const sortOrder = {sort_order_filter};
@@ -983,7 +1036,17 @@ const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
 const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
+const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
+const getPlannedDate = (task) => {{
+  try {{
+    const value = task.plannedDate;
+    return value === undefined ? null : value;
+  }} catch (e) {{
+    return null;
+  }}
+}};
 
 const filteredTasks = document.flattenedTasks
   .filter(task => {{
@@ -1033,6 +1096,9 @@ const filteredTasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    const plannedDate = getPlannedDate(task);
+    if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
+    if (plannedAfter !== null && !(plannedDate !== null && plannedDate > plannedAfter)) return false;
     if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
 
     return true;
@@ -1088,6 +1154,7 @@ const tasks = sortedTasks.slice(0, {limit});
 
 return tasks.map(task => {{
   const tags = task.tags.map(taskTag => taskTag.name);
+  const plannedDate = getPlannedDate(task);
   return {{
     id: task.id.primaryKey,
     name: task.name,
@@ -1097,6 +1164,7 @@ return tasks.map(task => {{
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
     completed: task.completed,
     completionDate: task.completionDate ? task.completionDate.toISOString() : null,
+    plannedDate: plannedDate ? plannedDate.toISOString() : null,
     projectName: task.containingProject ? task.containingProject.name : null,
     tags: tags,
     estimatedMinutes: task.estimatedMinutes,
