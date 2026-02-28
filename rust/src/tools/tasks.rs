@@ -1426,69 +1426,6 @@ return {{
     runner.run_omnijs(&script).await
 }
 
-pub async fn add_notification<R: JxaRunner>(
-    runner: &R,
-    task_id: &str,
-    absolute_date: Option<&str>,
-    relative_offset: Option<f64>,
-) -> Result<Value> {
-    if task_id.trim().is_empty() {
-        return Err(OmniFocusError::Validation(
-            "task_id must not be empty.".to_string(),
-        ));
-    }
-    let has_absolute = absolute_date.is_some();
-    let has_relative = relative_offset.is_some();
-    if has_absolute == has_relative {
-        return Err(OmniFocusError::Validation(
-            "exactly one of absoluteDate or relativeOffset must be provided.".to_string(),
-        ));
-    }
-    if let Some(value) = absolute_date {
-        if value.trim().is_empty() {
-            return Err(OmniFocusError::Validation(
-                "absoluteDate must not be empty when provided.".to_string(),
-            ));
-        }
-    }
-
-    let task_id_filter = escape_for_jxa(task_id.trim());
-    let absolute_date_filter = absolute_date
-        .map(|value| escape_for_jxa(value.trim()))
-        .unwrap_or_else(|| "null".to_string());
-    let relative_offset_filter = relative_offset
-        .map(|value| value.to_string())
-        .unwrap_or_else(|| "null".to_string());
-    let script = format!(
-        r#"const taskId = {task_id_filter};
-const absoluteDateValue = {absolute_date_filter};
-const relativeOffsetValue = {relative_offset_filter};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
-if (!task) {{
-  throw new Error(`Task not found: ${{taskId}}`);
-}}
-if (relativeOffsetValue !== null && !task.effectiveDueDate) {{
-  throw new Error(`Task ${{taskId}} must have an effective due date when using relativeOffset.`);
-}}
-const notification = absoluteDateValue !== null
-  ? task.addNotification(new Date(absoluteDateValue))
-  : task.addNotification(relativeOffsetValue);
-if (!notification) {{
-  throw new Error("Failed to create notification.");
-}}
-return {{
-  id: notification.id.primaryKey,
-  kind: notification.initialFireDate ? "absolute" : "relative",
-  absoluteFireDate: notification.initialFireDate ? notification.initialFireDate.toISOString() : null,
-  relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,
-  nextFireDate: notification.nextFireDate ? notification.nextFireDate.toISOString() : null,
-  isSnoozed: notification.isSnoozed
-}};"#
-    );
-
-    runner.run_omnijs(&script).await
-}
-
 #[allow(clippy::too_many_arguments)]
 pub async fn search_tasks_with_planned<R: JxaRunner>(
     runner: &R,

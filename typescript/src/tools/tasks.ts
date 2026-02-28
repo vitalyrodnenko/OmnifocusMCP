@@ -430,6 +430,66 @@ return {
   );
 
   server.tool(
+    "add_notification",
+    "add one notification to a task by id.",
+    {
+      task_id: z.string().min(1),
+      absoluteDate: z.string().optional(),
+      relativeOffset: z.number().optional(),
+    },
+    async ({ task_id, absoluteDate, relativeOffset }) => {
+      try {
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        const hasAbsolute = absoluteDate !== undefined;
+        const hasRelative = relativeOffset !== undefined;
+        if (hasAbsolute === hasRelative) {
+          throw new Error("exactly one of absoluteDate or relativeOffset must be provided.");
+        }
+        if (absoluteDate !== undefined && absoluteDate.trim() === "") {
+          throw new Error("absoluteDate must not be empty when provided.");
+        }
+        const taskId = escapeForJxa(normalizedTaskId);
+        const absoluteDateValue =
+          absoluteDate === undefined ? "null" : escapeForJxa(absoluteDate.trim());
+        const relativeOffsetValue =
+          relativeOffset === undefined ? "null" : String(relativeOffset);
+        const script = `
+const taskId = ${taskId};
+const absoluteDateValue = ${absoluteDateValue};
+const relativeOffsetValue = ${relativeOffsetValue};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+if (relativeOffsetValue !== null && !task.effectiveDueDate) {
+  throw new Error(\`Task \${taskId} must have an effective due date when using relativeOffset.\`);
+}
+const notification = absoluteDateValue !== null
+  ? task.addNotification(new Date(absoluteDateValue))
+  : task.addNotification(relativeOffsetValue);
+if (!notification) {
+  throw new Error("Failed to create notification.");
+}
+return {
+  id: notification.id.primaryKey,
+  kind: notification.initialFireDate ? "absolute" : "relative",
+  absoluteFireDate: notification.initialFireDate ? notification.initialFireDate.toISOString() : null,
+  relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,
+  nextFireDate: notification.nextFireDate ? notification.nextFireDate.toISOString() : null,
+  isSnoozed: notification.isSnoozed
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "search_tasks",
     "search tasks by case-insensitive query across name and note.",
     {
