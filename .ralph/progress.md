@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 11
-- Current status: Phase 5 in progress (phase 4 complete; next 44).
+- Current status: Phase 5 in progress (criterion 45 complete; next 46).
 
 ## How This Works
 
@@ -21,12 +21,12 @@ This is how Ralph maintains continuity across iterations.
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
-| 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
+| 5     | Python: Resources & Prompts + Tests | 44–53   | 2/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 43 / 75 criteria complete**
+**Total: 45 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -509,8 +509,36 @@ This is how Ralph maintains continuity across iterations.
   - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 5 criterion 44 (`omnifocus://inbox` resource)
 
+### 2026-02-27 23:18:30
+**Session 13 update**
+- completed phase 5 criterion 44 (`omnifocus://inbox` resource)
+- extended `python/src/omnifocus_mcp/server.py`:
+  - added `_typed_resource` helper for typed resource decoration with test-safe fallback
+  - added `inbox_resource` at `omnifocus://inbox`, returning current inbox tasks JSON
+- extended `python/tests/test_tools_read.py`:
+  - added `test_inbox_resource_returns_inbox_json` to validate resource output and inbox query limit behavior
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 5 criterion 45 (`omnifocus://today` resource)
+
 ### 2026-02-27 23:10:17
 **Session 11 ended** - 🔄 Context rotation (token limit reached)
 
 ### 2026-02-27 23:10:19
 **Session 12 started** (model: auto)
+
+### 2026-02-27 23:16:40
+**Session 12 update**
+- completed phase 5 criterion 45 by adding `omnifocus://today` resource in `python/src/omnifocus_mcp/server.py`
+- resource returns forecast JSON through the existing `get_forecast()` tool function
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 5 criterion 46 (`omnifocus://projects` resource)
+
+### 2026-02-27 23:10:42
+**Session 12 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:10:44
+**Session 13 started** (model: auto)
