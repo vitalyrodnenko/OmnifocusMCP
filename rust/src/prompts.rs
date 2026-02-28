@@ -46,8 +46,6 @@ pub async fn daily_review<R: JxaRunner>(runner: &R) -> Result<String> {
         None,
         None,
         None,
-        None,
-        None,
         "asc",
         25,
     )
@@ -60,7 +58,6 @@ pub async fn daily_review<R: JxaRunner>(runner: &R) -> Result<String> {
         "any",
         Some(true),
         "all",
-        None,
         None,
         None,
         None,

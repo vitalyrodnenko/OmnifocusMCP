@@ -114,14 +114,6 @@ pub async fn get_task_counts<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
@@ -352,10 +344,6 @@ pub async fn get_task_counts_legacy1<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let completed_after_filter = completed_after
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
@@ -976,9 +964,7 @@ return tasks.map(task => {{
       return "unknown";
     }})()
   }};
-}});"#,
-        planned_before_filter = planned_before_filter,
-        planned_after_filter = planned_after_filter
+}});"#
     );
 
     let value = runner.run_omnijs(&script).await?;
@@ -1344,7 +1330,7 @@ return subtasks.map(subtask => {{
       return "unknown";
     }})()
   }};
-}});"#,
+}});"#
     );
 
     let value = runner.run_omnijs(&script).await?;
@@ -1526,15 +1512,7 @@ pub async fn search_tasks_with_planned<R: JxaRunner>(
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let sort_order_filter = escape_for_jxa(effective_sort_order);
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
     let query_filter = escape_for_jxa(query.trim());
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
-        .map(escape_for_jxa)
-        .unwrap_or_else(|| "null".to_string());
     let script = format!(
         r#"const queryFilter = {query_filter}.toLowerCase();
 const projectFilter = {project_filter};
