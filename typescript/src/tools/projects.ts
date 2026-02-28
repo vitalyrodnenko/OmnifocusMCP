@@ -187,7 +187,6 @@ const project = (() => {
     throw new Error(\`Folder not found: \${folderName}\`);
   }
   return new Project(projectName, targetFolder.ending);
-})();
 
 if (noteValue !== null) project.note = noteValue;
 if (dueDateValue !== null) project.dueDate = new Date(dueDateValue);
@@ -351,16 +350,14 @@ if (!project) {
   throw new Error(\`Project not found: \${projectFilter}\`);
 }
 
-let destination;
-if (folderName === null) {
-  destination = library.ending;
-} else {
+const destination = (() => {
+  if (folderName === null) return library.ending;
   const targetFolder = document.flattenedFolders.byName(folderName);
   if (!targetFolder) {
     throw new Error(\`Folder not found: \${folderName}\`);
   }
-  destination = targetFolder.ending;
-}
+  return targetFolder.ending;
+})();
 
 moveSections([project], destination);
 

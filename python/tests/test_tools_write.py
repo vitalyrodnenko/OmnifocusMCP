@@ -1,3 +1,12 @@
+import json
+from collections.abc import Callable
+import importlib
+import sys
+import types
+from typing import Any
+
+import pytest
+
 @pytest.fixture
 def server_module_duplicate(monkeypatch: pytest.MonkeyPatch) -> Any:
     class FakeFastMCP:
@@ -383,14 +392,34 @@ async def test_create_tag_happy_path(mock_server_run_omnijs: Callable[[Any], dic
     assert len(state["calls"]) == 1
     assert 'const tagName = "urgent";' in state["calls"][0]["script"]
     assert 'const parentName = "work";' in state["calls"][0]["script"]
-import json
-from collections.abc import Callable
-import importlib
-import sys
-import types
-from typing import Any
 
-import pytest
+
+@pytest.mark.asyncio
+async def test_update_tag_happy_path_criterion13(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "tag-1", "name": "Next", "status": "on_hold"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.update_tag(tag_name_or_id="tag-1", name="Next", status="on_hold")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const tagFilter = "tag-1";' in script
+    assert 'const newName = "Next";' in script
+    assert 'const statusValue = "on_hold";' in script
+    assert "Tag.Status.OnHold" in script
+    assert "tag.status = targetStatus;" in script
+
+
+@pytest.mark.asyncio
+async def test_update_tag_validation_error_criterion13(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="tag_name_or_id must not be empty."):
+        await server_module.update_tag(tag_name_or_id="   ", name="Next")
+    with pytest.raises(ValueError, match="at least one field must be provided: name or status."):
+        await server_module.update_tag(tag_name_or_id="tag-1")
 
 
 @pytest.fixture
