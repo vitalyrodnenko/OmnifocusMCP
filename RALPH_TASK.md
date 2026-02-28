@@ -525,7 +525,7 @@ set reminders without the user opening OmniFocus.
           list_notifications items).
         - Implement and test in all 3 implementations.
 
-30. [ ] **`remove_notification`** — all 3 implementations (NEW TOOL).
+30. [x] **`remove_notification`** — all 3 implementations (NEW TOOL).
         - **Input:** `task_id: str` (required), `notification_id: str`
           (required)
         - **JXA:** find task by ID. Find notification by ID in

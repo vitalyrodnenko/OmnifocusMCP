@@ -6,9 +6,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Superior read-side filtering, sorting, and aggregation
-- Current status: Phases 1-8 complete and Phase 9 in progress (29/36 criteria done).
-- Next criterion: **30** — implement `remove_notification` across all 3 implementations
-- Remaining: criteria 30-36 (7 criteria across Phases 9-11)
+- Current status: Phases 1-8 complete, criterion 30 done, and Phase 9 gate pending (30/36 criteria done).
+- Next criterion: **31** — run full lint/typecheck/test gate for Phase 9
+- Remaining: criteria 31-36 (6 criteria across Phases 9-11)
 
 ## Phase Overview
 
@@ -22,31 +22,21 @@
 | 6     | Tests and Parity Verification      | 19–20    | 2/2  |
 | 7     | Documentation                      | 21–22    | 2/2  |
 | 8     | Native Properties & Effective Vals | 23–27    | 5/5  |
-| 9     | Notifications                      | 28–31    | 2/4  |
+| 9     | Notifications                      | 28–31    | 3/4  |
 | 10    | Duplicate Task                     | 32–33    | 0/2  |
 | 11    | Final Parity & Docs                | 34–36    | 0/3  |
 
-**Total: 29 / 36 criteria complete**
+**Total: 30 / 36 criteria complete**
 
 ## Key Context
 
 - Python tools: `python/src/omnifocus_mcp/tools/*.py`
 - TypeScript tools: `typescript/src/tools/*.ts`
 - Rust tools: `rust/src/tools/*.rs`
-- Criteria 23-29 complete: taskStatus/effective fields/modified/plannedDate and notification list/add tools
-- Next: criterion 30 (`remove_notification`)
+- Criteria 23-30 complete: taskStatus/effective fields/modified/plannedDate and notification list/add/remove tools
+- Next: criterion 31 (Phase 9 full lint/typecheck/test gate)
 
 ## Session History (keep only last 3 substantive entries)
-
-### 2026-02-28 16:04
-- completed criterion 26 (`plannedDate` support) and criterion 27 (phase 8 full gate)
-- fixed rust parity drift by restoring planned-aware signatures for `list_tasks_with_planned` and `search_tasks_with_planned`
-- aligned rust prompt/test callsites with current `list_tasks` signature and kept planned-aware server wiring via `list_tasks_with_planned`/`search_tasks_with_planned`
-- ran full required gate successfully:
-  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
-  - `cd typescript && npx tsc --noEmit && npm test`
-  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
-- next: criterion 28 (`list_notifications` new tool across python/typescript/rust)
 
 ### 2026-02-28 16:08
 - verified criterion 28 is implemented in Python/TypeScript/Rust with matching JXA mapping and task-not-found behavior
@@ -63,3 +53,11 @@
   - `cd typescript && npx tsc --noEmit && npm test -- tools-representative.test.ts -t add_notification`
   - `cd rust && cargo test --test tools_read_test add_notification`
 - next: criterion 30 (`remove_notification`)
+
+### 2026-02-28 16:14
+- completed criterion 30 by verifying `remove_notification` behavior and parity in Python/TypeScript/Rust
+- ran focused remove-notification tests:
+  - `cd python && pytest tests/test_tools_read.py -k remove_notification -v`
+  - `cd typescript && npm test -- tools-representative.test.ts -t remove_notification`
+  - `cd rust && cargo test --test tools_read_test remove_notification`
+- next: criterion 31 (phase 9 full gate)
