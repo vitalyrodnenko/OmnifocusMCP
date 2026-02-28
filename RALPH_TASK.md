@@ -324,7 +324,7 @@ identical — only the server framework and subprocess calls change.
 65. [x] Resources (3) and prompts (4) ported.
 66. [x] `typescript/README.md` with install instructions, MCP client config
         examples (Claude Desktop, Cursor, Cline, generic stdio).
-67. [ ] `package.json` has `"bin"` entry; server runs via `npx`.
+67. [x] `package.json` has `"bin"` entry; server runs via `npx`.
 
 ### Tests (Phase 7)
 

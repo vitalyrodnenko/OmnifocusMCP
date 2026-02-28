@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772256452
-generated_at: 2026-02-28T05:27:42Z
+source_mtime: 1772256483
+generated_at: 2026-02-28T05:28:08Z
 
 tasks:
   - id: "line_109"
@@ -471,7 +471,7 @@ tasks:
     raw_marker: 66.
   - id: "line_327"
     line_number: 327
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `package.json` has `\"bin\"` entry; server runs via `npx`.
     indent_level: 0
