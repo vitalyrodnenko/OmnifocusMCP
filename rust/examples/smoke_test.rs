@@ -18,8 +18,8 @@ use omnifocus_mcp::{
         tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
         tasks::{
             append_to_note, complete_task, create_subtask, create_task, create_tasks_batch,
-            delete_task, delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks,
-            search_tasks, set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
+            delete_task, delete_tasks_batch, get_inbox, get_task, list_subtasks,
+            set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
         },
     },
 };
@@ -42,9 +42,6 @@ impl JxaRunner for SmokeJxaRunner {
         &'a self,
         script: &'a str,
     ) -> Pin<Box<dyn Future<Output = Result<Value>> + Send + 'a>> {
-        if script.contains("moveSections([project], destination);") {
-            println!("DEBUG move_project script:\n{script}");
-        }
         Box::pin(async move { run_omnijs_with_timeout(script, 120.0).await })
     }
 }
@@ -467,12 +464,10 @@ impl SmokeTest {
 
         let moved_project = move_project(runner, &project_id, Some(&folder_name)).await?;
         if moved_project.get("id").and_then(Value::as_str) != Some(project_id.as_str()) {
-            return Err(OmniFocusError::Validation(
-                format!(
-                    "move_project did not return the expected project id after folder move. payload={}",
-                    moved_project
-                ),
-            ));
+            return Err(OmniFocusError::Validation(format!(
+                "move_project did not return the expected project id after folder move. payload={}",
+                moved_project
+            )));
         }
         let _ = move_project(runner, &project_id, None).await?;
 

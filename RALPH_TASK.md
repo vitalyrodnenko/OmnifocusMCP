@@ -329,6 +329,10 @@ Reference implementations:
         - Same input parameter names and types
         - Same response shapes
         - Character-identical JXA scripts
+        **Strategy: use `rg` (grep) to compare tool names, param names,
+        and JXA snippets across the 3 dirs. Do NOT read entire source
+        files — they are 500-1000 lines each and will blow the context
+        budget. Extract and diff small sections with grep.**
 
 ---
 

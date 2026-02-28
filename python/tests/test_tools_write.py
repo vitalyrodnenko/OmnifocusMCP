@@ -1239,7 +1239,7 @@ async def test_move_project_to_top_level_happy_path_criterion11(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert "const folderName = null;" in script
-    assert "if (folderName === null) return library.ending;" in script
+    assert "if (folderName === null) return document.ending;" in script
 
 
 @pytest.mark.asyncio

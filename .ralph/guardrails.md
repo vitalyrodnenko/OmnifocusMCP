@@ -105,3 +105,13 @@
 - **Instruction**: Keep `# noqa: E402,F401` on the opening `from ... import (` line (not only the closing parenthesis line) so ruff suppresses deferred-import and re-export warnings for each imported symbol
 - **Added after**: full `test_command` failed on `server.py` with `E402` and per-symbol `F401` after formatter expanded the tags import block
 
+### Sign: Never Read Full Tool Source Files for Parity Checks
+- **Trigger**: When verifying tool parity (criterion 26) or comparing implementations across Python/TypeScript/Rust
+- **Instruction**: Tool source files are 500-1000 lines / 50-100KB each. Reading even 2-3 will blow the 80k token context budget and trigger rotation. Use `rg` (ripgrep) to extract specific tool names, parameter names, JXA script snippets, and response shapes. Diff the grep outputs instead of reading full files.
+- **Added after**: Sessions 1-7 post-truncation all rotated because agent read projects.py + projects.ts + projects.rs (~177KB total) for parity checking
+
+### Sign: Monitor Context Budget Before Large Reads
+- **Trigger**: Before reading any file larger than 200 lines
+- **Instruction**: Check the token breakdown in activity.log or estimate: each 1KB of file content ≈ 250 tokens. With ~15k tokens used by state files, you have ~65k tokens left. A 500-line source file is ~50KB ≈ 12,500 tokens. Plan reads accordingly — never read more than ~250KB of source in one session.
+- **Added after**: Repeated rotation loops caused by reading multiple large files without considering cumulative token cost
+

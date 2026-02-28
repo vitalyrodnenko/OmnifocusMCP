@@ -404,7 +404,7 @@ if (!project) {{
 }}
 
 const destination = (() => {{
-  if (folderName === null) return library.ending;
+  if (folderName === null) return document.ending;
   const targetFolder = document.flattenedFolders.byName(folderName);
   if (!targetFolder) {{
     throw new Error(`Folder not found: ${{folderName}}`);
