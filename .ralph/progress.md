@@ -1061,8 +1061,30 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-28 12:34:52
 **Session 1 started** (model: auto)
 
+### 2026-02-28 12:36:56
+- completed criterion 7 (`uncomplete_project`) across all three implementations and removed duplicate/invalid definitions that were blocking parity:
+  - TypeScript: deduplicated `uncomplete_project` registrations in `typescript/src/tools/projects.ts` to one canonical tool
+  - Rust: deduplicated `uncomplete_project` function definitions in `rust/src/tools/projects.rs` to one canonical function and kept server wiring intact
+  - Python: verified `python/src/omnifocus_mcp/tools/projects.py` already had a single valid implementation with required validation and completed-state guard
+- added missing Rust criterion-7 write-tool coverage in `rust/tests/tools_write_test.rs`:
+  - happy path call in project write tests
+  - validation error for empty `project_id_or_name`
+  - script assertion for completed-state guard plus `project.markIncomplete()`
+- ran full phase quality gates successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`78 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`37 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 7 complete in `RALPH_TASK.md`
+- next focus: criterion 8 (`update_project`) in Python -> TypeScript -> Rust order
+
 ### 2026-02-28 12:36:52
 **Session 1 ended** - 🔄 Context rotation (token limit reached)
 
 ### 2026-02-28 12:36:54
 **Session 2 started** (model: auto)
+
+### 2026-02-28 12:37:17
+**Session 2 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:37:19
+**Session 3 started** (model: auto)
