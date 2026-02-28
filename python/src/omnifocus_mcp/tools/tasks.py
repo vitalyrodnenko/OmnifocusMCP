@@ -469,39 +469,6 @@ return {{
 
 
 @typed_tool(mcp)
-async def uncomplete_task(task_id: str) -> str:
-    """mark a completed task as incomplete by id.
-
-    returns the task id, name, and current completed state after reopening.
-    """
-    if task_id.strip() == "":
-        raise ValueError("task_id must not be empty.")
-
-    task_id_value = escape_for_jxa(task_id.strip())
-
-    script = f"""
-const taskId = {task_id_value};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
-if (!task) {{
-  throw new Error(`Task not found: ${{taskId}}`);
-}}
-if (!task.completed) {{
-  throw new Error(`Task is not completed: ${{taskId}}`);
-}}
-
-task.markIncomplete();
-
-return {{
-  id: task.id.primaryKey,
-  name: task.name,
-  completed: task.completed
-}};
-""".strip()
-    result = await run_omnijs(script)
-    return json.dumps(result)
-
-
-@typed_tool(mcp)
 async def update_task(
     task_id: str,
     name: str | None = None,

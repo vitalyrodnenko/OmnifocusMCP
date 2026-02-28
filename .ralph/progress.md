@@ -853,3 +853,9 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:19:20
 **Session 6 started** (model: auto)
+
+### 2026-02-28 12:19:38
+**Session 6 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:19:40
+**Session 7 started** (model: auto)
