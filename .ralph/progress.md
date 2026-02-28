@@ -1400,3 +1400,21 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 12:52:07
 **Session 31 started** (model: auto)
+
+### 2026-02-28 12:52:20
+- revalidated criterion 11 (`move_project`) across all three implementations and fixed parity drift in script shape:
+  - Python: kept a single canonical `move_project` tool in `python/src/omnifocus_mcp/tools/projects.py` and added criterion-11 coverage in `python/tests/test_tools_write.py` (folder move, top-level move, empty-folder validation)
+  - TypeScript: aligned `move_project` OmniJS script in `typescript/src/tools/projects.ts` to the canonical `let destination; ...` flow and verified happy/error tests in `typescript/tests/tools-happy.test.ts`
+  - Rust: restored a single canonical `move_project` function in `rust/src/tools/projects.rs` and validated existing server wiring/tests (`rust/src/server.rs`, `rust/tests/tools_write_test.rs`)
+- ran the full `test_command` from `RALPH_TASK.md` successfully after fixes:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- confirmed criteria 10-12 are checked in `RALPH_TASK.md`
+- next focus: criterion 13 (`update_tag` in Python -> TypeScript -> Rust)
+
+### 2026-02-28 12:52:41
+**Session 31 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 12:52:43
+**Session 32 started** (model: auto)

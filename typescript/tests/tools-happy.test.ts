@@ -453,6 +453,38 @@ describe("tool happy paths", () => {
     expect(script).toContain("project.addTag(tag);");
   });
 
+  test("update_tag updates name and status", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "tag-1", name: "Next", status: "on_hold" });
+    const handler = registeredTools.get("update_tag");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      tag_name_or_id: "tag-1",
+      name: "Next",
+      status: "on_hold",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "tag-1",
+      name: "Next",
+      status: "on_hold",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const tagFilter = "tag-1";');
+    expect(script).toContain('const newName = "Next";');
+    expect(script).toContain('const statusValue = "on_hold";');
+    expect(script).toContain("Tag.Status.OnHold");
+    expect(script).toContain("tag.status = targetStatus;");
+  });
+
+  test("update_tag returns error when no update fields are provided", async () => {
+    const handler = registeredTools.get("update_tag");
+    expect(handler).toBeDefined();
+    const result = await handler!({ tag_name_or_id: "tag-1" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "at least one field must be provided: name or status.",
+    });
+  });
+
   test("set_project_status returns error for unsupported status value", async () => {
     const handler = registeredTools.get("set_project_status");
     expect(handler).toBeDefined();
