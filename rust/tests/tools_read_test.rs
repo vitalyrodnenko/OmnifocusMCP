@@ -50,6 +50,21 @@ impl JxaRunner for CapturingRunner {
     }
 }
 
+#[derive(Clone)]
+struct ErrorRunner {
+    message: String,
+}
+
+impl JxaRunner for ErrorRunner {
+    fn run_omnijs<'a>(
+        &'a self,
+        _script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        let message = self.message.clone();
+        Box::pin(async move { Err(OmniFocusError::OmniFocus(message)) })
+    }
+}
+
 fn task_value(id: &str, name: &str) -> Value {
     json!({
         "id": id,
@@ -399,4 +414,34 @@ async fn list_tasks_date_filter_script_contains_expected_logic() {
     ));
     assert!(script.contains("statusMatches = includeCompletedForDateFilter;"));
     assert!(script.contains("must be a valid ISO 8601 date string."));
+}
+
+#[tokio::test]
+async fn list_tasks_invalid_date_error_bubbles_up() {
+    let runner = ErrorRunner {
+        message: "dueBefore must be a valid ISO 8601 date string.".to_string(),
+    };
+
+    let error = list_tasks(
+        &runner,
+        None,
+        None,
+        None,
+        "available",
+        Some("bad-date"),
+        None,
+        None,
+        None,
+        None,
+        None,
+        5,
+    )
+    .await
+    .expect_err("invalid date should return omni error");
+
+    assert!(matches!(error, OmniFocusError::OmniFocus(_)));
+    assert_eq!(
+        error.to_string(),
+        "dueBefore must be a valid ISO 8601 date string."
+    );
 }
