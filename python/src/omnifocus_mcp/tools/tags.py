@@ -142,3 +142,74 @@ return {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def delete_tag(tag_name_or_id: str) -> str:
+    """delete a tag by id or name.
+
+    tasks using this tag will lose the tag assignment.
+    """
+    if tag_name_or_id.strip() == "":
+        raise ValueError("tag_name_or_id must not be empty.")
+
+    tag_filter = escape_for_jxa(tag_name_or_id.strip())
+    script = f"""
+const tagFilter = {tag_filter};
+const tag = document.flattenedTags.find(
+  t => t.id.primaryKey === tagFilter || t.name === tagFilter
+);
+if (!tag) {{
+  throw new Error(`Tag not found: ${{tagFilter}}`);
+}}
+
+const tagId = tag.id.primaryKey;
+const tagName = tag.name;
+const taskCount = tag.tasks.length;
+
+deleteObject(tag);
+
+return {{
+  id: tagId,
+  name: tagName,
+  deleted: true,
+  taskCount: taskCount
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
+async def delete_tag(tag_name_or_id: str) -> str:
+    """delete a tag by id or name.
+
+    warning: tasks using this tag will lose the tag assignment.
+    """
+    if tag_name_or_id.strip() == "":
+        raise ValueError("tag_name_or_id must not be empty.")
+
+    tag_filter = escape_for_jxa(tag_name_or_id.strip())
+    script = f"""
+const tagFilter = {tag_filter};
+
+const tag = document.flattenedTags.find(
+  t => t.id.primaryKey === tagFilter || t.name === tagFilter
+);
+if (!tag) {{
+  throw new Error(`Tag not found: ${{tagFilter}}`);
+}}
+
+const tagName = tag.name;
+const taskCount = tag.tasks.length;
+deleteObject(tag);
+
+return {{
+  id: tag.id.primaryKey,
+  name: tagName,
+  deleted: true,
+  taskCount: taskCount
+}};
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

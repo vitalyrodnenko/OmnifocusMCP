@@ -146,4 +146,46 @@ return {
     }
   );
 
+  server.tool(
+    "delete_tag",
+    "delete a tag by id or name. warning: tasks using this tag will lose the tag assignment.",
+    {
+      tag_name_or_id: z.string().min(1),
+    },
+    async ({ tag_name_or_id }) => {
+      try {
+        const tagFilter = tag_name_or_id.trim();
+        if (!tagFilter) {
+          throw new Error("tag_name_or_id must not be empty.");
+        }
+
+        const escapedTagFilter = escapeForJxa(tagFilter);
+        const script = `
+const tagFilter = ${escapedTagFilter};
+
+const tag = document.flattenedTags.find(
+  t => t.id.primaryKey === tagFilter || t.name === tagFilter
+);
+if (!tag) {
+  throw new Error(\`Tag not found: \${tagFilter}\`);
+}
+
+const tagName = tag.name;
+const taskCount = tag.tasks.length;
+deleteObject(tag);
+
+return {
+  id: tag.id.primaryKey,
+  name: tagName,
+  deleted: true,
+  taskCount: taskCount
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
 }
