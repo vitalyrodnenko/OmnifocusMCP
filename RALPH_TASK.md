@@ -268,7 +268,7 @@ encoding GTD workflows.
         stalled projects, guides GTD-style weekly review.
 49. [x] Prompt `inbox_processing` — fetches inbox items, walks through each:
         decide project, tags, dates, or delete.
-50. [ ] Prompt `project_planning` — accepts project name, fetches state,
+50. [x] Prompt `project_planning` — accepts project name, fetches state,
         helps break down into actionable steps with estimates.
 
 ### Tests (Phase 5)
