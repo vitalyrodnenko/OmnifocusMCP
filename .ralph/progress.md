@@ -521,3 +521,25 @@ This is how Ralph maintains continuity across iterations.
   - `cd typescript && npx tsc --noEmit && npm test`
   - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
 - next: criterion 19 (cross-implementation parity verification)
+
+### 2026-02-28 15:25:10
+- completed criterion 21 by updating top-level `README.md`:
+  - added an `advanced filtering` section documenting new `list_tasks` and `list_projects` parameters
+  - added an `aggregate counts` section for `get_task_counts` and `get_project_counts`
+  - added example LLM queries for completion-history, time-budget, stalled-project, and overdue-count scenarios
+  - updated tool surface documentation to include count tools and refreshed tool count to 40
+- reran full required gate successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- marked criterion 21 complete in `RALPH_TASK.md`
+- next: criterion 22 (update `rust/README.md` tool listing if needed)
+
+### 2026-02-28 15:32:20
+- re-verified criterion 19 parity across python/typescript/rust for enhanced read tools and aggregate tools using targeted signature/schema and handler-default checks (no parity gaps found)
+- reran criterion 20 full gate successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd typescript && npx tsc --noEmit && npm test`
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- confirmed `RALPH_TASK.md` has criteria 19 and 20 marked complete
+- next: criterion 21 (top-level `README.md` updates)

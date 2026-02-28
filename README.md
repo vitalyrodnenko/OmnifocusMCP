@@ -38,16 +38,17 @@ This project is not affiliated with, endorsed by, or associated with The Omni Gr
 
 ## Features
 
-### tools (38)
+### tools (40)
 
-API parity is complete across Python, TypeScript, and Rust for all tool names, input schemas, and response shapes, expanding the surface from the original 20 tools to the current 38.
+API parity is complete across Python, TypeScript, and Rust for all tool names, input schemas, and response shapes, expanding the surface from the original 20 tools to the current 40.
 
 | Type | Name | Description |
 | --- | --- | --- |
 | tool | `get_inbox` | Return inbox tasks that are not completed. |
-| tool | `list_tasks` | List tasks with filters for project, tag, flagged state, and status. |
+| tool | `list_tasks` | List tasks with advanced date/tag/duration filters, sorting, and enriched task fields. |
 | tool | `get_task` | Fetch one task by stable OmniFocus task id. |
 | tool | `search_tasks` | Search tasks by case-insensitive text in name and note. |
+| tool | `get_task_counts` | Return aggregate task counts for any filter combination without listing tasks. |
 | tool | `create_task` | Create one task in inbox or a named project with optional metadata. |
 | tool | `create_tasks_batch` | Create multiple tasks in a single OmniJS call. |
 | tool | `complete_task` | Mark a task complete by id. |
@@ -60,7 +61,7 @@ API parity is complete across Python, TypeScript, and Rust for all tool names, i
 | tool | `delete_tasks_batch` | Delete multiple tasks in a single OmniJS call (confirm with the user first). |
 | tool | `move_task` | Move a task into a target project or back to inbox. |
 | tool | `append_to_note` | Append text to a task or project note by object id. |
-| tool | `list_projects` | List projects with optional folder and status filters. |
+| tool | `list_projects` | List projects with completion-date filters, stalled detection, and sorting. |
 | tool | `get_project` | Return full details for a project by id or exact name. |
 | tool | `create_project` | Create a project with optional folder, note, dates, and mode. |
 | tool | `complete_project` | Mark a project complete by id or exact name. |
@@ -70,6 +71,7 @@ API parity is complete across Python, TypeScript, and Rust for all tool names, i
 | tool | `delete_project` | Permanently delete a project and report deleted task count. |
 | tool | `move_project` | Move a project into a folder or back to top level. |
 | tool | `search_projects` | Search projects by OmniFocus matching rules with limit support. |
+| tool | `get_project_counts` | Return aggregate project counts by status, including stalled projects. |
 | tool | `list_tags` | List tags with active task counts and status filtering. |
 | tool | `create_tag` | Create a tag with an optional parent tag. |
 | tool | `update_tag` | Rename a tag and/or change tag status. |
@@ -80,7 +82,7 @@ API parity is complete across Python, TypeScript, and Rust for all tool names, i
 | tool | `get_folder` | Return folder details including direct projects and subfolders. |
 | tool | `update_folder` | Rename a folder and/or change folder status. |
 | tool | `delete_folder` | Permanently delete a folder and report contained counts. |
-| tool | `get_forecast` | Return forecast sections for overdue, due today, and flagged work. |
+| tool | `get_forecast` | Return forecast sections for overdue, due today, flagged, deferred, and due-this-week work plus counts. |
 | tool | `list_perspectives` | List available built-in and custom perspectives. |
 
 ### resources (3)
@@ -99,6 +101,34 @@ API parity is complete across Python, TypeScript, and Rust for all tool names, i
 | prompt | `weekly_review` | Run GTD-style weekly review across active projects and next actions. |
 | prompt | `inbox_processing` | Process inbox items one-by-one into concrete decisions. |
 | prompt | `project_planning` | Turn a project into sequenced executable next actions. |
+
+## Advanced Filtering
+
+### `list_tasks` filters and sorting
+
+- date filters: `dueBefore`, `dueAfter`, `deferBefore`, `deferAfter`, `completedBefore`, `completedAfter`
+- tag filters: `tag` (single alias), `tags` (multi-tag), `tagFilterMode` (`any`/`all`)
+- effort filter: `maxEstimatedMinutes`
+- sorting: `sortBy` (`dueDate`, `deferDate`, `name`, `completionDate`, `estimatedMinutes`, `project`, `flagged`) and `sortOrder` (`asc`/`desc`)
+
+### `list_projects` filters and sorting
+
+- status and scope filters: `status`, `folder`, `stalledOnly`
+- completion filters: `completedBefore`, `completedAfter`
+- sorting: `sortBy` (`name`, `dueDate`, `completionDate`, `taskCount`) and `sortOrder` (`asc`/`desc`)
+
+## Aggregate Counts
+
+- `get_task_counts` summarizes task totals (`total`, `available`, `completed`, `overdue`, `dueSoon`, `flagged`, `deferred`) for the same filter set used by `list_tasks`
+- `get_project_counts` summarizes project totals (`total`, `active`, `onHold`, `completed`, `dropped`, `stalled`) with optional folder filtering
+- these tools are optimized for "how many" questions and avoid returning full task/project lists
+
+## Example LLM Queries
+
+- what did I complete last week?
+- what can I do in 15 minutes?
+- what projects are stalled?
+- how many tasks are overdue?
 
 ## MCP client config examples
 

@@ -407,7 +407,7 @@ See individual phase criteria below.
 
 ### Success Criteria
 
-21. [ ] Update top-level `README.md`:
+21. [x] Update top-level `README.md`:
         - Add "Advanced Filtering" section listing all new params
           on list_tasks and list_projects.
         - Add "Aggregate Counts" section describing get_task_counts
@@ -418,7 +418,7 @@ See individual phase criteria below.
           are overdue?"
         - Update tool count if needed.
 
-22. [ ] Update `rust/README.md` if it has a separate tool listing.
+22. [x] Update `rust/README.md` if it has a separate tool listing.
 
 ---
 
