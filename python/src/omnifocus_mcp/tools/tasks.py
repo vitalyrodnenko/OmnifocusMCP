@@ -1276,6 +1276,36 @@ return subtasks.map(subtask => {{
 
 
 @typed_tool(mcp)
+async def list_notifications(task_id: str) -> str:
+    """list active notifications for a task by id.
+
+    returns notification id, kind, absolute or relative fire configuration, next
+    fire date, and snooze state.
+    """
+    if task_id.strip() == "":
+        raise ValueError("task_id must not be empty.")
+
+    task_id_filter = escape_for_jxa(task_id.strip())
+    script = f"""
+const taskId = {task_id_filter};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+return task.notifications.map(n => ({{
+  id: n.id.primaryKey,
+  kind: n.initialFireDate ? "absolute" : "relative",
+  absoluteFireDate: n.initialFireDate ? n.initialFireDate.toISOString() : null,
+  relativeFireOffset: n.initialFireDate ? null : n.relativeFireOffset,
+  nextFireDate: n.nextFireDate ? n.nextFireDate.toISOString() : null,
+  isSnoozed: n.isSnoozed
+}}));
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)
+
+
+@typed_tool(mcp)
 async def create_task(
     name: str,
     project: str | None = None,

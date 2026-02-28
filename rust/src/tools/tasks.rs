@@ -1337,6 +1337,33 @@ return subtasks.map(subtask => {{
     parse_task_list(value)
 }
 
+pub async fn list_notifications<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Value> {
+    if task_id.trim().is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_id must not be empty.".to_string(),
+        ));
+    }
+
+    let task_id_filter = escape_for_jxa(task_id.trim());
+    let script = format!(
+        r#"const taskId = {task_id_filter};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {{
+  throw new Error(`Task not found: ${{taskId}}`);
+}}
+return task.notifications.map(n => ({{
+  id: n.id.primaryKey,
+  kind: n.initialFireDate ? "absolute" : "relative",
+  absoluteFireDate: n.initialFireDate ? n.initialFireDate.toISOString() : null,
+  relativeFireOffset: n.initialFireDate ? null : n.relativeFireOffset,
+  nextFireDate: n.nextFireDate ? n.nextFireDate.toISOString() : null,
+  isSnoozed: n.isSnoozed
+}}));"#
+    );
+
+    runner.run_omnijs(&script).await
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn search_tasks_with_planned<R: JxaRunner>(
     runner: &R,

@@ -269,6 +269,39 @@ return subtasks.map(subtask => {
   );
 
   server.tool(
+    "list_notifications",
+    "list active notifications for a task by id.",
+    { task_id: z.string().min(1) },
+    async ({ task_id }) => {
+      try {
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        const taskId = escapeForJxa(normalizedTaskId);
+        const script = `
+const taskId = ${taskId};
+const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+return task.notifications.map(n => ({
+  id: n.id.primaryKey,
+  kind: n.initialFireDate ? "absolute" : "relative",
+  absoluteFireDate: n.initialFireDate ? n.initialFireDate.toISOString() : null,
+  relativeFireOffset: n.initialFireDate ? null : n.relativeFireOffset,
+  nextFireDate: n.nextFireDate ? n.nextFireDate.toISOString() : null,
+  isSnoozed: n.isSnoozed
+}));
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "search_tasks",
     "search tasks by case-insensitive query across name and note.",
     {
