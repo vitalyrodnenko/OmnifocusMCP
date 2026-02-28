@@ -387,7 +387,7 @@ describe("tool happy paths", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain("const folderName = null;");
-    expect(script).toContain("if (folderName === null) return library.ending;");
+    expect(script).toContain("destination = library.ending;");
   });
 
   test("move_project returns error for empty project id or name", async () => {
