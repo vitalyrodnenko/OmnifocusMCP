@@ -228,7 +228,7 @@ See individual phase criteria below.
        - Add tests for isStalled, nextTask, completionDate fields.
        - All lint/test commands pass.
 
-8. [ ] **Add completion date filters and sorting to `list_projects`** —
+8. [x] **Add completion date filters and sorting to `list_projects`** —
        all 3 implementations.
        - New optional params: `completedBefore: str | null`,
          `completedAfter: str | null` (ISO 8601).
@@ -252,7 +252,7 @@ See individual phase criteria below.
        - Add tests: completedAfter filter, stalledOnly, sorting.
        - All lint/test commands pass.
 
-9. [ ] All lint and test commands pass for Phase 2 (same as criterion 6).
+9. [x] All lint and test commands pass for Phase 2 (same as criterion 6).
 
 ---
 

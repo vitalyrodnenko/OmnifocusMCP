@@ -6,8 +6,6 @@ use crate::{
 };
 
 #[allow(clippy::too_many_arguments)]
-#[allow(clippy::too_many_arguments)]
-#[allow(clippy::too_many_arguments)]
 pub async fn list_projects<R: JxaRunner>(
     runner: &R,
     folder: Option<&str>,
