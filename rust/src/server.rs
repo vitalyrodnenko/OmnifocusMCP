@@ -493,6 +493,8 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.defer_after.as_deref(),
             params.completed_before.as_deref(),
             params.completed_after.as_deref(),
+            None,
+            None,
             params.max_estimated_minutes,
         )
         .await
