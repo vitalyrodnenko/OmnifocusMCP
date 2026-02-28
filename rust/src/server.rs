@@ -713,7 +713,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "get folder details by id or name, including direct projects and subfolders.")]
+    #[tool(description = "get a folder by id or name with direct child projects and subfolders.")]
     async fn get_folder(
         &self,
         Parameters(params): Parameters<FolderNameOrIdParams>,

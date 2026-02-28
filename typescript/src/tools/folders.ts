@@ -145,4 +145,70 @@ return {
       }
     }
   );
+
+  server.tool(
+    "get_folder",
+    "get folder details by id or name, including direct projects and subfolders.",
+    {
+      folder_name_or_id: z.string().min(1).describe("folder id or name"),
+    },
+    async ({ folder_name_or_id }) => {
+      try {
+        const normalizedFolderFilter = folder_name_or_id.trim();
+        if (normalizedFolderFilter === "") {
+          throw new Error("folder_name_or_id must not be empty.");
+        }
+        const folderFilter = escapeForJxa(normalizedFolderFilter);
+        const script = `
+const folderFilter = ${folderFilter};
+
+const folder = document.flattenedFolders.find(item => {
+  return item.id.primaryKey === folderFilter || item.name === folderFilter;
+});
+if (!folder) {
+  throw new Error(\`Folder not found: \${folderFilter}\`);
+}
+
+const normalizeFolderStatus = (item) => {
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+
+const normalizeProjectStatus = (item) => {
+  const rawStatus = String(item.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
+    return "on_hold";
+  }
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+
+return {
+  id: folder.id.primaryKey,
+  name: folder.name,
+  status: normalizeFolderStatus(folder),
+  parentName: folder.parent ? folder.parent.name : null,
+  projects: folder.projects.map(project => {
+    return {
+      id: project.id.primaryKey,
+      name: project.name,
+      status: normalizeProjectStatus(project)
+    };
+  }),
+  subfolders: folder.folders.map(subfolder => {
+    return {
+      id: subfolder.id.primaryKey,
+      name: subfolder.name
+    };
+  })
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
 }

@@ -545,6 +545,33 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("get_folder returns folder details with projects and subfolders", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "folder-1",
+      name: "Work",
+      status: "active",
+      parentName: null,
+      projects: [{ id: "project-1", name: "Launch", status: "active" }],
+      subfolders: [{ id: "folder-2", name: "Q1" }],
+    });
+    const handler = registeredTools.get("get_folder");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_name_or_id: "folder-1" });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "folder-1",
+      name: "Work",
+      status: "active",
+      parentName: null,
+      projects: [{ id: "project-1", name: "Launch", status: "active" }],
+      subfolders: [{ id: "folder-2", name: "Q1" }],
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const folderFilter = "folder-1";');
+    expect(script).toContain("Folder not found");
+    expect(script).toContain("projects: folder.projects.map");
+    expect(script).toContain("subfolders: folder.folders.map");
+  });
+
   test("get_folder returns folder details with direct children", async () => {
     runOmniJsMock.mockResolvedValueOnce({
       id: "folder-1",

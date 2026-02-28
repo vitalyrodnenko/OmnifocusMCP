@@ -72,7 +72,7 @@ return {{
 
 @typed_tool(mcp)
 async def get_folder(folder_name_or_id: str) -> str:
-    """get a folder by id or name with direct child projects and subfolders."""
+    """get folder details by id or name, including direct projects and subfolders."""
     if folder_name_or_id.strip() == "":
         raise ValueError("folder_name_or_id must not be empty.")
 
