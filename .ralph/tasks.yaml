@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772255724
-generated_at: 2026-02-28T05:16:14Z
+source_mtime: 1772255836
+generated_at: 2026-02-28T05:17:25Z
 
 tasks:
   - id: "line_109"
@@ -387,14 +387,14 @@ tasks:
     raw_marker: 54.
   - id: "line_293"
     line_number: 293
-    status: pending
+    status: completed
     parallel_group: 999999
     description: `python/README.md` with: install instructions (uv + pip), MCP client
     indent_level: 0
     raw_marker: 55.
   - id: "line_296"
     line_number: 296
-    status: pending
+    status: completed
     parallel_group: 999999
     description: MCP client configs documented and tested. Examples:
     indent_level: 0

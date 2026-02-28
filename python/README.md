@@ -45,7 +45,7 @@ Add this to your `claude_desktop_config.json` MCP servers section:
   "mcpServers": {
     "omnifocus": {
       "command": "uv",
-      "args": ["run", "python", "-m", "omnifocus_mcp"],
+      "args": ["run", "omnifocus-mcp"],
       "cwd": "/Users/your-user/Projects/OmnifocusMCP/python"
     }
   }
@@ -88,8 +88,8 @@ Configure the same stdio command in Cline MCP settings:
 
 Any MCP client that supports stdio can use:
 
-- command: `python`
-- args: `["-m", "omnifocus_mcp"]`
+- command: `omnifocus-mcp`
+- args: `[]`
 - cwd: `/path/to/OmnifocusMCP/python`
 
 ## Usage Examples

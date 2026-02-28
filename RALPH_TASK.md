@@ -293,7 +293,7 @@ Harden error handling, packaging, and MCP client integration docs.
 55. [x] `python/README.md` with: install instructions (uv + pip), MCP client
         configuration examples (Claude Desktop, Cursor, Cline, generic
         stdio), usage examples.
-56. [ ] MCP client configs documented and tested. Examples:
+56. [x] MCP client configs documented and tested. Examples:
         - Claude Desktop: `"command": "uv", "args": ["run", "omnifocus-mcp"]`
         - Cursor: `"command": "python", "args": ["-m", "omnifocus_mcp"]`
         - Generic stdio: `omnifocus-mcp` (any client that supports stdio)

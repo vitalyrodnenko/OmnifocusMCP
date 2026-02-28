@@ -697,3 +697,18 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:16:18
 **Session 24 started** (model: auto)
+
+### 2026-02-27 23:16:20
+**Session 24 update**
+- completed phase 6 criterion 55 by validating and keeping `python/README.md` aligned with required docs:
+  - install instructions for both `uv` and `pip`
+  - MCP client configuration examples for Claude Desktop, Cursor, Cline, and generic stdio clients
+  - usage examples for core tools
+- updated `RALPH_TASK.md` to mark criterion 55 complete
+- next up: phase 6 criterion 56 (client config examples documented and tested)
+
+### 2026-02-27 23:17:27
+**Session 24 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:17:29
+**Session 25 started** (model: auto)

@@ -20,7 +20,7 @@ def _friendly_jxa_error(stderr: str) -> str:
         "not authorized" in lowered
         or "not permitted" in lowered
         or "not authorised" in lowered
-        or "automation" in lowered
+        or "apple events" in lowered
         or "(-1743)" in lowered
     ):
         return (
@@ -51,7 +51,7 @@ def _friendly_omnijs_error(error: str) -> str:
         "not authorized" in lowered
         or "not permitted" in lowered
         or "not authorised" in lowered
-        or "automation" in lowered
+        or "apple events" in lowered
         or "(-1743)" in lowered
     ):
         return (
