@@ -1,0 +1,534 @@
+# Ralph Task Cache
+# Auto-generated from RALPH_TASK.md
+# DO NOT EDIT - regenerated on task file change
+
+source_file: RALPH_TASK.md
+source_mtime: 1772253999
+generated_at: 2026-02-28T04:47:13Z
+
+tasks:
+  - id: "line_109"
+    line_number: 109
+    status: completed
+    parallel_group: 999999
+    description: Monorepo directory structure created: `python/`, `typescript/`,
+    indent_level: 0
+    raw_marker: 1.
+  - id: "line_112"
+    line_number: 112
+    status: completed
+    parallel_group: 999999
+    description: Top-level `README.md` explains: what this project is, that there are
+    indent_level: 0
+    raw_marker: 2.
+  - id: "line_116"
+    line_number: 116
+    status: completed
+    parallel_group: 999999
+    description: Git repo initialized with an initial commit.
+    indent_level: 0
+    raw_marker: 3.
+  - id: "line_127"
+    line_number: 127
+    status: completed
+    parallel_group: 999999
+    description: `python/pyproject.toml` exists with `mcp` dependency, project
+    indent_level: 0
+    raw_marker: 4.
+  - id: "line_131"
+    line_number: 131
+    status: completed
+    parallel_group: 999999
+    description: `python/src/omnifocus_mcp/jxa.py` exports `async def run_jxa(script: str) -> str`
+    indent_level: 0
+    raw_marker: 5.
+  - id: "line_134"
+    line_number: 134
+    status: completed
+    parallel_group: 999999
+    description: `python/src/omnifocus_mcp/jxa.py` exports `async def run_jxa_json(script: str) -> Any`
+    indent_level: 0
+    raw_marker: 6.
+  - id: "line_136"
+    line_number: 136
+    status: completed
+    parallel_group: 999999
+    description: `python/src/omnifocus_mcp/jxa.py` exports `async def run_omnijs(script: str) -> Any`
+    indent_level: 0
+    raw_marker: 7.
+  - id: "line_139"
+    line_number: 139
+    status: completed
+    parallel_group: 999999
+    description: Error handling covers: OmniFocus not running (clear error message),
+    indent_level: 0
+    raw_marker: 8.
+  - id: "line_141"
+    line_number: 141
+    status: completed
+    parallel_group: 999999
+    description: `python/src/omnifocus_mcp/jxa.py` exports `def escape_for_jxa(value: str) -> str`
+    indent_level: 0
+    raw_marker: 9.
+  - id: "line_143"
+    line_number: 143
+    status: completed
+    parallel_group: 999999
+    description: `python/src/omnifocus_mcp/server.py` creates a FastMCP server with a
+    indent_level: 0
+    raw_marker: 10.
+  - id: "line_149"
+    line_number: 149
+    status: completed
+    parallel_group: 999999
+    description: Test setup: `python/tests/conftest.py` with shared fixtures and a
+    indent_level: 0
+    raw_marker: 11.
+  - id: "line_151"
+    line_number: 151
+    status: completed
+    parallel_group: 999999
+    description: Tests for `escape_for_jxa`: strings with double quotes, backslashes,
+    indent_level: 0
+    raw_marker: 12.
+  - id: "line_153"
+    line_number: 153
+    status: completed
+    parallel_group: 999999
+    description: Tests for `run_jxa` error paths (mocked subprocess): non-zero exit
+    indent_level: 0
+    raw_marker: 13.
+  - id: "line_155"
+    line_number: 155
+    status: completed
+    parallel_group: 999999
+    description: Tests for `run_omnijs` / `run_jxa_json` (mocked subprocess): valid
+    indent_level: 0
+    raw_marker: 14.
+  - id: "line_157"
+    line_number: 157
+    status: completed
+    parallel_group: 999999
+    description: `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+    indent_level: 0
+    raw_marker: 15.
+  - id: "line_169"
+    line_number: 169
+    status: pending
+    parallel_group: 999999
+    description: Tool `get_inbox` — returns all inbox (unprocessed) tasks. Each task
+    indent_level: 0
+    raw_marker: 16.
+  - id: "line_172"
+    line_number: 172
+    status: pending
+    parallel_group: 999999
+    description: Tool `list_tasks` — workhorse query tool. Optional filters: `project`
+    indent_level: 0
+    raw_marker: 17.
+  - id: "line_178"
+    line_number: 178
+    status: pending
+    parallel_group: 999999
+    description: Tool `get_task` — accepts task `id`, returns full detail including:
+    indent_level: 0
+    raw_marker: 18.
+  - id: "line_181"
+    line_number: 181
+    status: pending
+    parallel_group: 999999
+    description: Tool `search_tasks` — accepts `query` string + optional `limit`.
+    indent_level: 0
+    raw_marker: 19.
+  - id: "line_183"
+    line_number: 183
+    status: pending
+    parallel_group: 999999
+    description: Tool `list_projects` — optional filters: `folder` (name), `status`
+    indent_level: 0
+    raw_marker: 20.
+  - id: "line_188"
+    line_number: 188
+    status: pending
+    parallel_group: 999999
+    description: Tool `get_project` — accepts project `id` or `name`. Returns full
+    indent_level: 0
+    raw_marker: 21.
+  - id: "line_190"
+    line_number: 190
+    status: pending
+    parallel_group: 999999
+    description: Tool `list_tags` — returns all tags: `id`, `name`, `parent` (for
+    indent_level: 0
+    raw_marker: 22.
+  - id: "line_192"
+    line_number: 192
+    status: pending
+    parallel_group: 999999
+    description: Tool `list_folders` — returns folder hierarchy: `id`, `name`,
+    indent_level: 0
+    raw_marker: 23.
+  - id: "line_194"
+    line_number: 194
+    status: pending
+    parallel_group: 999999
+    description: Tool `get_forecast` — today's dashboard: overdue + due today +
+    indent_level: 0
+    raw_marker: 24.
+  - id: "line_196"
+    line_number: 196
+    status: pending
+    parallel_group: 999999
+    description: Tool `list_perspectives` — available perspectives (built-in + custom):
+    indent_level: 0
+    raw_marker: 25.
+  - id: "line_201"
+    line_number: 201
+    status: pending
+    parallel_group: 999999
+    description: Happy-path tests for every read tool (mocked `run_omnijs`): mock
+    indent_level: 0
+    raw_marker: 26.
+  - id: "line_204"
+    line_number: 204
+    status: pending
+    parallel_group: 999999
+    description: Error-path tests: task not found by ID → error response. Invalid
+    indent_level: 0
+    raw_marker: 27.
+  - id: "line_207"
+    line_number: 207
+    status: pending
+    parallel_group: 999999
+    description: `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+    indent_level: 0
+    raw_marker: 28.
+  - id: "line_218"
+    line_number: 218
+    status: pending
+    parallel_group: 999999
+    description: Tool `create_task` — required `name`, optional `project` (name),
+    indent_level: 0
+    raw_marker: 29.
+  - id: "line_221"
+    line_number: 221
+    status: pending
+    parallel_group: 999999
+    description: Tool `create_tasks_batch` — array of task definitions (same schema).
+    indent_level: 0
+    raw_marker: 30.
+  - id: "line_223"
+    line_number: 223
+    status: pending
+    parallel_group: 999999
+    description: Tool `complete_task` — by `id`. Handles repeating tasks gracefully.
+    indent_level: 0
+    raw_marker: 31.
+  - id: "line_225"
+    line_number: 225
+    status: pending
+    parallel_group: 999999
+    description: Tool `update_task` — by `id`. Optional: `name`, `note`, `dueDate`,
+    indent_level: 0
+    raw_marker: 32.
+  - id: "line_228"
+    line_number: 228
+    status: pending
+    parallel_group: 999999
+    description: Tool `delete_task` — drops/removes by `id`. Warns if task has
+    indent_level: 0
+    raw_marker: 33.
+  - id: "line_230"
+    line_number: 230
+    status: pending
+    parallel_group: 999999
+    description: Tool `move_task` — moves task to a different project (by name) or
+    indent_level: 0
+    raw_marker: 34.
+  - id: "line_232"
+    line_number: 232
+    status: pending
+    parallel_group: 999999
+    description: Tool `create_project` — required `name`, optional `folder` (name),
+    indent_level: 0
+    raw_marker: 35.
+  - id: "line_234"
+    line_number: 234
+    status: pending
+    parallel_group: 999999
+    description: Tool `complete_project` — by `id` or `name`. Returns confirmation.
+    indent_level: 0
+    raw_marker: 36.
+  - id: "line_235"
+    line_number: 235
+    status: pending
+    parallel_group: 999999
+    description: Tool `create_tag` — required `name`, optional `parent` (tag name
+    indent_level: 0
+    raw_marker: 37.
+  - id: "line_240"
+    line_number: 240
+    status: pending
+    parallel_group: 999999
+    description: Happy-path tests for every write tool (mocked `run_omnijs`): verify
+    indent_level: 0
+    raw_marker: 38.
+  - id: "line_243"
+    line_number: 243
+    status: pending
+    parallel_group: 999999
+    description: Test `create_task` with all optional fields set and with only
+    indent_level: 0
+    raw_marker: 39.
+  - id: "line_245"
+    line_number: 245
+    status: pending
+    parallel_group: 999999
+    description: Test `create_tasks_batch` creates N tasks in a single JXA call
+    indent_level: 0
+    raw_marker: 40.
+  - id: "line_247"
+    line_number: 247
+    status: pending
+    parallel_group: 999999
+    description: Test `update_task` only modifies provided fields (omitted fields
+    indent_level: 0
+    raw_marker: 41.
+  - id: "line_249"
+    line_number: 249
+    status: pending
+    parallel_group: 999999
+    description: Error-path tests: `complete_task` with nonexistent ID → error.
+    indent_level: 0
+    raw_marker: 42.
+  - id: "line_251"
+    line_number: 251
+    status: pending
+    parallel_group: 999999
+    description: `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+    indent_level: 0
+    raw_marker: 43.
+  - id: "line_262"
+    line_number: 262
+    status: pending
+    parallel_group: 999999
+    description: Resource `omnifocus://inbox` — current inbox tasks as JSON.
+    indent_level: 0
+    raw_marker: 44.
+  - id: "line_263"
+    line_number: 263
+    status: pending
+    parallel_group: 999999
+    description: Resource `omnifocus://today` — forecast: overdue + due today + flagged.
+    indent_level: 0
+    raw_marker: 45.
+  - id: "line_264"
+    line_number: 264
+    status: pending
+    parallel_group: 999999
+    description: Resource `omnifocus://projects` — all active projects summary.
+    indent_level: 0
+    raw_marker: 46.
+  - id: "line_265"
+    line_number: 265
+    status: pending
+    parallel_group: 999999
+    description: Prompt `daily_review` — fetches due-soon, overdue, flagged tasks;
+    indent_level: 0
+    raw_marker: 47.
+  - id: "line_267"
+    line_number: 267
+    status: pending
+    parallel_group: 999999
+    description: Prompt `weekly_review` — fetches all active projects, identifies
+    indent_level: 0
+    raw_marker: 48.
+  - id: "line_269"
+    line_number: 269
+    status: pending
+    parallel_group: 999999
+    description: Prompt `inbox_processing` — fetches inbox items, walks through each:
+    indent_level: 0
+    raw_marker: 49.
+  - id: "line_271"
+    line_number: 271
+    status: pending
+    parallel_group: 999999
+    description: Prompt `project_planning` — accepts project name, fetches state,
+    indent_level: 0
+    raw_marker: 50.
+  - id: "line_276"
+    line_number: 276
+    status: pending
+    parallel_group: 999999
+    description: Tests for each resource: verify correct JXA script is called and
+    indent_level: 0
+    raw_marker: 51.
+  - id: "line_278"
+    line_number: 278
+    status: pending
+    parallel_group: 999999
+    description: Tests for each prompt: verify template renders with expected
+    indent_level: 0
+    raw_marker: 52.
+  - id: "line_280"
+    line_number: 280
+    status: pending
+    parallel_group: 999999
+    description: `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
+    indent_level: 0
+    raw_marker: 53.
+  - id: "line_290"
+    line_number: 290
+    status: pending
+    parallel_group: 999999
+    description: All tools return user-friendly errors: OmniFocus not running,
+    indent_level: 0
+    raw_marker: 54.
+  - id: "line_293"
+    line_number: 293
+    status: pending
+    parallel_group: 999999
+    description: `python/README.md` with: install instructions (uv + pip), MCP client
+    indent_level: 0
+    raw_marker: 55.
+  - id: "line_296"
+    line_number: 296
+    status: pending
+    parallel_group: 999999
+    description: MCP client configs documented and tested. Examples:
+    indent_level: 0
+    raw_marker: 56.
+  - id: "line_300"
+    line_number: 300
+    status: pending
+    parallel_group: 999999
+    description: Server handles rapid sequential tool calls without crashing.
+    indent_level: 0
+    raw_marker: 57.
+  - id: "line_301"
+    line_number: 301
+    status: pending
+    parallel_group: 999999
+    description: `pyproject.toml` has `[project.scripts]` entry so `omnifocus-mcp`
+    indent_level: 0
+    raw_marker: 58.
+  - id: "line_303"
+    line_number: 303
+    status: pending
+    parallel_group: 999999
+    description: Full test suite passes: `ruff check src/ && ruff format --check src/
+    indent_level: 0
+    raw_marker: 59.
+  - id: "line_315"
+    line_number: 315
+    status: pending
+    parallel_group: 999999
+    description: `typescript/package.json` with `@modelcontextprotocol/sdk`, `zod`,
+    indent_level: 0
+    raw_marker: 60.
+  - id: "line_318"
+    line_number: 318
+    status: pending
+    parallel_group: 999999
+    description: `typescript/tsconfig.json` targets ES2022 / NodeNext, outputs `dist/`.
+    indent_level: 0
+    raw_marker: 61.
+  - id: "line_319"
+    line_number: 319
+    status: pending
+    parallel_group: 999999
+    description: `typescript/src/jxa.ts` — JXA execution layer ported: `runJxa`,
+    indent_level: 0
+    raw_marker: 62.
+  - id: "line_322"
+    line_number: 322
+    status: pending
+    parallel_group: 999999
+    description: All 10 read tools ported and `npm run build` passes with no errors.
+    indent_level: 0
+    raw_marker: 63.
+  - id: "line_323"
+    line_number: 323
+    status: pending
+    parallel_group: 999999
+    description: All 9 write tools ported and build passes.
+    indent_level: 0
+    raw_marker: 64.
+  - id: "line_324"
+    line_number: 324
+    status: pending
+    parallel_group: 999999
+    description: Resources (3) and prompts (4) ported.
+    indent_level: 0
+    raw_marker: 65.
+  - id: "line_325"
+    line_number: 325
+    status: pending
+    parallel_group: 999999
+    description: `typescript/README.md` with install instructions, MCP client config
+    indent_level: 0
+    raw_marker: 66.
+  - id: "line_327"
+    line_number: 327
+    status: pending
+    parallel_group: 999999
+    description: `package.json` has `\"bin\"` entry; server runs via `npx`.
+    indent_level: 0
+    raw_marker: 67.
+  - id: "line_331"
+    line_number: 331
+    status: pending
+    parallel_group: 999999
+    description: Tests for `escapeForJxa`: same adversarial inputs as Python tests
+    indent_level: 0
+    raw_marker: 68.
+  - id: "line_333"
+    line_number: 333
+    status: pending
+    parallel_group: 999999
+    description: Tests for `runJxa` / `runOmniJs` error paths (mocked subprocess):
+    indent_level: 0
+    raw_marker: 69.
+  - id: "line_335"
+    line_number: 335
+    status: pending
+    parallel_group: 999999
+    description: Happy-path tests for at least 3 representative read tools and
+    indent_level: 0
+    raw_marker: 70.
+  - id: "line_338"
+    line_number: 338
+    status: pending
+    parallel_group: 999999
+    description: `npx tsc --noEmit && npm test` passes with zero errors.
+    indent_level: 0
+    raw_marker: 71.
+  - id: "line_348"
+    line_number: 348
+    status: pending
+    parallel_group: 999999
+    description: Top-level `README.md` updated with feature comparison table,
+    indent_level: 0
+    raw_marker: 72.
+  - id: "line_351"
+    line_number: 351
+    status: pending
+    parallel_group: 999999
+    description: MCP client configs for both implementations tested. Documented
+    indent_level: 0
+    raw_marker: 73.
+  - id: "line_353"
+    line_number: 353
+    status: pending
+    parallel_group: 999999
+    description: Both implementations pass their respective full check commands
+    indent_level: 0
+    raw_marker: 74.
+  - id: "line_355"
+    line_number: 355
+    status: pending
+    parallel_group: 999999
+    description: `.gitignore` is complete, repo is clean, tagged as `v1.0.0`.
+    indent_level: 0
+    raw_marker: 75.
