@@ -1,2 +1,0 @@
-impl std::future::Future<Output = std::result::Result<rmcp::model::ReadResourceResult, rmcp::ErrorData>>
-impl std::future::Future<Output = std::result::Result<serde_json::Value, error::OmniFocusError>>

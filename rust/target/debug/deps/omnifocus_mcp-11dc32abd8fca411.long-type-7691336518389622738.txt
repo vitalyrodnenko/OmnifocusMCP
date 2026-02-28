@@ -1,2 +1,0 @@
-impl std::future::Future<Output = std::result::Result<serde_json::Value, error::OmniFocusError>>
-std::pin::Pin<std::boxed::Box<dyn std::future::Future<Output = std::result::Result<std::vec::Vec<rmcp::model::PromptMessage>, rmcp::ErrorData>> + std::marker::Send>>
