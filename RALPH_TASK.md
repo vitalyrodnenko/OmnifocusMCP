@@ -238,16 +238,16 @@ Verify everything is production-ready.
 
 ### Success Criteria
 
-31. [ ] Both servers start and stop cleanly:
+31. [x] Both servers start and stop cleanly:
         - `echo '{}' | python -m omnifocus_mcp` exits without crash
         - `echo '{}' | node typescript/dist/index.js` exits without crash
-32. [ ] Full test commands pass for both implementations (mocked tests):
+32. [x] Full test commands pass for both implementations (mocked tests):
         - `cd python && ruff check src/ && ruff format --check src/ &&
           mypy src/ --strict && pytest tests/ -v`
         - `cd typescript && npx tsc --noEmit && npm test`
-33. [ ] Git status is clean — no untracked source files, no uncommitted
+33. [x] Git status is clean — no untracked source files, no uncommitted
         changes. Commit all work with a descriptive message.
-34. [ ] Tag the repo as `v1.1.0`.
+34. [x] Tag the repo as `v1.1.0`.
 
 ---
 

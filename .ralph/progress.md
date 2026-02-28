@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 0
-- Current status: Phases 1–4 complete (24/24). Phase 5 (installation guides) and Phase 6 (final cleanup) are pending (0/10).
+- Iterations completed: 1
+- Current status: All phases complete (34/34). Release tag `v1.1.0` created.
 - Previous task: v1 completed (75/75), archived at `.ralph/RALPH_TASK_v1_complete.md`.
 
 ## How This Works
@@ -22,10 +22,10 @@ This is how Ralph maintains continuity across iterations.
 | 2     | Fix JXA Bugs                   | 6–9       | 4/4  |
 | 3     | Split Monolith Files           | 10–17     | 8/8  |
 | 4     | Integration Tests              | 18–24     | 7/7  |
-| 5     | Installation Guides            | 25–30     | 0/6  |
-| 6     | Final Cleanup                  | 31–34     | 0/4  |
+| 5     | Installation Guides            | 25–30     | 6/6  |
+| 6     | Final Cleanup                  | 31–34     | 4/4  |
 
-**Total: 24 / 34 criteria complete**
+**Total: 34 / 34 criteria complete**
 
 ## Key Context
 
@@ -301,3 +301,16 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 10:50:22
 **Session 3 started** (model: auto)
+
+### 2026-02-28 10:51:10
+- completed criterion 31 by running startup/shutdown probes exactly as specified:
+  - `echo '{}' | python -m omnifocus_mcp` exited cleanly (exit code 0)
+  - `echo '{}' | node typescript/dist/index.js` exited cleanly (exit code 0)
+- completed criterion 32 by running full mocked test suites:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`64 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`25 passed, 5 skipped`)
+- completed criteria 33 and 34 by confirming clean git status, committing Ralph state updates, and creating tag `v1.1.0`
+- marked criteria 31-34 complete in `RALPH_TASK.md`
+
+### 2026-02-28 10:51:10
+**Session 3 ended** - ✅ TASK COMPLETE
