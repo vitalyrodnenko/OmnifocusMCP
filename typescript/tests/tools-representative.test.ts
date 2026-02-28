@@ -583,7 +583,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("const relativeOffset = null;");
     expect(script).toContain("const parsed = new Date(absoluteDateRaw);");
     expect(script).toContain("return task.addNotification(absoluteDate);");
-    expect(script).toContain("const effectiveDueDate = task.effectiveDueDate;");
+    expect(script).toContain("if (task.effectiveDueDate === null) {");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "n2",
       kind: "absolute",

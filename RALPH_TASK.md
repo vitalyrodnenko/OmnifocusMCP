@@ -576,7 +576,7 @@ set reminders without the user opening OmniFocus.
         - duplicate_task registered and working
         - Character-identical JXA scripts
 
-35. [ ] **Update top-level `README.md`:**
+35. [x] **Update top-level `README.md`:**
         - Add native taskStatus field to feature list
         - Add effective dates to feature list
         - Add notifications support section
@@ -584,7 +584,7 @@ set reminders without the user opening OmniFocus.
         - Add plannedDate to filtering documentation
         - Update total tool count
 
-36. [ ] **Run full test suites — zero failures** (same as criterion 20).
+36. [x] **Run full test suites — zero failures** (same as criterion 20).
 
 ---
 

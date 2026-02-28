@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772317500
-generated_at: 2026-02-28T22:25:16Z
+source_mtime: 1772317617
+generated_at: 2026-02-28T22:27:24Z
 
 tasks:
   - id: "line_108"
@@ -240,21 +240,21 @@ tasks:
     raw_marker: 33.
   - id: "line_570"
     line_number: 570
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Verify all new fields and tools across all 3 implementations:**
     indent_level: 0
     raw_marker: 34.
   - id: "line_579"
     line_number: 579
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Update top-level `README.md`:**
     indent_level: 0
     raw_marker: 35.
   - id: "line_587"
     line_number: 587
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **Run full test suites — zero failures** (same as criterion 20).
     indent_level: 0

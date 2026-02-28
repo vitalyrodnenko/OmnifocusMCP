@@ -348,8 +348,7 @@ const created = (() => {
   if (absoluteDate !== null) {
     return task.addNotification(absoluteDate);
   }
-  const effectiveDueDate = task.effectiveDueDate;
-  if (effectiveDueDate === null) {
+  if (task.effectiveDueDate === null) {
     throw new Error("relativeOffset requires a task with an effective due date.");
   }
   return task.addNotification(relativeOffset);
