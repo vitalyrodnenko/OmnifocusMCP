@@ -326,7 +326,7 @@ distribution.
         - `test` block that verifies `--version` output
         Include a comment header explaining how to use: create a tap
         repo, copy this formula, update SHAs from release.
-40. [ ] Create `docs/install-rust.md` with:
+40. [x] Create `docs/install-rust.md` with:
         - Two install methods: **Homebrew** (preferred) and **from source**
         - Homebrew: `brew tap user/omnifocus-mcp && brew install omnifocus-mcp`
         - From source: prerequisites (macOS, Rust toolchain), `git clone`,
@@ -344,12 +344,12 @@ distribution.
             to run `xattr -cr /path/to/omnifocus-mcp` if downloaded
             outside Homebrew, or note that Homebrew-installed binaries
             are not affected
-41. [ ] Update top-level `README.md`:
+41. [x] Update top-level `README.md`:
         - Add Rust to the implementation comparison table
         - Add Rust quick-start section linking to `docs/install-rust.md`
         - Note Homebrew as the recommended install method
         - Update feature count if the Rust implementation has parity
-42. [ ] Release binary smoke test: build release binary, run the
+42. [x] Release binary smoke test: build release binary, run the
         `smoke_test` example against real OmniFocus, verify zero failures.
 
 ---
@@ -358,9 +358,9 @@ distribution.
 
 ### Success Criteria
 
-43. [ ] `cargo fmt --check` is clean (no formatting issues).
-44. [ ] `cargo clippy -- -D warnings` is clean (no lint warnings).
-45. [ ] `cargo test` passes (all mocked tests, integration skipped).
+43. [x] `cargo fmt --check` is clean (no formatting issues).
+44. [x] `cargo clippy -- -D warnings` is clean (no lint warnings).
+45. [x] `cargo test` passes (all mocked tests, integration skipped).
 46. [ ] `.gitignore` updated to exclude `rust/target/`.
         `rust/Cargo.lock` is committed (Rust convention for binaries).
 47. [ ] Git status is clean — no untracked source files, no uncommitted

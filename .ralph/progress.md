@@ -618,6 +618,15 @@ This is how Ralph maintains continuity across iterations.
 - verified version output with `./target/release/omnifocus-mcp --version` -> `omnifocus-mcp 0.1.0`
 - next focus: criterion 38 (`.github/workflows/release-rust.yml`)
 
+### 2026-02-28 13:00:00
+- completed criterion 38 by adding `.github/workflows/release-rust.yml` for `rust-v*` tags with arm64/intel macOS builds, tarball packaging, checksum generation, and release publishing
+- completed criterion 39 by adding `homebrew/omnifocus-mcp.rb` with arm/intel URL+sha placeholders and `--version` formula test
+- completed criterion 40 by creating `docs/install-rust.md` covering homebrew and source installs, client config snippets, and troubleshooting
+- completed criterion 41 by updating top-level `README.md` with rust implementation entries and install guidance
+- completed criterion 42 by running `cd rust && cargo run --release --example smoke_test` (`0 failures`)
+- reran rust quality gate: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- next focus: phase 6 criteria 43-47 (final cleanup)
+
 ### 2026-02-28 11:31:21
 **Session 18 ended** - 🔄 Context rotation (token limit reached)
 
@@ -666,6 +675,14 @@ This is how Ralph maintains continuity across iterations.
 - retained explicit teardown strategy (cleanup at test start and end) in integration tests for criterion 36
 - reran required rust task command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - next focus: begin Phase 5 criterion 37 (`cargo build --release` and release binary verification)
+
+### 2026-02-28 11:43:34
+- completed criterion 37 by validating release binary build and version output with `cd rust && cargo build --release && ./target/release/omnifocus-mcp --version`
+- completed criterion 40 by adding `docs/install-rust.md` with homebrew/source install paths, mcp client config snippets, and troubleshooting guidance
+- completed criterion 41 by updating top-level `README.md` to include rust in quick start and implementation comparison details with homebrew recommendation
+- completed criterion 42 by running release smoke validation: `cd rust && cargo build --release && cargo run --release --example smoke_test` (`0 failures`)
+- marked criteria 40-42 complete in `RALPH_TASK.md`
+- next focus: begin Phase 6 final cleanup (criteria 43-47)
 
 ### 2026-02-28 12:06:00
 - revalidated criterion 34 with `cd rust && cargo test --features integration` (`5 passed` with real OmniFocus)
