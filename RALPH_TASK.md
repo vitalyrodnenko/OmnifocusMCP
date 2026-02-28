@@ -295,7 +295,7 @@ Reference implementations:
           Return the array.
         - Implement and test in all 3 implementations.
 
-23. [ ] All lint and test commands pass for Phase 4 (same as criterion 6).
+23. [x] All lint and test commands pass for Phase 4 (same as criterion 6).
 
 ---
 

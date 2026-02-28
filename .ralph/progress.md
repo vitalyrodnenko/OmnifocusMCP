@@ -2068,3 +2068,21 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 13:33:23
 **Session 12 started** (model: auto)
+
+### 2026-02-28 13:33:20
+- completed criterion 22 (`search_tags`) by verifying parity across all 3 implementations:
+  - python: `python/src/omnifocus_mcp/tools/tags.py` includes `search_tags` with trimmed-query validation, escaped query interpolation, `tagsMatching(queryValue).slice(0, limit)`, and summary mapping (`id`, `name`, `status`, `parent`)
+  - typescript: `typescript/src/tools/tags.ts` registers `search_tags` with matching validation/message and equivalent JXA script structure/mapping
+  - rust: `rust/src/tools/tags.rs` exposes `search_tags` with identical validation semantics and matching JXA behavior
+- confirmed test coverage for criterion 22:
+  - `cd python && pytest tests/test_tools_read.py -k "search_tags" -v` (`2 passed`)
+  - `cd typescript && npm test -- --run tests/tools-happy.test.ts` (`43 passed`, includes `search_tags` cases)
+  - `cd rust && cargo test --test tools_read_test` (`5 passed`, includes `search_tags` happy/validation coverage path)
+- marked criterion 22 complete in `RALPH_TASK.md`
+- next focus: criterion 23 (run full phase-4 quality gate across python/typescript/rust and check off if clean)
+
+### 2026-02-28 13:33:38
+**Session 12 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 13:33:40
+**Session 13 started** (model: auto)
