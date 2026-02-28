@@ -4,8 +4,8 @@
 
 ## Summary
 
-- Iterations completed: 12
-- Current status: Phase 5 in progress (criterion 50 complete; next 51).
+- Iterations completed: 17
+- Current status: Phase 5 in progress (criterion 51 complete; next 52).
 
 ## How This Works
 
@@ -21,12 +21,12 @@ This is how Ralph maintains continuity across iterations.
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
 | 3     | Python: Read Tools + Tests        | 16–28     | 13/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
-| 5     | Python: Resources & Prompts + Tests | 44–53   | 7/10 |
+| 5     | Python: Resources & Prompts + Tests | 44–53   | 8/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 50 / 75 criteria complete**
+**Total: 51 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -623,6 +623,9 @@ This is how Ralph maintains continuity across iterations.
 **Session 18 update**
 - completed phase 5 criterion 50 by adding `project_planning(project)` prompt in `python/src/omnifocus_mcp/server.py`
 - prompt fetches project detail plus available project tasks, then guides step breakdown, sequencing, and effort estimates
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
 - next up: phase 5 criterion 51 (resource tests)
 
 ### 2026-02-27 23:13:52
@@ -630,3 +633,18 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:13:54
 **Session 19 started** (model: auto)
+
+### 2026-02-27 23:13:11
+**Session 19 update**
+- completed phase 5 criterion 51 by validating existing resource tests in `python/tests/test_tools_read.py`
+- confirmed resource coverage verifies json responses and key jxa script markers for `inbox_resource`, `today_resource`, and `projects_resource`
+- re-ran full command from `RALPH_TASK.md`; all checks passed:
+  - `cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v`
+  - `cd ../typescript && npx tsc --noEmit && npm test`
+- next up: phase 5 criterion 52 (prompt template tests)
+
+### 2026-02-27 23:14:16
+**Session 19 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-27 23:14:18
+**Session 20 started** (model: auto)

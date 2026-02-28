@@ -676,3 +676,12 @@ Ralph Session Started: Fri Feb 27 23:13:54 CST 2026
 [23:14:05] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/errors.log (5 lines, ~.4KB)
 [23:14:05] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/guardrails.md (28 lines, ~2.7KB)
 [23:14:05] 🟢 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/.ralph/activity.log (674 lines, ~65.8KB)
+[23:14:14] 🔴 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/src/omnifocus_mcp/server.py (1189 lines, ~116.1KB)
+[23:14:14] 🔴 WARN: Approaching token limit (73319 >= 70000)
+[23:14:14] 🔴 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/tests/conftest.py (30 lines, ~2.9KB)
+[23:14:14] 🔴 READ /Users/vitalyrodnenko/Projects/OmnifocusMCP/python/tests/test_tools_read.py (448 lines, ~43.7KB)
+[23:14:14] 🔴 ROTATE: Token threshold reached (85269 >= 80000)
+
+═══════════════════════════════════════════════════════════════
+Ralph Session Started: Fri Feb 27 23:14:18 CST 2026
+═══════════════════════════════════════════════════════════════

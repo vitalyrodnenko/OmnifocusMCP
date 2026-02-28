@@ -128,6 +128,87 @@ async def test_projects_resource_returns_active_projects_json(
 
 
 @pytest.mark.asyncio
+async def test_daily_review_prompt_renders_expected_sections(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    prompt = await server.daily_review()
+
+    assert "overdue_tasks_json:" in prompt
+    assert "due_soon_tasks_json:" in prompt
+    assert "flagged_tasks_json:" in prompt
+    assert "[]" in prompt
+    assert len(state["calls"]) == 3
+
+
+@pytest.mark.asyncio
+async def test_weekly_review_prompt_renders_expected_sections(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    prompt = await server.weekly_review()
+
+    assert "active_projects_json:" in prompt
+    assert "available_tasks_json:" in prompt
+    assert "stalled (no clear next action)" in prompt
+    assert "[]" in prompt
+    assert len(state["calls"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_inbox_processing_prompt_renders_expected_sections(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    prompt = await server.inbox_processing()
+
+    assert "inbox_items_json:" in prompt
+    assert "decide if it should be deleted, deferred, delegated, or kept." in prompt
+    assert "[]" in prompt
+    assert len(state["calls"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_project_planning_prompt_renders_expected_sections(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "p-123",
+        "name": "Alpha",
+        "status": "active",
+        "folderName": None,
+        "taskCount": 1,
+        "remainingTaskCount": 1,
+        "deferDate": None,
+        "dueDate": None,
+        "note": "",
+        "sequential": False,
+        "reviewInterval": None,
+        "rootTasks": [],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    prompt = await server.project_planning("Alpha")
+
+    assert "project_state_json:" in prompt
+    assert "project name:" in prompt
+    assert "Alpha" in prompt
+    assert '"id": "p-123"' in prompt
+    assert len(state["calls"]) == 1
+
+
+@pytest.mark.asyncio
 async def test_list_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = [
         {
