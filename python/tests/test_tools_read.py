@@ -303,6 +303,68 @@ async def test_list_tasks_completed_date_filter_auto_includes_completed_logic(
 
 
 @pytest.mark.asyncio
+async def test_list_tasks_sort_due_date_asc_is_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(sortBy="dueDate", sortOrder="asc", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const sortBy = "dueDate";' in script
+    assert 'const sortOrder = "asc";' in script
+    assert 'if (sortBy === "dueDate") {' in script
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_sort_name_desc_is_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(sortBy="name", sortOrder="desc", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const sortBy = "name";' in script
+    assert 'const sortOrder = "desc";' in script
+    assert "left = String(aValue).toLowerCase();" in script
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_sort_auto_defaults_for_completion_date_filters(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(completedAfter="2026-03-01T00:00:00Z", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const sortBy = "completionDate";' in script
+    assert 'const sortOrder = "desc";' in script
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_sort_nulls_last_logic_is_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(sortBy="project", sortOrder="desc", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert "if (aValue === null) return 1;" in script
+    assert "if (bValue === null) return -1;" in script
+
+
+@pytest.mark.asyncio
 async def test_list_tasks_tags_filter_single_via_tags_param(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

@@ -113,9 +113,10 @@ async fn list_tasks<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
     limit: i32,
 ) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
-    list_tasks_with_duration(
+    list_tasks_with_max(
         runner,
         project,
         tag,
@@ -129,7 +130,7 @@ async fn list_tasks<R: JxaRunner>(
         defer_after,
         completed_before,
         completed_after,
-        None,
+        max_estimated_minutes,
         limit,
     )
     .await
@@ -507,7 +508,6 @@ async fn list_tasks_date_filter_script_contains_expected_logic() {
         Some("2026-02-25T00:00:00Z"),
         Some("2026-03-09T00:00:00Z"),
         Some("2026-02-20T00:00:00Z"),
-        None,
         9,
     )
     .await
@@ -546,9 +546,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
         5,
     )
     .await
@@ -573,9 +570,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
         5,
     )
     .await
@@ -596,7 +590,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "all",
         None,
         "available",
-        None,
         None,
         None,
         None,
