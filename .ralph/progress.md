@@ -571,3 +571,11 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 11:28:11
 **Session 17 started** (model: auto)
+
+### 2026-02-28 11:28:28
+- completed criterion 31 by creating `rust/examples/smoke_test.rs` as a standalone async binary with pass/fail reporting for bridge, read-tool validation, and write-tool lifecycle validation
+- `smoke_test` now exercises all 19 rust tool functions at least once, including `create_tasks_batch`, `move_task`, `create_tag`, and `complete_project`
+- added cleanup registries in the smoke example for created tasks/projects/tags so repeated runs do not accumulate test artifacts
+- ran required rust validation command after changes: `cd rust && cargo fmt && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 31 complete in `RALPH_TASK.md`
+- next focus: criterion 32 (run smoke test against real OmniFocus and verify zero failures)
