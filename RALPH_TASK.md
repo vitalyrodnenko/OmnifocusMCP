@@ -205,7 +205,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
 
 ### Success Criteria
 
-14. [ ] Create `.github/workflows/ci.yml` that runs on push and
+14. [x] Create `.github/workflows/ci.yml` that runs on push and
         pull_request. Jobs:
 
         **python-checks** (runs-on: `macos-latest`):
@@ -236,7 +236,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
         (osascript). Integration tests are NOT run in CI (they need
         OmniFocus). Only mocked unit tests run.
 
-15. [ ] Verify the CI workflow YAML is valid by checking syntax.
+15. [x] Verify the CI workflow YAML is valid by checking syntax.
 
 ---
 

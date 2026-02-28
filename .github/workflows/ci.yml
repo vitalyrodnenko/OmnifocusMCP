@@ -1,0 +1,73 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  python-checks:
+    runs-on: macos-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: sync python deps
+        run: cd python && uv sync --extra dev
+
+      - name: ruff check
+        run: cd python && uv run ruff check src/
+
+      - name: ruff format check
+        run: cd python && uv run ruff format --check src/
+
+      - name: mypy strict
+        run: cd python && uv run mypy src/ --strict
+
+      - name: pytest
+        run: cd python && uv run pytest tests/ -v
+
+  typescript-checks:
+    runs-on: macos-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: install deps
+        run: cd typescript && npm install
+
+      - name: typescript check
+        run: cd typescript && npx tsc --noEmit
+
+      - name: vitest
+        run: cd typescript && npm test
+
+  rust-checks:
+    runs-on: macos-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+      - name: install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: cargo fmt
+        run: cd rust && cargo fmt --check
+
+      - name: cargo clippy
+        run: cd rust && cargo clippy -- -D warnings
+
+      - name: cargo test
+        run: cd rust && cargo test
