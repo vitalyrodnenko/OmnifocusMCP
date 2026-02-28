@@ -261,49 +261,4 @@ return {
     }
   );
 
-  server.tool(
-    "delete_folder",
-    "delete a folder by id or name. warning: this permanently removes the folder. contained projects may be moved to top level by omnifocus, so confirm with the user before proceeding.",
-    {
-      folder_name_or_id: z.string().min(1),
-    },
-    async ({ folder_name_or_id }) => {
-      try {
-        const folderFilter = folder_name_or_id.trim();
-        if (!folderFilter) {
-          throw new Error("folder_name_or_id must not be empty.");
-        }
-
-        const escapedFolderFilter = escapeForJxa(folderFilter);
-        const script = `
-const folderFilter = ${escapedFolderFilter};
-
-const folder = document.flattenedFolders.find(item => {
-  return item.id.primaryKey === folderFilter || item.name === folderFilter;
-});
-if (!folder) {
-  throw new Error(\`Folder not found: \${folderFilter}\`);
-}
-
-const folderId = folder.id.primaryKey;
-const folderName = folder.name;
-const projectCount = folder.projects.length;
-const subfolderCount = folder.folders.length;
-deleteObject(folder);
-
-return {
-  id: folderId,
-  name: folderName,
-  deleted: true,
-  projectCount: projectCount,
-  subfolderCount: subfolderCount
-};
-`.trim();
-        return textResult(await runOmniJs(script));
-      } catch (error: unknown) {
-        return errorResult(normalizeError(error));
-      }
-    }
-  );
-
 }

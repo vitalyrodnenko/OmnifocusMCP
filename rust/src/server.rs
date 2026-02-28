@@ -26,7 +26,10 @@ use crate::{
         PROJECTS_RESOURCE_URI, TODAY_RESOURCE_URI,
     },
     tools::{
-        folders::{create_folder, get_folder, list_folders, update_folder as update_folder_tool},
+        folders::{
+            create_folder, delete_folder as delete_folder_tool, get_folder, list_folders,
+            update_folder as update_folder_tool,
+        },
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
@@ -744,6 +747,19 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         )
         .await
         .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "delete a folder by id or name. warning: deleting a folder may move contained projects and subfolders to top level in omnifocus."
+    )]
+    async fn delete_folder(
+        &self,
+        Parameters(params): Parameters<FolderNameOrIdParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = delete_folder_tool(self.runner.as_ref(), &params.folder_name_or_id)
+            .await
+            .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 
