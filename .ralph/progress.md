@@ -420,18 +420,15 @@ This is how Ralph maintains continuity across iterations.
 **Session 46 started** (model: auto)
 
 ### 2026-02-28 15:20:40
-- removed duplicate `get_task_counts` tool registration in `typescript/src/tools/tasks.ts`
-- aligned python `get_task_counts` counting script to single-pass filtering/counting (no intermediate filtered array)
-- verified rust has a single active `get_task_counts` symbol and retained working script parity behavior
-- removed duplicate `get_project_counts` tool registration in `typescript/src/tools/projects.ts` and kept runtime folder validation/trim
-- reran focused gates:
-  - python: `pytest tests/test_tools_read.py -k get_task_counts -v` and `-k get_project_counts -v`
-  - typescript: `npm test -- -t get_task_counts` and `-t get_project_counts`
-  - rust: `cargo test get_task_counts -- --nocapture` and `cargo test get_project_counts -- --nocapture`
+- revalidated criterion 15 (`get_project_counts`) with focused tests across all implementations:
+  - python: `pytest tests/test_tools_read.py -k get_project_counts -v` (2 passed)
+  - typescript: `npm test -- -t get_project_counts` (2 passed)
+  - rust: `cargo test get_project_counts` (1 passed)
 - reran full cross-implementation gate successfully:
   - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
   - `cd typescript && npx tsc --noEmit && npm test`
   - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+- confirmed `RALPH_TASK.md` has criteria 15 and 16 marked complete
 - next: criterion 17 (`get_forecast` enrichment across all 3 implementations)
 
 ### 2026-02-28 15:19:51
