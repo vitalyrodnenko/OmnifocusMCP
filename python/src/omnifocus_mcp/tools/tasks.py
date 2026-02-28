@@ -293,9 +293,11 @@ return tasks.map(task => {{
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
     completed: task.completed,
+    completionDate: task.completionDate ? task.completionDate.toISOString() : null,
     projectName: task.containingProject ? task.containingProject.name : null,
     tags: tags,
-    estimatedMinutes: task.estimatedMinutes
+    estimatedMinutes: task.estimatedMinutes,
+    hasChildren: task.hasChildren
   }};
 }});
 """.strip()
@@ -386,9 +388,11 @@ return tasks.map(task => {{
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
     completed: task.completed,
+    completionDate: task.completionDate ? task.completionDate.toISOString() : null,
     projectName: task.containingProject ? task.containingProject.name : null,
     tags: tags,
-    estimatedMinutes: task.estimatedMinutes
+    estimatedMinutes: task.estimatedMinutes,
+    hasChildren: task.hasChildren
   }};
 }});
 """.strip()

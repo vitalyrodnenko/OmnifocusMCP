@@ -190,9 +190,11 @@ return tasks.map(task => ({
   dueDate: task.dueDate ? task.dueDate.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   completed: task.completed,
+  completionDate: task.completionDate ? task.completionDate.toISOString() : null,
   projectName: task.containingProject ? task.containingProject.name : null,
   tags: task.tags.map(tag => tag.name),
-  estimatedMinutes: task.estimatedMinutes
+  estimatedMinutes: task.estimatedMinutes,
+  hasChildren: task.hasChildren
 }));
 `.trim();
         return textResult(await runOmniJs(script));
@@ -893,9 +895,11 @@ return tasks.map(task => ({
   dueDate: task.dueDate ? task.dueDate.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   completed: task.completed,
+  completionDate: task.completionDate ? task.completionDate.toISOString() : null,
   projectName: task.containingProject ? task.containingProject.name : null,
   tags: task.tags.map(taskTag => taskTag.name),
-  estimatedMinutes: task.estimatedMinutes
+  estimatedMinutes: task.estimatedMinutes,
+  hasChildren: task.hasChildren
 }));
 `.trim();
   return runOmniJs(script);

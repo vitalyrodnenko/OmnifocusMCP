@@ -239,9 +239,11 @@ async def test_list_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dic
             "dueDate": "2026-03-01T10:00:00Z",
             "deferDate": None,
             "completed": False,
+            "completionDate": None,
             "projectName": "Proj",
             "tags": ["urgent"],
             "estimatedMinutes": 30,
+            "hasChildren": False,
         }
     ]
     configured = mock_server_run_omnijs(payload)
@@ -253,6 +255,8 @@ async def test_list_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dic
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert 'const statusFilter = "due_soon";' in state["calls"][0]["script"]
+    assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
+    assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
     assert ".slice(0, 7)" in state["calls"][0]["script"]
 
 
@@ -554,9 +558,11 @@ async def test_search_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], d
             "dueDate": None,
             "deferDate": None,
             "completed": False,
+            "completionDate": None,
             "projectName": None,
             "tags": [],
             "estimatedMinutes": 5,
+            "hasChildren": False,
         }
     ]
     configured = mock_server_run_omnijs(payload)
@@ -568,6 +574,8 @@ async def test_search_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], d
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert 'const query = "milk".toLowerCase();' in state["calls"][0]["script"]
+    assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
+    assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio
