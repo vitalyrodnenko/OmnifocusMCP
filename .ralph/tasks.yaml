@@ -3,8 +3,8 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772253999
-generated_at: 2026-02-28T04:47:13Z
+source_mtime: 1772254215
+generated_at: 2026-02-28T04:50:38Z
 
 tasks:
   - id: "line_109"
@@ -114,28 +114,28 @@ tasks:
     raw_marker: 15.
   - id: "line_169"
     line_number: 169
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `get_inbox` — returns all inbox (unprocessed) tasks. Each task
     indent_level: 0
     raw_marker: 16.
   - id: "line_172"
     line_number: 172
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `list_tasks` — workhorse query tool. Optional filters: `project`
     indent_level: 0
     raw_marker: 17.
   - id: "line_178"
     line_number: 178
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `get_task` — accepts task `id`, returns full detail including:
     indent_level: 0
     raw_marker: 18.
   - id: "line_181"
     line_number: 181
-    status: pending
+    status: completed
     parallel_group: 999999
     description: Tool `search_tasks` — accepts `query` string + optional `limit`.
     indent_level: 0
