@@ -9,7 +9,7 @@ use omnifocus_mcp::{
     jxa::{escape_for_jxa, JxaRunner},
     tools::{
         projects::{
-            complete_project, create_project, set_project_status, uncomplete_project,
+            complete_project, create_project, delete_project, set_project_status, uncomplete_project,
             update_project,
         },
         tags::create_tag,
@@ -189,6 +189,11 @@ async fn write_project_and_tag_tools_happy_path() {
         .expect("uncomplete_project should succeed");
     assert_eq!(uncompleted_project["id"], "p1");
 
+    let deleted_project = delete_project(&runner, "p1")
+        .await
+        .expect("delete_project should succeed");
+    assert_eq!(deleted_project["id"], "p1");
+
     let updated_project = update_project(
         &runner,
         "p1",
@@ -266,6 +271,10 @@ async fn validation_errors_for_write_tools() {
     ));
     assert!(matches!(
         uncomplete_project(&runner, "   ").await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        delete_project(&runner, "   ").await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -611,6 +620,30 @@ async fn set_project_status_script_sets_organizational_status_enum() {
     assert!(captured.contains("const statusValue = \"on_hold\";"));
     assert!(captured.contains("Project.Status.OnHold"));
     assert!(captured.contains("project.status = targetStatus;"));
+}
+
+#[tokio::test]
+async fn delete_project_script_captures_task_count_before_deletion() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "p5", "name": "Project Five", "deleted": true, "taskCount": 3}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = delete_project(&runner, "p5").await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const projectFilter = \"p5\";"));
+    assert!(captured.contains("const taskCount = document.flattenedTasks.filter"));
+    assert!(captured.contains("deleteObject(project);"));
+    assert!(captured.contains("taskCount: taskCount"));
 }
 
 #[tokio::test]

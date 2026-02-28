@@ -30,8 +30,8 @@ use crate::{
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
-            complete_project, create_project, get_project, list_projects, set_project_status,
-            uncomplete_project, update_project,
+            complete_project, create_project, delete_project, get_project, list_projects,
+            set_project_status, uncomplete_project, update_project,
         },
         tags::{create_tag, list_tags},
         tasks::{
@@ -540,6 +540,19 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         Parameters(params): Parameters<ProjectIdOrNameParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
         let result = uncomplete_project(self.runner.as_ref(), &params.project_id_or_name)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "delete a project by id or name. IMPORTANT: this permanently removes the project and all its tasks from the database. before calling, show the user the project name and task count, and ask for explicit confirmation."
+    )]
+    async fn delete_project(
+        &self,
+        Parameters(params): Parameters<ProjectIdOrNameParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = delete_project(self.runner.as_ref(), &params.project_id_or_name)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
