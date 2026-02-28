@@ -470,7 +470,10 @@ impl SmokeTest {
             != folder_name
         {
             return Err(OmniFocusError::Validation(
-                "move_project did not move project to folder.".to_string(),
+                format!(
+                    "move_project did not move project to folder. expected folderName={}, got payload={}",
+                    folder_name, moved_project
+                ),
             ));
         }
         let _ = move_project(runner, &project_id, None).await?;
@@ -539,7 +542,7 @@ impl SmokeTest {
             vec![
                 CreateTaskInput {
                     name: self.unique_name("smoke batch task"),
-                    project: Some(project_name.clone()),
+                    project: Some(updated_project_name.clone()),
                     note: Some("created by rust smoke test batch".to_string()),
                     due_date: None,
                     defer_date: None,
@@ -549,7 +552,7 @@ impl SmokeTest {
                 },
                 CreateTaskInput {
                     name: self.unique_name("smoke batch task"),
-                    project: Some(project_name.clone()),
+                    project: Some(updated_project_name.clone()),
                     note: Some("created by rust smoke test batch".to_string()),
                     due_date: None,
                     defer_date: None,
@@ -559,7 +562,7 @@ impl SmokeTest {
                 },
                 CreateTaskInput {
                     name: self.unique_name("smoke batch task"),
-                    project: Some(project_name.clone()),
+                    project: Some(updated_project_name),
                     note: Some("created by rust smoke test batch".to_string()),
                     due_date: None,
                     defer_date: None,
