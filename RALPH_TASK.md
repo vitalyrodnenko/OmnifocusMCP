@@ -142,7 +142,7 @@ Reference implementations:
 
 ### Success Criteria
 
-7. [ ] **`uncomplete_project`** — all 3 implementations.
+7. [x] **`uncomplete_project`** — all 3 implementations.
        - **Input:** `project_id_or_name: str` (non-empty)
        - **JXA:** find project by ID or name (same pattern as
          `complete_project`), call `project.markIncomplete()`, return
