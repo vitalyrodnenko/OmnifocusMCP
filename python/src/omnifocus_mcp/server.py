@@ -140,6 +140,31 @@ available_tasks_json:
 """
 
 
+@_typed_prompt(mcp)
+async def inbox_processing() -> str:
+    """inbox processing prompt that drives one-by-one clarification decisions."""
+    inbox_items = await get_inbox(limit=200)
+
+    return f"""run a gtd inbox processing session using the inbox data below.
+
+for each inbox item, guide a decision in this order:
+1) clarify desired outcome and next action.
+2) decide if it should be deleted, deferred, delegated, or kept.
+3) if kept, assign the best target project (or keep in inbox if truly unassigned).
+4) propose relevant tags and whether it should be flagged.
+5) suggest due/defer dates only when there is a real deadline or start date.
+6) suggest estimated minutes when the task is actionable.
+
+respond with:
+- a prioritized processing queue
+- concrete update recommendations per item
+- a short batch action plan for the first 5 items
+
+inbox_items_json:
+{inbox_items}
+"""
+
+
 @_typed_tool(mcp)
 async def list_tasks(
     project: str | None = None,
