@@ -487,3 +487,10 @@ This is how Ralph maintains continuity across iterations.
 - ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - marked criterion 26 complete in `RALPH_TASK.md`
 - next focus: criterion 27 (`echo '{}' | cargo run`)
+
+### 2026-02-28 11:28:00
+- completed criterion 27 by updating `rust/src/main.rs` shutdown handling so transport closure on invalid startup payload is treated as a clean exit
+- verified the required probe command exactly: `cd rust && echo '{}' | cargo run` (exit code 0)
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 27 complete in `RALPH_TASK.md`
+- next focus: criterion 28 (`cargo run -- --version`)

@@ -253,9 +253,9 @@ Connect everything into a working MCP server.
           transport via `.serve(stdio()).await`
         - `service.waiting().await` to keep alive
         - Clean shutdown on EOF/SIGINT
-27. [ ] `echo '{}' | cargo run` starts the server and exits cleanly
+27. [x] `echo '{}' | cargo run` starts the server and exits cleanly
         (handles invalid JSON-RPC without crashing).
-28. [ ] `cargo run -- --version` prints `omnifocus-mcp` followed by
+28. [x] `cargo run -- --version` prints `omnifocus-mcp` followed by
         the version from Cargo.toml.
 29. [ ] Create `rust/tests/resources_test.rs` — verify resource content
         strings contain expected keywords.
