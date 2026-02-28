@@ -284,11 +284,11 @@ const projectName = ${projectName};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) throw new Error(\`Task not found: \${taskId}\`);
 if (projectName === null || projectName === "") {
-  task.move(inbox.ending);
+  moveTasks([task], inbox.ending);
 } else {
   const targetProject = document.flattenedProjects.byName(projectName);
   if (!targetProject) throw new Error(\`Project not found: \${projectName}\`);
-  task.move(targetProject.ending);
+  moveTasks([task], targetProject.ending);
 }
 return { id: task.id.primaryKey, name: task.name, projectName: task.containingProject ? task.containingProject.name : null };
 `.trim();

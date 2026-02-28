@@ -588,7 +588,7 @@ const destination = (() => {{
   return targetProject.ending;
 }})();
 
-task.move(destination);
+moveTasks([task], destination);
 
 return {{
   id: task.id.primaryKey,

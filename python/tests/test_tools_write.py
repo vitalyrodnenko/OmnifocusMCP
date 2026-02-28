@@ -236,7 +236,7 @@ async def test_move_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict
     assert len(state["calls"]) == 1
     assert 'const taskId = "t4";' in state["calls"][0]["script"]
     assert 'const projectName = "Target";' in state["calls"][0]["script"]
-    assert "task.move(destination);" in state["calls"][0]["script"]
+    assert "moveTasks([task], destination);" in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio
@@ -531,7 +531,7 @@ async def test_move_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict
     script = state["calls"][0]["script"]
     assert 'const taskId = "t7";' in script
     assert 'const projectName = "Work";' in script
-    assert "task.move(destination);" in script
+    assert "moveTasks([task], destination);" in script
 
 
 @pytest.mark.asyncio
