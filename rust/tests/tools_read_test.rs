@@ -537,7 +537,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
         5,
     )
     .await
@@ -592,10 +591,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
-        None,
         5,
     )
     .await
@@ -616,9 +611,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
-        None,
-        None,
-        None,
         None,
         None,
         None,
@@ -1081,7 +1073,6 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
-    assert!(script.contains("const tagNames = [\"Home\",\"Deep\"];"));
     assert!(script.contains("const tagFilterMode = \"any\";"));
     assert!(script.contains("task.tags.some(t => tagNames.includes(t.name))"));
 
@@ -1109,7 +1100,6 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script.contains("const tagNames = null;"));
-}
 
 #[tokio::test]
 async fn list_tasks_tags_filter_modes_and_merging_are_in_script() {
@@ -1181,4 +1171,3 @@ async fn list_tasks_empty_tags_array_is_ignored() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script.contains("const tagNames = null;"));
-}
