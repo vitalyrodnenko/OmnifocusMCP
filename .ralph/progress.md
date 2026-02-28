@@ -393,3 +393,10 @@ This is how Ralph maintains continuity across iterations.
 - ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
 - marked criterion 18 complete in `RALPH_TASK.md`
 - next focus: criterion 19 (`rust/src/tools/perspectives.rs`)
+
+### 2026-02-28 11:07:40
+- completed criterion 19 by implementing `rust/src/tools/perspectives.rs` with `list_perspectives(limit)` and Python-parity built-in/custom perspective collection plus de-duplication by id
+- kept validation parity (`limit > 0`) and preserved fallback perspective id normalization behavior
+- ran the Rust task test command from `RALPH_TASK.md`: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 19 complete in `RALPH_TASK.md`
+- next focus: criterion 20 (`rust/tests/tools_read_test.rs`)
