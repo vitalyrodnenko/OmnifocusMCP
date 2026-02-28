@@ -3,13 +3,13 @@
 # DO NOT EDIT - regenerated on task file change
 
 source_file: RALPH_TASK.md
-source_mtime: 1772302467
-generated_at: 2026-02-28T18:17:33Z
+source_mtime: 1772302666
+generated_at: 2026-02-28T18:17:58Z
 
 tasks:
   - id: "line_71"
     line_number: 71
-    status: pending
+    status: completed
     parallel_group: 999999
     description: **`delete_tasks_batch` — Rust only.** Python and TypeScript already
     indent_level: 0

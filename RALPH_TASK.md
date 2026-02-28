@@ -68,7 +68,7 @@ Reference implementations:
 
 ### Success Criteria
 
-1. [ ] **`delete_tasks_batch` — Rust only.** Python and TypeScript already
+1. [x] **`delete_tasks_batch` — Rust only.** Python and TypeScript already
        have this tool. Add to `rust/src/tools/tasks.rs`:
        - Function: `pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>) -> Result<Value>`
        - JXA: character-identical to the Python version. Iterates IDs,
