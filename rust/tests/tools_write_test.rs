@@ -261,20 +261,7 @@ async fn validation_errors_for_write_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        update_project(
-            &runner,
-            "   ",
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None
-        )
-        .await,
+        update_project(&runner, "   ", None, None, None, None, None, None, None, None, None).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -545,9 +532,9 @@ async fn update_project_script_applies_partial_fields_and_tag_replacement() {
         .expect("one script should be captured");
     assert!(captured.contains("const projectFilter = \"p3\";"));
     assert!(captured.contains("\"completedByChildren\":true"));
-    assert!(captured.contains(
-        "project.reviewInterval = parseReviewInterval(updates.reviewInterval);"
-    ));
+    assert!(
+        captured.contains("project.reviewInterval = parseReviewInterval(updates.reviewInterval);")
+    );
     assert!(captured.contains("existingTags.forEach"));
     assert!(captured.contains("project.addTag(tag);"));
 }
