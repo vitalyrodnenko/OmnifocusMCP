@@ -55,6 +55,9 @@ struct LimitParams {
 struct ListTasksParams {
     project: Option<String>,
     tag: Option<String>,
+    tags: Option<Vec<String>>,
+    #[serde(rename = "tagFilterMode")]
+    tag_filter_mode: Option<String>,
     flagged: Option<bool>,
     status: Option<String>,
     #[serde(rename = "dueBefore")]
@@ -333,6 +336,8 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             self.runner.as_ref(),
             params.project.as_deref(),
             params.tag.as_deref(),
+            params.tags,
+            params.tag_filter_mode.as_deref().unwrap_or("any"),
             params.flagged,
             params.status.as_deref().unwrap_or("available"),
             params.due_before.as_deref(),
