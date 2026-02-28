@@ -8,7 +8,12 @@ async def ping() -> dict[str, str]:
     return {"status": "ok", "message": "pong"}
 
 
-from omnifocus_mcp.tools.folders import create_folder, get_folder, list_folders  # noqa: E402,F401  # type: ignore[import-untyped]
+from omnifocus_mcp.tools.folders import (  # noqa: E402,F401
+    create_folder,
+    get_folder,
+    list_folders,
+    update_folder,
+)  # type: ignore[import-untyped]
 from omnifocus_mcp.tools.forecast import get_forecast  # noqa: E402,F401
 from omnifocus_mcp.tools.perspectives import list_perspectives  # noqa: E402,F401
 from omnifocus_mcp.tools.projects import (  # noqa: E402,F401

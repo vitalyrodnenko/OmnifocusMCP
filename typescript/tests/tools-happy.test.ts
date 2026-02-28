@@ -641,6 +641,16 @@ describe("tool happy paths", () => {
     });
   });
 
+  test("update_folder returns error for unsupported status", async () => {
+    const handler = registeredTools.get("update_folder");
+    expect(handler).toBeDefined();
+    const result = await handler!({ folder_name_or_id: "folder-1", status: "on_hold" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "status must be one of: active, dropped.",
+    });
+  });
+
   test("set_project_status returns error for unsupported status value", async () => {
     const handler = registeredTools.get("set_project_status");
     expect(handler).toBeDefined();
