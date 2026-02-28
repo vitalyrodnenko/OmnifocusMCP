@@ -400,8 +400,12 @@ describe("tool happy paths", () => {
     });
   });
 
-  test("move_project returns updated project folder payload", async () => {
-    runOmniJsMock.mockResolvedValueOnce({ id: "p6", name: "Project Six", folderName: "Work" });
+  test("move_project moves project into folder and returns folder summary", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "p6",
+      name: "Project Six",
+      folderName: "Work",
+    });
     const handler = registeredTools.get("move_project");
     expect(handler).toBeDefined();
     const result = await handler!({ project_id_or_name: "p6", folder: "Work" });
@@ -413,11 +417,11 @@ describe("tool happy paths", () => {
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const projectFilter = "p6";');
     expect(script).toContain('const folderName = "Work";');
+    expect(script).toContain("const destination = (() => {");
     expect(script).toContain("moveSections([project], destination);");
-    expect(script).toContain("destination = targetFolder.ending;");
   });
 
-  test("move_project returns error for empty folder string", async () => {
+  test("move_project returns error for empty folder value", async () => {
     const handler = registeredTools.get("move_project");
     expect(handler).toBeDefined();
     const result = await handler!({ project_id_or_name: "p6", folder: "   " });

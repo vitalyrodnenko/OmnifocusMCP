@@ -351,61 +351,6 @@ if (!project) {
   throw new Error(\`Project not found: \${projectFilter}\`);
 }
 
-let destination;
-if (folderName === null) {
-  destination = library.ending;
-} else {
-  const targetFolder = document.flattenedFolders.byName(folderName);
-  if (!targetFolder) {
-    throw new Error(\`Folder not found: \${folderName}\`);
-  }
-  destination = targetFolder.ending;
-}
-
-moveSections([project], destination);
-
-return {
-  id: project.id.primaryKey,
-  name: project.name,
-  folderName: project.folder ? project.folder.name : null
-};
-`.trim();
-        const result = await runOmniJs(script);
-        return textResult(result);
-      } catch (error: unknown) {
-        return errorResult(normalizeError(error));
-      }
-    }
-  );
-
-  server.tool(
-    "move_project",
-    "move a project by id or name into a folder or to top level.",
-    {
-      project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name"),
-      folder: z.string().min(1).nullable().optional().describe("folder name or null for top level"),
-    },
-    async ({ project_id_or_name, folder }) => {
-      try {
-        const normalizedProjectFilter = project_id_or_name.trim();
-        if (normalizedProjectFilter === "") {
-          throw new Error("project_id_or_name must not be empty.");
-        }
-        if (typeof folder === "string" && folder.trim() === "") {
-          throw new Error("folder must not be empty when provided.");
-        }
-        const projectFilter = escapeForJxa(normalizedProjectFilter);
-        const folderName = folder === null || folder === undefined ? "null" : escapeForJxa(folder.trim());
-        const script = `
-const projectFilter = ${projectFilter};
-const folderName = ${folderName};
-const project = document.flattenedProjects.find(item => {
-  return item.id.primaryKey === projectFilter || item.name === projectFilter;
-});
-if (!project) {
-  throw new Error(\`Project not found: \${projectFilter}\`);
-}
-
 const destination = (() => {
   if (folderName === null) return library.ending;
   const targetFolder = document.flattenedFolders.byName(folderName);
@@ -414,61 +359,6 @@ const destination = (() => {
   }
   return targetFolder.ending;
 })();
-
-moveSections([project], destination);
-
-return {
-  id: project.id.primaryKey,
-  name: project.name,
-  folderName: project.folder ? project.folder.name : null
-};
-`.trim();
-        const result = await runOmniJs(script);
-        return textResult(result);
-      } catch (error: unknown) {
-        return errorResult(normalizeError(error));
-      }
-    }
-  );
-
-  server.tool(
-    "move_project",
-    "move a project by id or name to a folder or top level.",
-    {
-      project_id_or_name: z.string().min(1).describe("project id primaryKey or exact name"),
-      folder: z.string().min(1).nullable().optional().describe("folder name, or null for top level"),
-    },
-    async ({ project_id_or_name, folder }) => {
-      try {
-        const normalizedProjectFilter = project_id_or_name.trim();
-        if (normalizedProjectFilter === "") {
-          throw new Error("project_id_or_name must not be empty.");
-        }
-        if (folder !== undefined && folder !== null && folder.trim() === "") {
-          throw new Error("folder must not be empty when provided.");
-        }
-        const projectFilter = escapeForJxa(normalizedProjectFilter);
-        const folderName = folder === undefined || folder === null ? "null" : escapeForJxa(folder.trim());
-        const script = `
-const projectFilter = ${projectFilter};
-const folderName = ${folderName};
-const project = document.flattenedProjects.find(item => {
-  return item.id.primaryKey === projectFilter || item.name === projectFilter;
-});
-if (!project) {
-  throw new Error(\`Project not found: \${projectFilter}\`);
-}
-
-let destination;
-if (folderName === null) {
-  destination = library.ending;
-} else {
-  const targetFolder = document.flattenedFolders.byName(folderName);
-  if (!targetFolder) {
-    throw new Error(\`Folder not found: \${folderName}\`);
-  }
-  destination = targetFolder.ending;
-}
 
 moveSections([project], destination);
 
