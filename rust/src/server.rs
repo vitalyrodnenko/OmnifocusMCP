@@ -38,10 +38,10 @@ use crate::{
         },
         tags::{create_tag, delete_tag, list_tags, update_tag},
         tasks::{
-            append_to_note, complete_task, create_subtask, create_task, create_tasks_batch,
-            delete_task, delete_tasks_batch, get_inbox, get_task, list_subtasks, list_tasks,
-            move_task, search_tasks, set_task_repetition, uncomplete_task, update_task,
-            CreateTaskInput,
+            append_to_note as append_to_note_tool, complete_task, create_subtask, create_task,
+            create_tasks_batch, delete_task, delete_tasks_batch, get_inbox, get_task,
+            list_subtasks, list_tasks, move_task, search_tasks, set_task_repetition,
+            uncomplete_task, update_task, CreateTaskInput,
         },
     },
 };
@@ -529,7 +529,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         &self,
         Parameters(params): Parameters<AppendToNoteParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = append_to_note(
+        let result = append_to_note_tool(
             self.runner.as_ref(),
             &params.object_type,
             &params.object_id,
