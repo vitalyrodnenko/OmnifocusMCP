@@ -156,7 +156,8 @@ impl SmokeTest {
             "get_task result",
         )?;
 
-        let projects_value = list_projects(runner, None, "active", 10)
+        let projects_value =
+            list_projects(runner, None, "active", None, None, false, None, "asc", 10)
             .await
             .map_err(|error| {
                 OmniFocusError::Validation(format!("list_projects failed: {error}"))

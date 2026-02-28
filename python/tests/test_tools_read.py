@@ -616,6 +616,44 @@ async def test_list_projects_happy_path(mock_server_run_omnijs: Callable[[Any], 
 
 
 @pytest.mark.asyncio
+async def test_list_projects_completion_filters_and_auto_sort_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([{"id": "p-completed", "name": "Completed Project"}])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_projects(completedAfter="2026-03-01T00:00:00Z", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const statusFilter = "completed";' in script
+    assert 'const sortBy = "completionDate";' in script
+    assert 'const sortOrder = "desc";' in script
+    assert (
+        "if (completedAfter !== null && !(project.completionDate !== null && project.completionDate > completedAfter)) return false;"
+        in script
+    )
+
+
+@pytest.mark.asyncio
+async def test_list_projects_stalled_only_and_sorting_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([{"id": "p-stalled", "name": "Stalled Project"}])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_projects(stalledOnly=True, sortBy="taskCount", sortOrder="desc", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const statusFilter = "active";' in script
+    assert "const stalledOnly = true;" in script
+    assert "if (stalledOnly && !isStalled) return false;" in script
+    assert 'const sortBy = "taskCount";' in script
+    assert 'const sortOrder = "desc";' in script
+
+
+@pytest.mark.asyncio
 async def test_search_projects_happy_path_criterion21(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -837,6 +875,12 @@ async def test_list_tasks_empty_project_validation_error(server_module: Any) -> 
 async def test_list_projects_empty_folder_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="folder must not be empty when provided"):
         await server_module.list_projects(folder="   ")
+
+
+@pytest.mark.asyncio
+async def test_list_projects_invalid_sort_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="sortBy must be one of"):
+        await server_module.list_projects(sortBy="invalid")  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

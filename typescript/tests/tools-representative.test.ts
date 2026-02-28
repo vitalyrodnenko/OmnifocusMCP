@@ -427,6 +427,38 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "proj-2", name: "Project 2" }]);
   });
 
+  test("list_projects completion filters auto-set completed status and sorting", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "proj-3", name: "Completed Project" }]);
+    await getTool("list_projects")({
+      completedAfter: "2026-03-01T00:00:00Z",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const statusFilter = "completed";');
+    expect(script).toContain('const sortBy = "completionDate";');
+    expect(script).toContain('const sortOrder = "desc";');
+    expect(script).toContain(
+      "if (completedAfter !== null && !(project.completionDate !== null && project.completionDate > completedAfter)) return false;"
+    );
+  });
+
+  test("list_projects stalledOnly forces active status and filters stalled projects", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "proj-4", name: "Stalled Project" }]);
+    await getTool("list_projects")({
+      status: "completed",
+      stalledOnly: true,
+      sortBy: "taskCount",
+      sortOrder: "desc",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const statusFilter = "active";');
+    expect(script).toContain("const stalledOnly = true;");
+    expect(script).toContain("if (stalledOnly && !isStalled) return false;");
+    expect(script).toContain('const sortBy = "taskCount";');
+    expect(script).toContain('const sortOrder = "desc";');
+  });
+
   test("create_task generates project-aware creation script", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "task-3", name: "created" });
     const result = await getTool("create_task")({

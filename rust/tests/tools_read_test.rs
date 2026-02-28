@@ -191,7 +191,17 @@ async fn read_non_task_tools_happy_path() {
     let projects_runner = MockRunner {
         payload: json!([{"id": "p1", "name": "project one"}]),
     };
-    let projects = list_projects(&projects_runner, None, "active", 100)
+    let projects = list_projects(
+        &projects_runner,
+        None,
+        "active",
+        None,
+        None,
+        false,
+        None,
+        "asc",
+        100,
+    )
         .await
         .expect("projects should load");
     assert!(projects.is_array());
@@ -402,7 +412,7 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        list_projects(&runner, None, "active", 0).await,
+        list_projects(&runner, None, "active", None, None, false, None, "asc", 0).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -455,7 +465,7 @@ async fn list_projects_script_includes_stalled_and_next_task_fields() {
         last_script: last_script.clone(),
     };
 
-    let projects = list_projects(&runner, None, "active", 3)
+    let projects = list_projects(&runner, None, "active", None, None, false, None, "asc", 3)
         .await
         .expect("projects should parse");
     assert!(projects.is_array());
