@@ -1116,9 +1116,18 @@ async def test_get_forecast_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
     payload = {
-        "overdue": [{"id": "t5", "name": "Overdue"}],
-        "dueToday": [{"id": "t6", "name": "Today"}],
-        "flagged": [{"id": "t7", "name": "Flagged"}],
+        "overdue": [{"id": "t5", "name": "Overdue", "completionDate": None, "hasChildren": False}],
+        "dueToday": [{"id": "t6", "name": "Today", "completionDate": None, "hasChildren": True}],
+        "flagged": [{"id": "t7", "name": "Flagged", "completionDate": None, "hasChildren": False}],
+        "deferred": [{"id": "t8", "name": "Deferred", "completionDate": None, "hasChildren": False}],
+        "dueThisWeek": [{"id": "t9", "name": "This week", "completionDate": None, "hasChildren": False}],
+        "counts": {
+            "overdueCount": 2,
+            "dueTodayCount": 1,
+            "flaggedCount": 3,
+            "deferredCount": 4,
+            "dueThisWeekCount": 5,
+        },
     }
     configured = mock_server_run_omnijs(payload)
     state = configured["state"]
@@ -1129,7 +1138,11 @@ async def test_get_forecast_happy_path(
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert "const overdue = openTasks" in state["calls"][0]["script"]
-    assert ".slice(0, 6)" in state["calls"][0]["script"]
+    assert "const deferred = [];" in state["calls"][0]["script"]
+    assert "const dueThisWeek = [];" in state["calls"][0]["script"]
+    assert "const counts = {" in state["calls"][0]["script"]
+    assert "completionDate: task.completionDate ? task.completionDate.toISOString() : null," in state["calls"][0]["script"]
+    assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
 
 
 @pytest.mark.asyncio

@@ -24,26 +24,31 @@ const now = new Date();
 const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 const endOfToday = new Date(startOfToday.getTime() + (24 * 60 * 60 * 1000));
 const endOfWeek = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
-const toTaskSummary = task => ({
-  id: task.id.primaryKey,
-  name: task.name,
-  note: task.note,
-  flagged: task.flagged,
-  completed: task.completed,
-  dueDate: task.dueDate ? task.dueDate.toISOString() : null,
-  deferDate: task.deferDate ? task.deferDate.toISOString() : null,
-  completionDate: task.completionDate ? task.completionDate.toISOString() : null,
-  projectName: task.containingProject ? task.containingProject.name : null,
-  tags: task.tags.map(tag => tag.name),
-  estimatedMinutes: task.estimatedMinutes,
-  hasChildren: task.hasChildren
-});
+
+const toTaskSummary = (task) => {
+  return {
+    id: task.id.primaryKey,
+    name: task.name,
+    note: task.note,
+    flagged: task.flagged,
+    completed: task.completed,
+    dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    completionDate: task.completionDate ? task.completionDate.toISOString() : null,
+    projectName: task.containingProject ? task.containingProject.name : null,
+    tags: task.tags.map(tag => tag.name),
+    estimatedMinutes: task.estimatedMinutes,
+    hasChildren: task.hasChildren
+  };
+};
+
 const openTasks = document.flattenedTasks.filter(task => !task.completed);
 const overdue = [];
 const dueToday = [];
 const flagged = [];
 const deferred = [];
 const dueThisWeek = [];
+
 const counts = {
   overdueCount: 0,
   dueTodayCount: 0,
@@ -51,6 +56,7 @@ const counts = {
   deferredCount: 0,
   dueThisWeekCount: 0
 };
+
 openTasks.forEach(task => {
   if (task.dueDate !== null && task.dueDate < startOfToday) {
     counts.overdueCount += 1;
@@ -73,7 +79,15 @@ openTasks.forEach(task => {
     if (dueThisWeek.length < ${limit}) dueThisWeek.push(toTaskSummary(task));
   }
 });
-return { overdue, dueToday, flagged, deferred, dueThisWeek, counts };
+
+return {
+  overdue: overdue,
+  dueToday: dueToday,
+  flagged: flagged,
+  deferred: deferred,
+  dueThisWeek: dueThisWeek,
+  counts: counts
+};
 `.trim();
   return runOmniJs(script);
 }

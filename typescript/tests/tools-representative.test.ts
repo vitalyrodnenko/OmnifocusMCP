@@ -87,6 +87,44 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-1", name: "inbox item" }]);
   });
 
+  test("get_forecast includes deferred, dueThisWeek, counts, and enriched task fields", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      overdue: [{ id: "task-5", name: "Overdue", completionDate: null, hasChildren: false }],
+      dueToday: [{ id: "task-6", name: "Today", completionDate: null, hasChildren: true }],
+      flagged: [{ id: "task-7", name: "Flagged", completionDate: null, hasChildren: false }],
+      deferred: [{ id: "task-8", name: "Deferred", completionDate: null, hasChildren: false }],
+      dueThisWeek: [{ id: "task-9", name: "This week", completionDate: null, hasChildren: false }],
+      counts: {
+        overdueCount: 2,
+        dueTodayCount: 1,
+        flaggedCount: 3,
+        deferredCount: 4,
+        dueThisWeekCount: 5,
+      },
+    });
+    const result = await getTool("get_forecast")({ limit: 6 });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("const deferred = [];");
+    expect(script).toContain("const dueThisWeek = [];");
+    expect(script).toContain("const counts = {");
+    expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
+    expect(script).toContain("hasChildren: task.hasChildren");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      overdue: [{ id: "task-5", name: "Overdue", completionDate: null, hasChildren: false }],
+      dueToday: [{ id: "task-6", name: "Today", completionDate: null, hasChildren: true }],
+      flagged: [{ id: "task-7", name: "Flagged", completionDate: null, hasChildren: false }],
+      deferred: [{ id: "task-8", name: "Deferred", completionDate: null, hasChildren: false }],
+      dueThisWeek: [{ id: "task-9", name: "This week", completionDate: null, hasChildren: false }],
+      counts: {
+        overdueCount: 2,
+        dueTodayCount: 1,
+        flaggedCount: 3,
+        deferredCount: 4,
+        dueThisWeekCount: 5,
+      },
+    });
+  });
+
   test("list_tasks uses provided filters in generated script", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-2", name: "filtered" }]);
     const result = await getTool("list_tasks")({
