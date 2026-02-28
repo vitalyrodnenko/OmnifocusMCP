@@ -1,370 +1,133 @@
 ---
-task: OmniFocus MCP — Rust implementation with Homebrew distribution
-test_command: "cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test"
+task: OmniFocus MCP — Add batch deletion tool across all implementations
+test_command: "cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test && cd ../rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test"
 ---
 
-# Task: OmniFocus MCP Rust — Native Binary + Homebrew
+# Task: Add `delete_tasks_batch` Tool
 
-Port the OmniFocus MCP server to Rust, producing a single native binary
-that can be distributed via Homebrew. The Python and TypeScript
-implementations already exist and are fully validated — this is a
-**port, not a rewrite**. JXA scripts must be character-identical to the
-existing implementations.
+The current `delete_task` tool only accepts a single task ID. When an LLM
+needs to delete many tasks, it must call `delete_task` N times — each
+spawning a separate `osascript` process with ~0.5-1s overhead. This is
+painfully slow for bulk operations.
 
-Reference implementations:
-- Python tools: `python/src/omnifocus_mcp/tools/*.py`
-- Python resources: `python/src/omnifocus_mcp/resources.py`
-- Python prompts: `python/src/omnifocus_mcp/prompts.py`
-- TypeScript tools: `typescript/src/tools/*.ts`
-- JXA bridge: `python/src/omnifocus_mcp/jxa.py`
-- Cursor rules: `.cursor/rules/jxa-scripting.mdc` (MUST follow)
+Add a `delete_tasks_batch` tool that accepts an array of task IDs and
+deletes them all in a **single** JXA/OmniJS invocation. Follow the
+exact same pattern as `create_tasks_batch`.
 
-**Prerequisite:** Rust toolchain must be installed (`rustc`, `cargo`).
-If not available, install via `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`.
-OmniFocus must be running for smoke/integration tests.
+**All three implementations** (Python, TypeScript, Rust) must be updated.
+Tool name, input schema, and response shape must be **identical** across
+all three.
 
-**SDK:** The official Rust MCP SDK is `rmcp` v0.17+ on crates.io
-(https://github.com/modelcontextprotocol/rust-sdk). It uses:
-- `#[tool_router]` on impl block + `#[tool(description = "...")]` on methods
-- `#[tool_handler] impl ServerHandler` for the trait + capabilities
-- `ServerCapabilities::builder().enable_tools().enable_resources().enable_prompts().build()`
-- `.serve(stdio()).await` + `service.waiting().await` for stdio transport
-- `Parameters<T>` wrapper for structured tool inputs
-- `CallToolResult::success(vec![Content::text(...)])` for tool returns
+**CRITICAL — User Approval:** This tool performs destructive bulk
+operations. The tool description MUST instruct the LLM to always ask
+the user for explicit confirmation before executing the deletion,
+listing the tasks that will be deleted. This is a UX safety rail, not
+a technical enforcement — the tool itself executes immediately when
+called, but the description tells the LLM to confirm first.
+
+Reference:
+- `create_tasks_batch` in each implementation for the batch pattern
+- `delete_task` in each implementation for the deletion JXA logic
+- `.cursor/rules/jxa-scripting.mdc` for scripting rules
 
 ---
 
-## Phase 1 — Scaffold & JXA Bridge
-
-Set up the Rust project and implement the core JXA execution layer.
-This is the foundation everything else builds on.
+## Phase 1 — Python Implementation
 
 ### Success Criteria
 
-1. [x] Research the `rmcp` crate (official Rust MCP SDK at
-       https://github.com/modelcontextprotocol/rust-sdk). Use the
-       `context7` MCP tool to fetch up-to-date documentation. Determine:
-       - How to register tools (derive macro, trait impl, or builder)
-       - How to register resources and prompts
-       - How to wire stdio transport
-       - How to define tool parameter schemas
-       Document findings as a comment block at the top of `rust/Cargo.toml`.
-2. [x] Create `.cursor/rules/rust-conventions.mdc` with:
-       - Tooling: `cargo fmt`, `cargo clippy -- -D warnings`, `cargo test`
-       - Edition 2021, MSRV matching `rmcp`'s requirement (check Cargo.toml)
-       - Error handling: `thiserror` for error enums, `?` operator,
-         **no `unwrap()` or `expect()` in production code**
-       - Async: `tokio` runtime, use native async traits (Rust 1.75+)
-         unless rmcp requires `async-trait`
-       - Testing: `#[tokio::test]`, trait-based mocking (no external
-         mocking crate), `#[cfg(feature = "integration")]` for integration
-       - Code organization: `lib.rs` re-exports all modules, `main.rs`
-         is the binary entry point, `tools/` directory one file per entity
-       - JXA: same rules as `jxa-scripting.mdc` — escape via
-         `serde_json::to_string()`, raw string literals for script
-         templates
-       - Binary crate: commit `Cargo.lock` to version control
-3. [x] Create `rust/Cargo.toml` with:
-       - `[package]` name = `"omnifocus-mcp"`, version matching project
-       - Dependencies: `rmcp` (with `transport-io` feature or equivalent),
-         `tokio` (full features), `serde` + `serde_json`, `schemars`,
-         `thiserror`, `clap` (derive feature, for `--version`)
-       - Dev dependencies: `tokio` test utils
-       - `[features] integration = []`
-       - Adjust dependency list based on SDK research from criterion 1
-4. [x] Create `rust/src/error.rs`:
-       ```rust
-       #[derive(thiserror::Error, Debug)]
-       pub enum OmniFocusError {
-           JxaExecution(String),
-           OmniFocus(String),
-           JsonParse(serde_json::Error),
-           Validation(String),
-           Io(std::io::Error),
-           Timeout { seconds: f64 },
-       }
-       ```
-       Include `Display` messages matching the Python error strings.
-5. [x] Create `rust/src/types.rs` with result structs:
-       - `TaskResult` (id, name, note, flagged, completed, project,
-         due_date, defer_date, completion_date, tags, estimated_minutes,
-         in_inbox, has_children, sequential)
-       - `ProjectResult` (id, name, status, note, folder, due_date,
-         defer_date, completion_date, sequential, number_available,
-         number_remaining, flagged)
-       - `TagResult` (id, name, active, available_task_count)
-       - `FolderResult` (id, name)
-       - `ForecastDay` (date, task_count, tasks)
-       - `PerspectiveResult` (id, name)
-       All structs derive `Serialize`, `Deserialize`, `Debug`, `Clone`.
-       Use `Option<T>` for nullable fields. Use `Vec<String>` for tags.
-6. [x] Create `rust/src/jxa.rs` with three layers matching Python's jxa.py:
-       - `run_jxa(script) -> Result<String>` — low-level osascript call.
-         Uses `tokio::sync::Mutex<()>` for serialized execution,
-         `tokio::process::Command` calling `osascript -l JavaScript -e`,
-         timeout (default 30s) via `tokio::time::timeout`,
-         `friendly_jxa_error()` for stderr → human message.
-       - `run_jxa_json(script) -> Result<Value>` — calls `run_jxa`,
-         parses stdout as JSON, errors on empty or malformed output.
-       - `run_omnijs(script) -> Result<Value>` — wraps the OmniJS
-         script in the IIFE + try/catch + JSON envelope, adds the
-         `document.flattened*` compatibility shim, calls `run_jxa_json`
-         on the outer JXA template, unwraps the `{ok, data, error}`
-         envelope. **Copy the exact wrapper string from jxa.py lines
-         112–148.**
-       - `pub trait JxaRunner: Send + Sync` with
-         `async fn run_omnijs(&self, script: &str) -> Result<Value>`
-       - `pub struct RealJxaRunner` implementing the trait (delegates
-         to the `run_omnijs` function above)
-       - `pub fn escape_for_jxa(value: &str) -> String` using
-         `serde_json::to_string(value)`
-       - `friendly_omnijs_error()` with identical logic to jxa.py
-       - The outer JXA template: `const app = Application('OmniFocus');
-         const result = app.evaluateJavascript({escaped}); result;`
-         — note the lowercase 's' in `evaluateJavascript`
-7. [x] Create `rust/src/lib.rs` that re-exports all modules: `error`,
-       `types`, `jxa`, `tools`, `resources`, `prompts`, `server`.
-       This allows tests to `use omnifocus_mcp::*` cleanly.
-8. [x] `cargo build` succeeds with no errors.
-9. [x] Create `rust/tests/jxa_test.rs` with unit tests:
-       - `escape_for_jxa` handles quotes, backslashes, newlines, unicode,
-         null characters
-       - `OmniFocusError` display messages match expected strings
-       - Mock `JxaRunner` returns canned data, verify parsing
-       - Envelope unwrapping: `{ok: true, data: ...}` returns data,
-         `{ok: false, error: "..."}` returns friendly error
-10. [x] JXA bridge probe against real OmniFocus:
-        `RealJxaRunner::new().run_omnijs("return document.flattenedTasks.length;")`
-        returns a number. Create `rust/examples/probe.rs` for this.
-11. [x] `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
-        all pass.
+1. [ ] Read `python/src/omnifocus_mcp/tools/tasks.py` to understand the
+       existing `delete_task` and `create_tasks_batch` implementations.
+2. [ ] Add `delete_tasks_batch` tool to `python/src/omnifocus_mcp/tools/tasks.py`:
+       - **Input:** `task_ids: list[str]` — array of task IDs to delete.
+         Minimum 1 element. Each ID must be non-empty.
+       - **Tool description** must include: "IMPORTANT: before calling
+         this tool, always show the user the list of tasks to be deleted
+         and ask for explicit confirmation. do not proceed without user
+         approval."
+       - **JXA script:** single OmniJS invocation that:
+         1. Iterates over the task ID array
+         2. For each ID, finds the task via `document.flattenedTasks.find()`
+         3. Records `{ id, name, deleted: true }` for found tasks,
+            `{ id, deleted: false, error: "not found" }` for missing ones
+         4. Calls `task.drop(false)` on found tasks
+         5. Returns the full results array plus a summary
+            `{ deleted_count, not_found_count, results }`
+       - **Validation:** `task_ids` must not be empty. Each element
+         must be a non-empty string after trimming.
+       - **Escape** each task ID via `escape_for_jxa` / `json.dumps`
+         (pass the whole array as a JSON-serialized string, same pattern
+         as `create_tasks_batch` passes its task array).
+3. [ ] Add tests in `python/tests/test_tools_write.py`:
+       - Happy path: mock JXA returns successful batch deletion
+       - Partial failure: some IDs not found
+       - Validation error: empty array
+       - Validation error: array contains empty string
+4. [ ] `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` all pass.
 
 ---
 
-## Phase 2 — Tool Implementation
-
-Port all 19 tools. JXA script strings must be **character-identical** to
-the Python implementation. Copy them from `python/src/omnifocus_mcp/tools/*.py`.
-
-Use the trait-based approach: tool functions accept `&dyn JxaRunner`
-(or be generic over `R: JxaRunner`), build the JXA script, call
-`runner.run_omnijs(script)`, parse the response into typed structs.
+## Phase 2 — TypeScript Implementation
 
 ### Success Criteria
 
-12. [x] Create `rust/src/tools/mod.rs` re-exporting all tool modules.
-13. [x] Create `rust/src/tools/tasks.rs` with read tools — **signatures
-        must match Python exactly** (read `python/src/omnifocus_mcp/tools/tasks.py`):
-        - `get_inbox(limit: i32 = 100)`
-        - `list_tasks(project?: String, tag?: String, flagged?: bool,
-          status: String = "available", limit: i32 = 100)`
-        - `get_task(task_id: String)`
-        - `search_tasks(query: String, limit: i32 = 100)` — NO status param
-        JXA scripts copied from the Python file.
-        Input validation: limit > 0, non-empty task_id, non-empty query.
-14. [x] Add write tools to `rust/src/tools/tasks.rs`:
-        - `create_task(name, project?, note?, due_date?, defer_date?,
-          flagged?, tags?: Vec<String>, estimated_minutes?: i32)`
-        - `create_tasks_batch(tasks: Vec<CreateTaskInput>)`
-        - `complete_task(task_id)`
-        - `update_task(task_id, name?, note?, due_date?, defer_date?,
-          flagged?, tags?, estimated_minutes?)`
-        - `delete_task(task_id)`
-        - `move_task(task_id, project?)` — when project is None,
-          moves task to inbox (matches Python, NO extra `to_inbox` param)
-        Input validation: non-empty name, non-empty project when provided.
-15. [x] Create `rust/src/tools/projects.rs` — **read Python file first**:
-        - `list_projects(folder?: String, status: String = "active",
-          limit: i32 = 100)`
-        - `get_project(project_id_or_name: String)` — accepts BOTH
-          ID and name, matching the Python implementation
-        - `create_project(name, folder?, note?, due_date?, defer_date?,
-          sequential?: bool)` — NO tags parameter
-        - `complete_project(project_id_or_name: String)` — accepts
-          BOTH ID and name
-16. [x] Create `rust/src/tools/tags.rs`:
-        - `list_tags(limit: i32 = 100)` — NO status parameter
-        - `create_tag(name: String, parent?: String)`
-17. [x] Create `rust/src/tools/folders.rs`:
-        - `list_folders(limit: i32 = 100)`
-18. [x] Create `rust/src/tools/forecast.rs`:
-        - `get_forecast(limit: i32 = 100)` — param is `limit`, NOT `days`
-19. [x] Create `rust/src/tools/perspectives.rs`:
-        - `list_perspectives(limit: i32 = 100)`
-20. [x] Create `rust/tests/tools_read_test.rs` with mocked `JxaRunner`:
-        - Happy path for each read tool (canned JSON → typed result)
-        - Empty results return empty vec
-        - Malformed JSON from JXA produces `JsonParse` error
-        - Validation errors (limit < 1, empty id, empty query)
-21. [x] Create `rust/tests/tools_write_test.rs` with mocked `JxaRunner`:
-        - Happy path for each write tool
-        - Validation errors (empty name, empty project when provided)
-        - JXA error propagation
-        - `create_task` JXA script contains expected escaped values
-22. [x] `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
-        all pass.
+5. [ ] Read `typescript/src/tools/tasks.ts` to understand the existing
+       `delete_task` and `create_tasks_batch` implementations.
+6. [ ] Add `delete_tasks_batch` tool to `typescript/src/tools/tasks.ts`:
+       - **Tool name:** `delete_tasks_batch` (must match Python exactly)
+       - **Input schema:** `{ task_ids: z.array(z.string().min(1)).min(1) }`
+       - **Tool description:** identical approval language as Python
+       - **JXA script:** character-identical to the Python version
+       - **Response shape:** identical to Python
+7. [ ] Add tests in `typescript/tests/tools-tasks.test.ts` (or
+       equivalent test file) matching the Python test cases.
+8. [ ] `cd typescript && npx tsc --noEmit && npm run lint && npm test` all pass.
 
 ---
 
-## Phase 3 — Resources, Prompts & Server Wiring
-
-Connect everything into a working MCP server.
+## Phase 3 — Rust Implementation
 
 ### Success Criteria
 
-23. [x] Create `rust/src/resources.rs` with 3 resource handlers matching
-        Python's `resources.py` exactly:
-        - `omnifocus://inbox` — returns current inbox tasks as JSON
-          (calls `get_inbox()` internally)
-        - `omnifocus://today` — returns forecast sections as JSON
-          (calls `get_forecast()` internally)
-        - `omnifocus://projects` — returns active project summaries as JSON
-          (calls `list_projects(status="active")` internally)
-24. [x] Create `rust/src/prompts.rs` with 4 prompt handlers matching
-        Python's `prompts.py` exactly. Read the Python file first.
-        - `daily_review` (underscore, not hyphen) — no arguments.
-          Calls `list_tasks(status="due_soon")`,
-          `list_tasks(status="overdue")`,
-          `list_tasks(flagged=true, status="all")`. Returns formatted
-          review prompt text.
-        - `weekly_review` — no arguments. Calls
-          `list_projects(status="active", limit=500)` and
-          `list_tasks(status="available", limit=1000)`.
-        - `inbox_processing` — no arguments. Calls
-          `get_inbox(limit=200)`.
-        - `project_planning(project: String)` — **required `project`
-          argument**. Validates non-empty. Calls
-          `get_project(project_id_or_name)` and
-          `list_tasks(project, status="available", limit=500)`.
-        Prompt text must match Python output format.
-25. [x] Create `rust/src/server.rs`:
-        - Implement MCP server using `rmcp` patterns (see SDK notes
-          in preamble): `#[tool_router]` impl, `#[tool_handler]`
-          impl ServerHandler, `ServerCapabilities::builder()
-          .enable_tools().enable_resources().enable_prompts().build()`
-        - Register all 19 tools with names matching Python exactly
-          (e.g. `get_inbox`, `list_tasks`, etc.)
-        - Register 3 resources and 4 prompts
-        - The server struct holds a `Box<dyn JxaRunner>` (or Arc)
-26. [x] Create `rust/src/main.rs`:
-        - `clap` for `--version` flag (prints `omnifocus-mcp X.Y.Z`)
-        - `#[tokio::main]` async entry point
-        - Creates `RealJxaRunner`, creates server, connects stdio
-          transport via `.serve(stdio()).await`
-        - `service.waiting().await` to keep alive
-        - Clean shutdown on EOF/SIGINT
-27. [x] `echo '{}' | cargo run` starts the server and exits cleanly
-        (handles invalid JSON-RPC without crashing).
-28. [x] `cargo run -- --version` prints `omnifocus-mcp` followed by
-        the version from Cargo.toml.
-29. [x] Create `rust/tests/resources_test.rs` — verify resource content
-        strings contain expected keywords.
-        Create `rust/tests/prompts_test.rs` — verify prompt rendering
-        with mocked JxaRunner returns expected structure. Verify
-        `project_planning` validates non-empty project argument.
-30. [x] `cargo test && cargo clippy -- -D warnings && cargo fmt --check`
-        all pass.
+9. [ ] Read `rust/src/tools/tasks.rs` to understand the existing
+        `delete_task` and `create_tasks_batch` implementations.
+10. [ ] Add `delete_tasks_batch` function to `rust/src/tools/tasks.rs`:
+        - Function signature: `pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>) -> Result<Value>`
+        - **Validation:** same rules as Python (non-empty vec, non-empty strings)
+        - **JXA script:** character-identical to Python/TypeScript
+        - **Escape:** serialize `task_ids` via `serde_json::to_string()`
+11. [ ] Register the tool in `rust/src/server.rs`:
+        - Add `#[tool(description = "...")]` method with the approval
+          language in the description
+        - Input params struct with `task_ids: Vec<String>`
+12. [ ] Add tests in `rust/tests/tools_write_test.rs`:
+        - Happy path, partial failure, validation errors
+13. [ ] `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` all pass.
 
 ---
 
-## Phase 4 — Smoke Test & Integration
-
-Validate the Rust server against real OmniFocus. Follow the same
-patterns as `python/tests/test_integration.py`.
+## Phase 4 — Integration & Smoke Test
 
 ### Success Criteria
 
-31. [x] Create `rust/examples/smoke_test.rs` — standalone async binary
-        that calls every tool function against real OmniFocus and prints
-        pass/fail. Pattern: same as `python/scripts/smoke_test.py`.
-32. [x] Smoke test passes against real OmniFocus with zero failures.
-        Any bugs discovered are documented with `// BUG:` and fixed
-        before proceeding.
-33. [x] Create `rust/tests/integration_test.rs` gated by
-        `#[cfg(feature = "integration")]`. Tests:
-        - `test_jxa_bridge_connectivity` — basic run_omnijs call
-        - `test_read_tools_return_valid_json` — calls each read tool,
-          asserts return is parseable with expected fields
-        - `test_task_lifecycle` — create `[TEST-MCP]` → get → update →
-          complete → delete. Cleanup in Drop impl or explicit teardown.
-        - `test_search_finds_created_task` — create, search, assert found
-        - `test_project_lifecycle` — create → get → complete
-34. [x] Integration tests pass: `cargo test --features integration`
-        (with OmniFocus running).
-35. [x] Integration tests are excluded from normal `cargo test`.
-36. [x] No test data leaks — all `[TEST-MCP]` items cleaned up by
-        teardown even if assertions panic (use `Drop` or explicit
-        cleanup at start of each test).
+14. [ ] Add `delete_tasks_batch` to the Rust smoke test
+        (`rust/examples/smoke_test.rs`): create 3 test tasks, batch
+        delete them, verify all deleted.
+15. [ ] Run the smoke test against real OmniFocus — zero failures.
+        Fix any bugs discovered.
+16. [ ] Verify all three implementations produce identical tool names
+        and matching response shapes. Manually compare a sample call
+        or add a note confirming parity.
 
 ---
 
-## Phase 5 — Homebrew & Distribution
-
-Create the CI pipeline and Homebrew infrastructure for binary
-distribution.
+## Phase 5 — Documentation
 
 ### Success Criteria
 
-37. [x] `cargo build --release` produces a working binary at
-        `rust/target/release/omnifocus-mcp`. Verify it starts and
-        responds to `--version`.
-38. [x] Create `.github/workflows/release-rust.yml`:
-        - Trigger: push tag matching `rust-v*`
-        - Jobs: build on `macos-latest` (Apple Silicon) and
-          `macos-13` (Intel) — or use cross-compilation with
-          `rustup target add x86_64-apple-darwin` on ARM runner
-        - Steps: checkout, install Rust, `cargo build --release --target $TARGET`,
-          create tarball `omnifocus-mcp-$VERSION-$TARGET.tar.gz`,
-          compute SHA256 (`shasum -a 256`)
-        - Create GitHub Release with both tarballs attached
-        - Output SHA256 values in release notes for Homebrew formula
-39. [x] Create `homebrew/omnifocus-mcp.rb` — Homebrew formula template:
-        - `desc`, `homepage`, `version`, `license`
-        - `depends_on :macos`
-        - `on_arm` / `on_intel` blocks with URL and sha256 placeholders
-        - `bin.install "omnifocus-mcp"`
-        - `test` block that verifies `--version` output
-        Include a comment header explaining how to use: create a tap
-        repo, copy this formula, update SHAs from release.
-40. [x] Create `docs/install-rust.md` with:
-        - Two install methods: **Homebrew** (preferred) and **from source**
-        - Homebrew: `brew tap user/omnifocus-mcp && brew install omnifocus-mcp`
-        - From source: prerequisites (macOS, Rust toolchain), `git clone`,
-          `cd rust`, `cargo build --release`,
-          `cp target/release/omnifocus-mcp /usr/local/bin/`
-        - MCP client configuration snippets for Claude Desktop, Cursor,
-          and generic stdio. Command: `omnifocus-mcp` (Homebrew) or
-          full path to binary (source)
-        - Troubleshooting section covering:
-          - OmniFocus not running
-          - macOS Automation permission denied
-          - Rust version mismatch
-          - Binary architecture mismatch (ARM vs Intel)
-          - **macOS Gatekeeper blocking unsigned binary**: instruct users
-            to run `xattr -cr /path/to/omnifocus-mcp` if downloaded
-            outside Homebrew, or note that Homebrew-installed binaries
-            are not affected
-41. [x] Update top-level `README.md`:
-        - Add Rust to the implementation comparison table
-        - Add Rust quick-start section linking to `docs/install-rust.md`
-        - Note Homebrew as the recommended install method
-        - Update feature count if the Rust implementation has parity
-42. [x] Release binary smoke test: build release binary, run the
-        `smoke_test` example against real OmniFocus, verify zero failures.
-
----
-
-## Phase 6 — Final Cleanup
-
-### Success Criteria
-
-43. [x] `cargo fmt --check` is clean (no formatting issues).
-44. [x] `cargo clippy -- -D warnings` is clean (no lint warnings).
-45. [x] `cargo test` passes (all mocked tests, integration skipped).
-46. [x] `.gitignore` updated to exclude `rust/target/`.
-        `rust/Cargo.lock` is committed (Rust convention for binaries).
-47. [x] Git status is clean — no untracked source files, no uncommitted
-        changes. Commit all work with a descriptive message.
+17. [ ] Update `README.md` tool count and tool list table to include
+        `delete_tasks_batch`.
+18. [ ] Update `rust/README.md` if it has a separate tool listing.
 
 ---
 
@@ -372,13 +135,13 @@ distribution.
 
 1. Work on the next incomplete criterion (marked `[ ]`)
 2. Check off completed criteria (change `[ ]` to `[x]`)
-3. Run `cargo test && cargo clippy -- -D warnings` after every code change
-4. **Criterion 1 is critical** — research the rmcp SDK thoroughly before
-   writing any server code. Use the `context7` MCP tool to fetch docs.
-5. **JXA scripts must be identical** to the Python implementation. Read
-   each Python tool file before writing the Rust equivalent.
-6. **Phases 4 and 5 require real OmniFocus** — if not running or
-   permission is denied, output: `<ralph>GUTTER</ralph>`
-7. Commit your changes frequently
+3. Run the phase-appropriate test command after every code change
+4. **JXA scripts must be character-identical** across all three
+   implementations. Write it once in Python, then copy to TS and Rust.
+5. **The tool description MUST include the user-approval instruction.**
+   This is a hard requirement — do not skip it.
+6. **Phases 4 requires real OmniFocus** — if not running or permission
+   is denied, output: `<ralph>GUTTER</ralph>`
+7. Commit changes after completing each phase
 8. When ALL criteria are `[x]`, output: `<ralph>COMPLETE</ralph>`
 9. If stuck on the same issue 3+ times, output: `<ralph>GUTTER</ralph>`
