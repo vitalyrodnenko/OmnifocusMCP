@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 28
-- Current status: Phase 7 in progress (criterion 61 complete; next 62).
+- Current status: Phase 7 in progress (criterion 62 complete; next 63).
 
 ## How This Works
 
@@ -23,10 +23,10 @@ This is how Ralph maintains continuity across iterations.
 | 4     | Python: Write Tools + Tests       | 29–43     | 15/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 10/10 |
 | 6     | Python: Polish                    | 54–59     | 6/6  |
-| 7     | TypeScript: Full Port + Tests     | 60–71     | 2/12 |
+| 7     | TypeScript: Full Port + Tests     | 60–71     | 3/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 61 / 75 criteria complete**
+**Total: 62 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -820,3 +820,14 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 23:20:56
 **Session 29 started** (model: auto)
+
+### 2026-02-27 23:22:28
+**Session 29 update**
+- completed phase 7 criterion 62 by implementing `typescript/src/jxa.ts` with:
+  - `escapeForJxa`, `runJxa`, `runJxaJson`, and `runOmniJs`
+  - timeout/error normalization aligned with Python behavior
+  - serialized JXA execution queue to avoid overlapping `osascript` calls
+- resolved a duplicate-content merge issue in `typescript/src/jxa.ts` by rewriting the file to a single implementation
+- verified TypeScript checks pass:
+  - `cd typescript && npx tsc --noEmit && npm test`
+- next up: phase 7 criterion 63 (port read tools and pass `npm run build`)
