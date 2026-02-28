@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 0
-- Current status: Phase 3 in progress. Python split criteria 10-13 complete with passing lint/type/tests after modularization.
+- Current status: Phase 3 in progress. Python split criteria 10-13 and TypeScript split criteria 14-16 are complete with passing checks/tests.
 - Previous task: v1 completed (75/75), archived at `.ralph/RALPH_TASK_v1_complete.md`.
 
 ## How This Works
@@ -20,11 +20,11 @@ This is how Ralph maintains continuity across iterations.
 |-------|--------------------------------|-----------|------|
 | 1     | Real OmniFocus Smoke Test      | 1–5       | 5/5  |
 | 2     | Fix JXA Bugs                   | 6–9       | 4/4  |
-| 3     | Split Monolith Files           | 10–17     | 4/8  |
+| 3     | Split Monolith Files           | 10–17     | 7/8  |
 | 4     | Integration Tests              | 18–24     | 0/7  |
 | 5     | Final Cleanup                  | 25–28     | 0/4  |
 
-**Total: 13 / 28 criteria complete**
+**Total: 16 / 28 criteria complete**
 
 ## Key Context
 
@@ -114,6 +114,13 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-28 09:07:51
 **Session 6 started** (model: auto)
+
+### 2026-02-28 09:17:00
+- completed TypeScript split for criteria 14-16 by creating `typescript/src/tools/` modules (`tasks.ts`, `projects.ts`, `tags.ts`, `folders.ts`, `forecast.ts`, `perspectives.ts`) plus `typescript/src/resources.ts`, `typescript/src/prompts.ts`, and shared `typescript/src/types.ts`
+- kept `typescript/src/index.ts` as a <50-line bootstrap wiring all register functions and stdio transport
+- ran `cd typescript && npx tsc --noEmit && npm test` with 25 passing tests
+- marked criteria 14-16 complete in `RALPH_TASK.md`
+- next focus: run real OmniFocus smoke test for criterion 17
 
 ### 2026-02-28 09:15:12
 **Session 6 ended** - 🔄 Context rotation (token limit reached)

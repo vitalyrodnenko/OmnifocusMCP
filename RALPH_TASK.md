@@ -131,13 +131,13 @@ typescript/src/
         respective handlers extracted from the old `server.py`.
 13. [x] Python: `ruff check src/ && ruff format --check src/ && mypy src/
         --strict && pytest tests/ -v` all pass. Zero test failures.
-14. [ ] TypeScript: `index.ts` refactored to < 50 lines. Creates
+14. [x] TypeScript: `index.ts` refactored to < 50 lines. Creates
         McpServer, calls `register(server)` from each tool module,
         connects StdioServerTransport.
-15. [ ] TypeScript: `tools/` directory created with separate files.
+15. [x] TypeScript: `tools/` directory created with separate files.
         Each exports a `register(server: McpServer): void` function.
         `resources.ts`, `prompts.ts`, `types.ts` created.
-16. [ ] TypeScript: `npx tsc --noEmit && npm test` passes. Zero failures.
+16. [x] TypeScript: `npx tsc --noEmit && npm test` passes. Zero failures.
 17. [ ] Smoke test still passes against real OmniFocus after refactor.
 
 ---
