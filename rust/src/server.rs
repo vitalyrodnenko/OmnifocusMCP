@@ -1,25 +1,23 @@
-use std::sync::Arc;
-
 use rmcp::{
     handler::server::{
         router::{prompt::PromptRouter, tool::ToolRouter},
         wrapper::Parameters,
     },
     model::{
-        CallToolResult, Content, GetPromptResult, ListResourcesResult, PaginatedRequestParams,
-        PromptMessage, PromptMessageRole, RawResource, ReadResourceRequestParams,
-        ReadResourceResult, RequestContext, ResourceContents, RoleServer, ServerCapabilities,
-        ServerInfo,
+        CallToolResult, Content, GetPromptRequestParams, GetPromptResult, ListPromptsResult,
+        ListResourcesResult, PaginatedRequestParams, PromptMessage, PromptMessageRole,
+        RawResource, ReadResourceRequestParams, ReadResourceResult, ResourceContents,
+        ServerCapabilities, ServerInfo,
     },
     prompt, prompt_handler, prompt_router, tool, tool_handler, tool_router, ErrorData as McpError,
     ServerHandler,
 };
+use rmcp::{RoleServer, service::RequestContext};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 use crate::{
-    error::{OmniFocusError, Result},
+    error::OmniFocusError,
     jxa::JxaRunner,
     prompts::{daily_review, inbox_processing, project_planning, weekly_review},
     resources::{
@@ -38,23 +36,6 @@ use crate::{
         },
     },
 };
-
-#[derive(Clone)]
-struct DynJxaRunner {
-    inner: Arc<dyn JxaRunner>,
-}
-
-impl DynJxaRunner {
-    fn new(inner: Arc<dyn JxaRunner>) -> Self {
-        Self { inner }
-    }
-}
-
-impl JxaRunner for DynJxaRunner {
-    async fn run_omnijs(&self, script: &str) -> Result<Value> {
-        self.inner.run_omnijs(script).await
-    }
-}
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct LimitParams {
@@ -95,7 +76,19 @@ struct CreateTaskParams {
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct CreateTasksBatchParams {
-    tasks: Vec<CreateTaskInput>,
+    tasks: Vec<BatchCreateTaskInput>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct BatchCreateTaskInput {
+    name: String,
+    project: Option<String>,
+    note: Option<String>,
+    due_date: Option<String>,
+    defer_date: Option<String>,
+    flagged: Option<bool>,
+    tags: Option<Vec<String>>,
+    estimated_minutes: Option<i32>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -150,16 +143,16 @@ struct ProjectPlanningPromptParams {
 }
 
 #[derive(Clone)]
-pub struct OmniFocusServer {
-    runner: DynJxaRunner,
+pub struct OmniFocusServer<R: JxaRunner + Clone + Send + Sync + 'static> {
+    runner: R,
     tool_router: ToolRouter<Self>,
     prompt_router: PromptRouter<Self>,
 }
 
-impl OmniFocusServer {
-    pub fn new(runner: Arc<dyn JxaRunner>) -> Self {
+impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
+    pub fn new(runner: R) -> Self {
         Self {
-            runner: DynJxaRunner::new(runner),
+            runner,
             tool_router: Self::tool_router(),
             prompt_router: Self::prompt_router(),
         }
@@ -180,7 +173,7 @@ fn as_call_tool_result<T: Serialize>(value: &T) -> std::result::Result<CallToolR
 }
 
 #[tool_router(router = tool_router)]
-impl OmniFocusServer {
+impl<R: JxaRunner + Clone + Send + Sync + 'static> OmniFocusServer<R> {
     #[tool(description = "get inbox tasks from omnifocus.")]
     async fn get_inbox(
         &self,
@@ -258,7 +251,21 @@ impl OmniFocusServer {
         &self,
         Parameters(params): Parameters<CreateTasksBatchParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = create_tasks_batch(&self.runner, params.tasks)
+        let tasks = params
+            .tasks
+            .into_iter()
+            .map(|task| CreateTaskInput {
+                name: task.name,
+                project: task.project,
+                note: task.note,
+                due_date: task.due_date,
+                defer_date: task.defer_date,
+                flagged: task.flagged,
+                tags: task.tags,
+                estimated_minutes: task.estimated_minutes,
+            })
+            .collect();
+        let result = create_tasks_batch(&self.runner, tasks)
             .await
             .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
