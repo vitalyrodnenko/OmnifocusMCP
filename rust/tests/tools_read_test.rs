@@ -191,6 +191,7 @@ async fn read_task_tools_happy_path() {
         None,
         None,
         None,
+        None,
         100,
     )
     .await
@@ -320,6 +321,7 @@ async fn empty_results_return_empty_vec() {
         None,
         None,
         None,
+        None,
         100,
     )
     .await
@@ -361,6 +363,7 @@ async fn malformed_json_from_jxa_produces_json_parse_error() {
         None,
         None,
         None,
+        None,
         100,
     )
     .await
@@ -390,6 +393,7 @@ async fn validation_errors_for_read_tools() {
             None,
             None,
             None,
+            None,
             0,
         )
         .await,
@@ -404,6 +408,7 @@ async fn validation_errors_for_read_tools() {
             "invalid",
             None,
             "available",
+            None,
             None,
             None,
             None,
@@ -542,6 +547,9 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
         5,
     )
     .await
@@ -566,7 +574,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
         5,
     )
     .await
@@ -587,6 +594,7 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "all",
         None,
         "available",
+        None,
         None,
         None,
         None,
@@ -1000,6 +1008,7 @@ async fn list_tasks_invalid_date_error_bubbles_up() {
         None,
         None,
         None,
+        None,
         5,
     )
     .await
@@ -1061,6 +1070,7 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         None,
         None,
         None,
+        None,
         5,
     )
     .await
@@ -1082,6 +1092,7 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         "any",
         None,
         "available",
+        None,
         None,
         None,
         None,

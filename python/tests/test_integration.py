@@ -131,9 +131,11 @@ async def test_read_tools_return_valid_json(cleanup_registry: dict[str, list[str
                 "dueDate",
                 "deferDate",
                 "completed",
+                "completionDate",
                 "projectName",
                 "tags",
                 "estimatedMinutes",
+                "hasChildren",
             },
         )
 
@@ -174,9 +176,11 @@ async def test_read_tools_return_valid_json(cleanup_registry: dict[str, list[str
                 "dueDate",
                 "deferDate",
                 "completed",
+                "completionDate",
                 "projectName",
                 "tags",
                 "estimatedMinutes",
+                "hasChildren",
             },
         )
 

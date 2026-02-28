@@ -191,6 +191,10 @@ integrationDescribe("typescript integration", () => {
 
       const tasks = parseToolResult(await listTasks({ status: "all", limit: 20 })) as unknown[];
       expect(Array.isArray(tasks)).toBe(true);
+      if (tasks.length > 0) {
+        expect(tasks[0]).toHaveProperty("completionDate");
+        expect(tasks[0]).toHaveProperty("hasChildren");
+      }
 
       const task = parseToolResult(await getTask({ task_id: createdTask.id })) as Record<string, unknown>;
       expect(task.id).toBe(createdTask.id);
@@ -198,6 +202,10 @@ integrationDescribe("typescript integration", () => {
 
       const searched = parseToolResult(await searchTasks({ query: "TS Read Tool", limit: 20 })) as unknown[];
       expect(Array.isArray(searched)).toBe(true);
+      if (searched.length > 0) {
+        expect(searched[0]).toHaveProperty("completionDate");
+        expect(searched[0]).toHaveProperty("hasChildren");
+      }
 
       const projects = parseToolResult(await listProjects({ status: "active", limit: 20 })) as unknown[];
       expect(Array.isArray(projects)).toBe(true);

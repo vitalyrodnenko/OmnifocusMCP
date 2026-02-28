@@ -98,6 +98,14 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-2", name: "filtered" }]);
   });
 
+  test("list_tasks mapper includes completionDate and hasChildren", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-shape", name: "shape" }]);
+    await getTool("list_tasks")({ status: "all", limit: 2 });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
+    expect(script).toContain("hasChildren: task.hasChildren");
+  });
+
   test("list_tasks supports tags with any/all mode and tag+tags merge", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-merge", name: "merged" }]);
     await getTool("list_tasks")({
@@ -331,6 +339,14 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const taskId = "parent-1";');
     expect(script).toContain("const subtasks = task.children.slice(0, 2);");
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "sub-1", name: "child" }]);
+  });
+
+  test("search_tasks mapper includes completionDate and hasChildren", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "search-shape", name: "shape" }]);
+    await getTool("search_tasks")({ query: "shape", limit: 2 });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("completionDate: task.completionDate ? task.completionDate.toISOString() : null,");
+    expect(script).toContain("hasChildren: task.hasChildren");
   });
 
   test("get_project generates id/name lookup script", async () => {
