@@ -690,17 +690,37 @@ describe("representative read and write tool handlers", () => {
     runOmniJsMock.mockResolvedValueOnce({
       id: "copy-1",
       name: "Copied task",
+      note: "copied",
+      flagged: true,
+      dueDate: "2026-03-10T09:00:00Z",
+      deferDate: null,
+      completed: false,
+      completionDate: null,
+      projectName: "Errands",
+      tags: ["Home"],
+      estimatedMinutes: 15,
+      hasChildren: true,
       taskStatus: "available",
     });
     const result = await getTool("duplicate_task")({ task_id: "task-9" });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const taskId = "task-9";');
     expect(script).toContain("const includeChildren = true;");
-    expect(script).toContain("const duplicated = duplicateTasks([task], insertionLocation);");
-    expect(script).toContain("const taskStatusValue = (taskItem) => {");
+    expect(script).toContain("const duplicates = duplicateTasks([task], insertionLocation);");
+    expect(script).toContain("taskStatus: (() => {");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "copy-1",
       name: "Copied task",
+      note: "copied",
+      flagged: true,
+      dueDate: "2026-03-10T09:00:00Z",
+      deferDate: null,
+      completed: false,
+      completionDate: null,
+      projectName: "Errands",
+      tags: ["Home"],
+      estimatedMinutes: 15,
+      hasChildren: true,
       taskStatus: "available",
     });
   });
@@ -716,8 +736,8 @@ describe("representative read and write tool handlers", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain("const includeChildren = false;");
-    expect(script).toContain("duplicatedTask = new Task(task.name, insertionLocation);");
-    expect(script).toContain("task.tags.forEach(tag => duplicatedTask.addTag(tag));");
+    expect(script).toContain("const manualClone = new Task(task.name, insertionLocation);");
+    expect(script).toContain("manualClone.addTag(tag);");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "copy-2",
       name: "Copied task flat",

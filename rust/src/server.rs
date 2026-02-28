@@ -212,13 +212,6 @@ struct CreateSubtaskParams {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
-struct DuplicateTaskParams {
-    task_id: String,
-    #[serde(rename = "includeChildren")]
-    include_children: Option<bool>,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct CreateTasksBatchParams {
     tasks: Vec<BatchCreateTaskInput>,
 }
@@ -708,23 +701,6 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.flagged,
             params.tags,
             params.estimated_minutes,
-        )
-        .await
-        .map_err(to_mcp_error)?;
-        as_call_tool_result(&result)
-    }
-
-    #[tool(
-        description = "duplicate a task with all its properties. if the task has subtasks, they are cloned too by default."
-    )]
-    async fn duplicate_task(
-        &self,
-        Parameters(params): Parameters<DuplicateTaskParams>,
-    ) -> std::result::Result<CallToolResult, McpError> {
-        let result = duplicate_task(
-            self.runner.as_ref(),
-            &params.task_id,
-            params.include_children.unwrap_or(true),
         )
         .await
         .map_err(to_mcp_error)?;
