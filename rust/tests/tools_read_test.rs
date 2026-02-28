@@ -225,7 +225,7 @@ async fn read_non_task_tools_happy_path() {
     let tags_runner = MockRunner {
         payload: json!([{"id": "g1", "name": "home"}]),
     };
-    let tags = list_tags(&tags_runner, 100)
+    let tags = list_tags(&tags_runner, "all", None, "asc", 100)
         .await
         .expect("tags should load");
     assert!(tags.is_array());
@@ -305,7 +305,7 @@ async fn empty_results_return_empty_vec() {
         .expect("search should parse");
     assert!(searched.is_empty());
 
-    let tags = list_tags(&empty_runner, 100)
+    let tags = list_tags(&empty_runner, "all", None, "asc", 100)
         .await
         .expect("tags should parse");
     assert_eq!(tags, json!([]));
@@ -451,7 +451,7 @@ async fn validation_errors_for_read_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        list_tags(&runner, 0).await,
+        list_tags(&runner, "all", None, "asc", 0).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(

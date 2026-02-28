@@ -745,6 +745,7 @@ async def test_list_tags_happy_path(mock_server_run_omnijs: Callable[[Any], dict
             "name": "errands",
             "parent": None,
             "availableTaskCount": 3,
+            "totalTaskCount": 5,
             "status": "active",
         }
     ]
@@ -756,7 +757,29 @@ async def test_list_tags_happy_path(mock_server_run_omnijs: Callable[[Any], dict
 
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
-    assert "document.flattenedTags.slice(0, 9)" in state["calls"][0]["script"]
+    script = state["calls"][0]["script"]
+    assert 'const statusFilter = "all";' in script
+    assert "totalTaskCount: counts.totalTaskCount," in script
+    assert "return sortedTags.slice(0, 9);" in script
+
+
+@pytest.mark.asyncio
+async def test_list_tags_status_filter_and_sorting_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs(
+        [{"id": "tag2", "name": "home", "parent": None, "availableTaskCount": 2, "totalTaskCount": 3, "status": "active"}]
+    )
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tags(statusFilter="active", sortBy="totalTaskCount", sortOrder="desc", limit=7)
+    script = state["calls"][0]["script"]
+    assert 'const statusFilter = "active";' in script
+    assert 'const sortBy = "totalTaskCount";' in script
+    assert 'const sortOrder = "desc";' in script
+    assert "statusFilter === \"all\" || normalizeTagStatus(tag) === statusFilter" in script
+    assert "return sortedTags.slice(0, 7);" in script
 
 
 @pytest.mark.asyncio
@@ -885,6 +908,12 @@ async def test_list_projects_empty_folder_validation_error(server_module: Any) -
 async def test_list_projects_invalid_sort_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="sortBy must be one of"):
         await server_module.list_projects(sortBy="invalid")  # type: ignore[arg-type]
+
+
+@pytest.mark.asyncio
+async def test_list_tags_invalid_status_filter_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="statusFilter must be one of"):
+        await server_module.list_tags(statusFilter="invalid")  # type: ignore[arg-type]
 
 
 @pytest.mark.asyncio

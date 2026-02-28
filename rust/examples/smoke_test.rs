@@ -187,7 +187,7 @@ impl SmokeTest {
             .await
             .map_err(|error| OmniFocusError::Validation(format!("get_project failed: {error}")))?;
 
-        let _ = list_tags(runner, 20)
+        let _ = list_tags(runner, "all", None, "asc", 20)
             .await
             .map_err(|error| OmniFocusError::Validation(format!("list_tags failed: {error}")))?;
         let _ = list_folders(runner, 20)

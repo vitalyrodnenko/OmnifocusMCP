@@ -290,7 +290,7 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
         ],
     );
 
-    let tags = list_tags(&runner, 20).await?;
+    let tags = list_tags(&runner, "all", None, "asc", 20).await?;
     let tags_array = require_array(&tags, "list_tags result");
     if let Some(first) = tags_array.first() {
         assert_has_keys(

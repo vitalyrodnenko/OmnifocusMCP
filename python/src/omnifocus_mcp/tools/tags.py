@@ -21,7 +21,11 @@ async def list_tags(
         raise ValueError("limit must be greater than 0.")
     if statusFilter not in ("active", "on_hold", "dropped", "all"):
         raise ValueError("statusFilter must be one of: active, on_hold, dropped, all.")
-    if sortBy is not None and sortBy not in ("name", "availableTaskCount", "totalTaskCount"):
+    if sortBy is not None and sortBy not in (
+        "name",
+        "availableTaskCount",
+        "totalTaskCount",
+    ):
         raise ValueError(
             "sortBy must be one of: name, availableTaskCount, totalTaskCount."
         )

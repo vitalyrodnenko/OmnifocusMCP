@@ -239,7 +239,7 @@ async def test_read_tools_return_valid_json(cleanup_registry: dict[str, list[str
     assert isinstance(tags, list)
     if tags:
         assert isinstance(tags[0], dict)
-        _assert_keys(tags[0], {"id", "name", "parent", "availableTaskCount", "status"})
+        _assert_keys(tags[0], {"id", "name", "parent", "availableTaskCount", "totalTaskCount", "status"})
 
     folders = _parse_json(await list_folders(limit=20))
     assert isinstance(folders, list)
