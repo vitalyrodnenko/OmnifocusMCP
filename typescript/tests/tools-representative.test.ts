@@ -579,11 +579,10 @@ describe("representative read and write tool handlers", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const taskId = "task-9";');
-    expect(script).toContain('const absoluteDate = "2026-03-03T10:30:00Z";');
+    expect(script).toContain('const absoluteDateRaw = "2026-03-03T10:30:00Z";');
     expect(script).toContain("const relativeOffset = null;");
-    expect(script).toContain("const parsedAbsoluteDate = new Date(absoluteDate);");
-    expect(script).toContain("notification = task.addNotification(parsedAbsoluteDate);");
-    expect(script).toContain("if (task.effectiveDueDate === null) {");
+    expect(script).toContain("const parsed = new Date(absoluteDateRaw);");
+    expect(script).toContain("return task.addNotification(absoluteDate);");
     expect(script).toContain("const effectiveDueDate = task.effectiveDueDate;");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "n2",
@@ -609,9 +608,9 @@ describe("representative read and write tool handlers", () => {
       relativeOffset: -3600,
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
-    expect(script).toContain("const absoluteDate = null;");
+    expect(script).toContain("const absoluteDateRaw = null;");
     expect(script).toContain("const relativeOffset = -3600;");
-    expect(script).toContain("notification = task.addNotification(relativeOffset);");
+    expect(script).toContain("return task.addNotification(relativeOffset);");
     expect(script).toContain(
       "relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,"
     );
@@ -707,8 +706,8 @@ describe("representative read and write tool handlers", () => {
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const taskId = "task-9";');
     expect(script).toContain("const includeChildren = true;");
-    expect(script).toContain("const duplicates = duplicateTasks([task], insertionLocation);");
-    expect(script).toContain("taskStatus: (() => {");
+    expect(script).toContain("const duplicated = duplicateTasks([task], insertionLocation);");
+    expect(script).toContain("const taskStatusValue = (taskItem) => {");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "copy-1",
       name: "Copied task",
@@ -737,8 +736,8 @@ describe("representative read and write tool handlers", () => {
     });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain("const includeChildren = false;");
-    expect(script).toContain("const manualClone = new Task(task.name, insertionLocation);");
-    expect(script).toContain("manualClone.addTag(tag);");
+    expect(script).toContain("duplicatedTask = new Task(task.name, insertionLocation);");
+    expect(script).toContain("task.tags.forEach(tag => duplicatedTask.addTag(tag));");
     expect(JSON.parse(result.content[0].text)).toEqual({
       id: "copy-2",
       name: "Copied task flat",

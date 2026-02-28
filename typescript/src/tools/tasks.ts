@@ -426,7 +426,7 @@ return {
           throw new Error("task_id must not be empty.");
         }
         const taskId = escapeForJxa(normalizedTaskId);
-        const includeChildrenValue = includeChildren ? "true" : "false";
+        const includeChildrenValue = (includeChildren ?? true) ? "true" : "false";
         const script = `
 const taskId = ${taskId};
 const includeChildren = ${includeChildrenValue};
