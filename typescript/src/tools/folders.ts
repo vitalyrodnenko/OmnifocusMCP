@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { runOmniJs } from "../jxa.js";
+import { escapeForJxa, runOmniJs } from "../jxa.js";
 import { errorResult, normalizeError, textResult, type Server } from "../types.js";
 
 export function register(server: Server): void {
@@ -25,6 +25,49 @@ return folders.map(folder => ({
   parentName: folder.parent ? folder.parent.name : null,
   projectCount: folderProjectCounts.get(folder.id.primaryKey) || 0
 }));
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
+    "create_folder",
+    "create a folder with optional parent folder and return id/name.",
+    {
+      name: z.string().min(1).describe("folder name"),
+      parent: z.string().min(1).nullable().optional().describe("parent folder name or null"),
+    },
+    async ({ name, parent }) => {
+      try {
+        const normalizedName = name.trim();
+        if (normalizedName === "") {
+          throw new Error("name must not be empty.");
+        }
+        if (typeof parent === "string" && parent.trim() === "") {
+          throw new Error("parent must not be empty when provided.");
+        }
+        const folderName = escapeForJxa(normalizedName);
+        const parentName = parent === undefined || parent === null ? "null" : escapeForJxa(parent.trim());
+        const script = `
+const folderName = ${folderName};
+const parentName = ${parentName};
+
+const folder = (() => {
+  if (parentName === null) return new Folder(folderName);
+  const parentFolder = document.flattenedFolders.byName(parentName);
+  if (!parentFolder) {
+    throw new Error(\`Folder not found: \${parentName}\`);
+  }
+  return new Folder(folderName, parentFolder.ending);
+})();
+
+return {
+  id: folder.id.primaryKey,
+  name: folder.name
+};
 `.trim();
         return textResult(await runOmniJs(script));
       } catch (error: unknown) {
