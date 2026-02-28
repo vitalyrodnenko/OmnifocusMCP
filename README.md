@@ -2,6 +2,8 @@
 
 OmniFocus MCP is a Model Context Protocol server for OmniFocus automation on macOS, powered by JXA (`osascript`) and Omni Automation (`evaluateJavascript` bridge).
 
+This project is not affiliated with, endorsed by, or associated with The Omni Group or OmniFocus. OmniFocus is a trademark of The Omni Group. This is an independent, non-commercial open-source project.
+
 ## Status
 
 | Indicator | Value |
