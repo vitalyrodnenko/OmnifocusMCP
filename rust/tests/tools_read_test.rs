@@ -556,9 +556,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
         5,
     )
     .await
@@ -580,9 +577,6 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
-        None,
-        None,
-        None,
         None,
         None,
         None,
@@ -614,6 +608,9 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
         5,
     )
     .await
@@ -637,6 +634,10 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
         5,
     )
     .await
@@ -656,6 +657,9 @@ async fn list_tasks_multi_tag_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
+        None,
+        None,
+        None,
         None,
         None,
         None,
@@ -1016,6 +1020,7 @@ async fn list_tasks_invalid_date_error_bubbles_up() {
         None,
         None,
         None,
+        None,
         5,
     )
     .await
@@ -1098,7 +1103,6 @@ async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
         "any",
         None,
         "available",
-        None,
         None,
         None,
         None,

@@ -5,9 +5,9 @@
 ## Summary
 
 - Current task: OmniFocus MCP — Full API parity (19 new tools across 3 implementations)
-- Current status: Iteration 12 in progress (criterion 2 complete).
-- Next criterion: 3 — add duration filter to `list_tasks`
-- Remaining: criteria 3-36
+- Current status: Iteration 13 in progress (criteria 1-4 complete).
+- Next criterion: 5 — add `completionDate` and `hasChildren` to `list_tasks` and `search_tasks` responses
+- Remaining: criteria 5-36
 
 ## How This Works
 
@@ -261,6 +261,12 @@ Reading even two full files will blow your budget and trigger rotation.
 - updated `RALPH_TASK.md` criterion 3 to `[x]`
 - next criterion: 4 (add sorting to `list_tasks`)
 
+### 2026-02-28 14:40:00
+- verified criterion 4 implementation across python/typescript/rust (`sortBy`, `sortOrder`, completion-date auto-sort, nulls-last sort behavior)
+- reran full `test_command` successfully across python/typescript/rust
+- updated `RALPH_TASK.md` criterion 4 to `[x]`
+- next criterion: 5 (add `completionDate` and `hasChildren` to `list_tasks` and `search_tasks`)
+
 ### 2026-02-28 14:34:21
 **Session 16 ended** - 🔄 Context rotation (token limit reached)
 
@@ -308,3 +314,9 @@ Reading even two full files will blow your budget and trigger rotation.
 
 ### 2026-02-28 14:38:18
 **Session 24 started** (model: auto)
+
+### 2026-02-28 14:38:45
+**Session 24 ended** - 🔄 Context rotation (token limit reached)
+
+### 2026-02-28 14:38:47
+**Session 25 started** (model: auto)

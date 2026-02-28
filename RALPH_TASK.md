@@ -157,7 +157,7 @@ See individual phase criteria below.
          estimatedMinutes excluded.
        - All lint/test commands pass.
 
-4. [ ] **Add sorting to `list_tasks`** — all 3 implementations.
+4. [x] **Add sorting to `list_tasks`** — all 3 implementations.
        - New optional params: `sortBy: str | null` (enum: `"dueDate"`,
          `"deferDate"`, `"name"`, `"completionDate"`,
          `"estimatedMinutes"`, `"project"`, `"flagged"`),
