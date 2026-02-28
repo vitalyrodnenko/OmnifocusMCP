@@ -303,7 +303,7 @@ return task.notifications.map(n => ({
 
   server.tool(
     "add_notification",
-    "add one notification to a task by id.",
+    "add a notification to a task by id. provide exactly one of absoluteDate or relativeOffset.",
     {
       task_id: z.string().min(1),
       absoluteDate: z.string().optional(),
@@ -323,28 +323,40 @@ return task.notifications.map(n => ({
         if (absoluteDate !== undefined && absoluteDate.trim() === "") {
           throw new Error("absoluteDate must not be empty when provided.");
         }
-
         const taskId = escapeForJxa(normalizedTaskId);
-        const absoluteDateValue =
+        const absoluteDateRaw =
           absoluteDate === undefined ? "null" : escapeForJxa(absoluteDate.trim());
         const relativeOffsetValue =
           relativeOffset === undefined ? "null" : String(relativeOffset);
         const script = `
 const taskId = ${taskId};
-const absoluteDateValue = ${absoluteDateValue};
-const relativeOffsetValue = ${relativeOffsetValue};
+const absoluteDateRaw = ${absoluteDateRaw};
+const relativeOffset = ${relativeOffsetValue};
+const absoluteDate = (() => {
+  if (absoluteDateRaw === null) return null;
+  const parsed = new Date(absoluteDateRaw);
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error("absoluteDate must be a valid ISO 8601 date string.");
+  }
+  return parsed;
+})();
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) {
   throw new Error(\`Task not found: \${taskId}\`);
 }
-if (relativeOffsetValue !== null && !task.effectiveDueDate) {
-  throw new Error(\`Task \${taskId} must have an effective due date when using relativeOffset.\`);
-}
-const notification = absoluteDateValue !== null
-  ? task.addNotification(new Date(absoluteDateValue))
-  : task.addNotification(relativeOffsetValue);
+const created = (() => {
+  if (absoluteDate !== null) {
+    return task.addNotification(absoluteDate);
+  }
+  const effectiveDueDate = task.effectiveDueDate;
+  if (effectiveDueDate === null) {
+    throw new Error("relativeOffset requires a task with an effective due date.");
+  }
+  return task.addNotification(relativeOffset);
+})();
+const notification = created || task.notifications[task.notifications.length - 1];
 if (!notification) {
-  throw new Error("Failed to create notification.");
+  throw new Error(\`Failed to create notification for task: \${taskId}\`);
 }
 return {
   id: notification.id.primaryKey,
@@ -364,74 +376,7 @@ return {
 
   server.tool(
     "add_notification",
-    "add one notification to a task by id. exactly one of absoluteDate or relativeOffset must be provided.",
-    {
-      task_id: z.string().min(1),
-      absoluteDate: z.string().optional(),
-      relativeOffset: z.number().optional(),
-    },
-    async ({ task_id, absoluteDate, relativeOffset }) => {
-      try {
-        const normalizedTaskId = task_id.trim();
-        if (normalizedTaskId === "") {
-          throw new Error("task_id must not be empty.");
-        }
-        const hasAbsolute = absoluteDate !== undefined;
-        const hasRelative = relativeOffset !== undefined;
-        if (hasAbsolute === hasRelative) {
-          throw new Error("exactly one of absoluteDate or relativeOffset must be provided.");
-        }
-        if (absoluteDate !== undefined && absoluteDate.trim() === "") {
-          throw new Error("absoluteDate must not be empty when provided.");
-        }
-        if (
-          relativeOffset !== undefined &&
-          (typeof relativeOffset !== "number" || Number.isNaN(relativeOffset))
-        ) {
-          throw new Error("relativeOffset must be a number when provided.");
-        }
-
-        const taskId = escapeForJxa(normalizedTaskId);
-        const absoluteDateValue =
-          absoluteDate === undefined ? "null" : escapeForJxa(absoluteDate.trim());
-        const relativeOffsetValue =
-          relativeOffset === undefined ? "null" : String(Number(relativeOffset));
-        const script = `
-const taskId = ${taskId};
-const absoluteDateValue = ${absoluteDateValue};
-const relativeOffsetValue = ${relativeOffsetValue};
-const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
-if (!task) {
-  throw new Error(\`Task not found: \${taskId}\`);
-}
-if (relativeOffsetValue !== null && !task.effectiveDueDate) {
-  throw new Error(\`Task \${taskId} must have an effective due date when using relativeOffset.\`);
-}
-const notification = absoluteDateValue !== null
-  ? task.addNotification(new Date(absoluteDateValue))
-  : task.addNotification(relativeOffsetValue);
-if (!notification) {
-  throw new Error("Failed to create notification.");
-}
-return {
-  id: notification.id.primaryKey,
-  kind: notification.initialFireDate ? "absolute" : "relative",
-  absoluteFireDate: notification.initialFireDate ? notification.initialFireDate.toISOString() : null,
-  relativeFireOffset: notification.initialFireDate ? null : notification.relativeFireOffset,
-  nextFireDate: notification.nextFireDate ? notification.nextFireDate.toISOString() : null,
-  isSnoozed: notification.isSnoozed
-};
-`.trim();
-        return textResult(await runOmniJs(script));
-      } catch (error: unknown) {
-        return errorResult(normalizeError(error));
-      }
-    }
-  );
-
-  server.tool(
-    "add_notification",
-    "add one notification to a task by id.",
+    "add one notification to a task by id using either an absolute date or a due-relative offset.",
     {
       task_id: z.string().min(1),
       absoluteDate: z.string().optional(),
@@ -452,24 +397,29 @@ return {
           throw new Error("absoluteDate must not be empty when provided.");
         }
         const taskId = escapeForJxa(normalizedTaskId);
-        const absoluteDateValue =
-          absoluteDate === undefined ? "null" : escapeForJxa(absoluteDate.trim());
-        const relativeOffsetValue =
-          relativeOffset === undefined ? "null" : String(relativeOffset);
+        const absoluteDateValue = absoluteDate === undefined ? "null" : escapeForJxa(absoluteDate.trim());
+        const relativeOffsetValue = relativeOffset === undefined ? "null" : String(relativeOffset);
         const script = `
 const taskId = ${taskId};
-const absoluteDateValue = ${absoluteDateValue};
-const relativeOffsetValue = ${relativeOffsetValue};
+const absoluteDate = ${absoluteDateValue};
+const relativeOffset = ${relativeOffsetValue};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) {
   throw new Error(\`Task not found: \${taskId}\`);
 }
-if (relativeOffsetValue !== null && !task.effectiveDueDate) {
-  throw new Error(\`Task \${taskId} must have an effective due date when using relativeOffset.\`);
+let notification = null;
+if (absoluteDate !== null) {
+  const parsedAbsoluteDate = new Date(absoluteDate);
+  if (Number.isNaN(parsedAbsoluteDate.getTime())) {
+    throw new Error("absoluteDate must be a valid ISO 8601 date string.");
+  }
+  notification = task.addNotification(parsedAbsoluteDate);
+} else {
+  if (task.effectiveDueDate === null) {
+    throw new Error("relativeOffset requires a task with an effective due date.");
+  }
+  notification = task.addNotification(relativeOffset);
 }
-const notification = absoluteDateValue !== null
-  ? task.addNotification(new Date(absoluteDateValue))
-  : task.addNotification(relativeOffsetValue);
 if (!notification) {
   throw new Error("Failed to create notification.");
 }
