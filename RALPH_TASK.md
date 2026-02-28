@@ -98,7 +98,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
 
 ### Success Criteria
 
-8. [ ] Rewrite `README.md` to be a polished open-source project page.
+8. [x] Rewrite `README.md` to be a polished open-source project page.
        Study https://github.com/umputun/ralphex for tone and structure
        reference. The README must include these sections in order:
 
