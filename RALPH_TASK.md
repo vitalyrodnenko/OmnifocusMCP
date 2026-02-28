@@ -191,7 +191,7 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
           `docs/install-typescript.md`).
         - Fix placeholder URLs if any.
 
-12. [ ] Fix `rust/README.md`:
+12. [x] Fix `rust/README.md`:
         - Replace `<user>` in Homebrew tap command with
           `vitalyrodnenko`.
 
