@@ -90,6 +90,39 @@ async def test_create_task_happy_path(mock_server_run_omnijs: Callable[[Any], di
 
 
 @pytest.mark.asyncio
+async def test_create_subtask_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "id": "child-1",
+        "name": "Child task",
+        "parentTaskId": "parent-1",
+        "parentTaskName": "Parent task",
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
+
+    result = await tasks_mod.create_subtask(
+        name="Child task",
+        parent_task_id="parent-1",
+        note="detail",
+        dueDate="2026-03-10T10:00:00Z",
+        deferDate="2026-03-09T10:00:00Z",
+        flagged=True,
+        tags=["home"],
+        estimatedMinutes=15,
+    )
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const taskName = "Child task";' in script
+    assert 'const parentTaskId = "parent-1";' in script
+    assert "const parentTask = document.flattenedTasks.find" in script
+    assert "const task = new Task(taskName, parentTask.ending);" in script
+
+
+@pytest.mark.asyncio
 async def test_create_task_optional_field_matrix(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -670,6 +703,13 @@ async def test_create_task_empty_name_validation_error(server_module: Any) -> No
 async def test_create_task_empty_project_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="project must not be empty when provided"):
         await server_module.create_task("Task", project="   ")
+
+
+@pytest.mark.asyncio
+async def test_create_subtask_empty_parent_validation_error(server_module: Any) -> None:
+    tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
+    with pytest.raises(ValueError, match="parent_task_id must not be empty."):
+        await tasks_mod.create_subtask("Task", parent_task_id="   ")
 
 
 @pytest.mark.asyncio

@@ -93,6 +93,37 @@ describe("tool happy paths", () => {
     expect(script).toContain("const projectName = \"Errands\";");
   });
 
+  test("create_subtask returns created child task summary", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "child-1",
+      name: "Child task",
+      parentTaskId: "parent-1",
+      parentTaskName: "Parent task",
+    });
+    const handler = registeredTools.get("create_subtask");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      name: "Child task",
+      parent_task_id: "parent-1",
+      note: "detail",
+      dueDate: "2026-03-10T10:00:00Z",
+      deferDate: "2026-03-09T10:00:00Z",
+      flagged: true,
+      tags: ["home"],
+      estimatedMinutes: 15,
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "child-1",
+      name: "Child task",
+      parentTaskId: "parent-1",
+      parentTaskName: "Parent task",
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const taskName = "Child task";');
+    expect(script).toContain('const parentTaskId = "parent-1";');
+    expect(script).toContain("const task = new Task(taskName, parentTask.ending);");
+  });
+
   test("update_task includes updates payload and returns updated task", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "u1", name: "Updated task", flagged: true });
     const handler = registeredTools.get("update_task");

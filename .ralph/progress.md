@@ -871,8 +871,33 @@ This is how Ralph maintains continuity across iterations.
 ### 2026-02-28 12:19:40
 **Session 7 started** (model: auto)
 
+### 2026-02-28 12:20:30
+- revalidated criterion 2 (`uncomplete_task`) across all three implementations and added missing parity wiring where needed:
+  - Python: ensured `uncomplete_task` is exported via `python/src/omnifocus_mcp/server.py`, added happy-path coverage in `python/tests/test_tools_write.py`
+  - TypeScript: added `uncomplete_task` tool registration in `typescript/src/tools/tasks.ts` with completed-state guard and `markIncomplete()` flow, plus handler test in `typescript/tests/tools-happy.test.ts`
+  - Rust: added `uncomplete_task` in `rust/src/tools/tasks.rs`, registered it in `rust/src/server.rs`, and added write-tool coverage in `rust/tests/tools_write_test.rs`
+- ran the full Ralph quality gate command from `RALPH_TASK.md` successfully:
+  - python: `69 passed, 5 skipped`
+  - typescript: `30 passed, 5 skipped`
+  - rust: fmt/clippy/tests all passing
+- confirmed criterion 2 remains complete in `RALPH_TASK.md`
+- next focus: criterion 3 (`create_subtask`, implementation order Python -> TypeScript -> Rust)
+
 ### 2026-02-28 12:20:13
 **Session 7 ended** - 🔄 Context rotation (token limit reached)
 
 ### 2026-02-28 12:20:15
 **Session 8 started** (model: auto)
+
+### 2026-02-28 12:24:00
+- completed criterion 3 (`create_subtask`) across all implementations in Python -> TypeScript -> Rust order:
+  - Python: validated existing `create_subtask` implementation in `python/src/omnifocus_mcp/tools/tasks.py` and added write-tool coverage in `python/tests/test_tools_write.py`
+  - TypeScript: added `create_subtask` registration to `typescript/src/tools/tasks.ts` with required inputs (`name`, `parent_task_id`) plus optional fields parity with `create_task`
+  - Rust: finalized `create_subtask` implementation in `rust/src/tools/tasks.rs` and verified existing server wiring/tests in `rust/src/server.rs` and `rust/tests/tools_write_test.rs`
+- fixed one iteration failure immediately: duplicate Rust `create_subtask` definition (`E0428`) by removing the extra function block and rerunning rust checks
+- ran required cross-implementation quality gates successfully:
+  - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v` (`71 passed, 5 skipped`)
+  - `cd typescript && npx tsc --noEmit && npm test` (`31 passed, 5 skipped`)
+  - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test` (all passing)
+- marked criterion 3 complete in `RALPH_TASK.md`
+- next focus: criterion 4 (`list_subtasks` in Python -> TypeScript -> Rust)

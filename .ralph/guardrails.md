@@ -65,3 +65,13 @@
 - **Instruction**: Immediately validate symbol uniqueness (for example with `rg` counts for core types/functions) before running broader test commands
 - **Added after**: Rust smoke test failed to compile because `examples/smoke_test.rs` contained duplicated type/function blocks
 
+### Sign: Confirm Existing Tool Symbol Before Adding New Function
+- **Trigger**: Before implementing a tool criterion in a file that has active in-progress changes
+- **Instruction**: Run `rg` for the target function name in the destination file first; if already present, extend or fix it instead of appending a second definition
+- **Added after**: Rust `cargo clippy` failed with `E0428` because `create_subtask` was accidentally defined twice in `src/tools/tasks.rs`
+
+### Sign: Check Existing Symbol Before Adding Tool Function
+- **Trigger**: Before adding a new tool function in an already-evolving module
+- **Instruction**: Run `rg` for the target function name first to avoid duplicate definitions, then patch the existing implementation or wiring gaps instead of adding a second copy
+- **Added after**: Python lint failed with `F811` because `uncomplete_task` was accidentally added twice in `tools/tasks.py`
+

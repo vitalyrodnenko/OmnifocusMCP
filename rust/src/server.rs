@@ -32,9 +32,9 @@ use crate::{
         projects::{complete_project, create_project, get_project, list_projects},
         tags::{create_tag, list_tags},
         tasks::{
-            complete_task, create_task, create_tasks_batch, delete_task, delete_tasks_batch,
-            get_inbox, get_task, list_tasks, move_task, search_tasks, uncomplete_task, update_task,
-            CreateTaskInput,
+            complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
+            delete_tasks_batch, get_inbox, get_task, list_tasks, move_task, search_tasks,
+            uncomplete_task, update_task, CreateTaskInput,
         },
     },
 };
@@ -73,6 +73,21 @@ struct CreateTaskParams {
     defer_date: Option<String>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
+    estimated_minutes: Option<i32>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct CreateSubtaskParams {
+    name: String,
+    parent_task_id: String,
+    note: Option<String>,
+    #[serde(rename = "dueDate")]
+    due_date: Option<String>,
+    #[serde(rename = "deferDate")]
+    defer_date: Option<String>,
+    flagged: Option<bool>,
+    tags: Option<Vec<String>>,
+    #[serde(rename = "estimatedMinutes")]
     estimated_minutes: Option<i32>,
 }
 
@@ -283,6 +298,27 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = create_tasks_batch(self.runner.as_ref(), tasks)
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(description = "create a subtask under an existing parent task by id.")]
+    async fn create_subtask(
+        &self,
+        Parameters(params): Parameters<CreateSubtaskParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = create_subtask(
+            self.runner.as_ref(),
+            &params.name,
+            &params.parent_task_id,
+            params.note.as_deref(),
+            params.due_date.as_deref(),
+            params.defer_date.as_deref(),
+            params.flagged,
+            params.tags,
+            params.estimated_minutes,
+        )
+        .await
+        .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 

@@ -98,7 +98,7 @@ Reference implementations:
          `server.rs`, add test in `rust/tests/tools_write_test.rs`.
        - All lint/test commands pass for all 3 implementations.
 
-3. [ ] **`create_subtask`** — all 3 implementations.
+3. [x] **`create_subtask`** — all 3 implementations.
        - **Input:** `name: str` (required, non-empty),
          `parent_task_id: str` (required, non-empty),
          plus same optional fields as `create_task`: `note`, `dueDate`,

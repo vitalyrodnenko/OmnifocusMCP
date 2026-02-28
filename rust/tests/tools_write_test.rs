@@ -11,8 +11,8 @@ use omnifocus_mcp::{
         projects::{complete_project, create_project},
         tags::create_tag,
         tasks::{
-            complete_task, create_task, create_tasks_batch, delete_task, delete_tasks_batch,
-            move_task, uncomplete_task, update_task, CreateTaskInput,
+            complete_task, create_subtask, create_task, create_tasks_batch, delete_task,
+            delete_tasks_batch, move_task, uncomplete_task, update_task, CreateTaskInput,
         },
     },
 };
@@ -100,6 +100,21 @@ async fn write_task_tools_happy_path() {
         .expect("complete_task should succeed");
     assert_eq!(completed["id"], "t1");
 
+    let subtask = create_subtask(
+        &runner,
+        "subtask",
+        "t1",
+        Some("note"),
+        Some("2026-03-02T12:00:00Z"),
+        Some("2026-03-01T12:00:00Z"),
+        Some(true),
+        Some(vec!["home".to_string()]),
+        Some(10),
+    )
+    .await
+    .expect("create_subtask should succeed");
+    assert_eq!(subtask["id"], "t1");
+
     let uncompleted = uncomplete_task(&runner, "t1")
         .await
         .expect("uncomplete_task should succeed");
@@ -172,6 +187,14 @@ async fn validation_errors_for_write_tools() {
 
     assert!(matches!(
         create_task(&runner, "   ", None, None, None, None, None, None, None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        create_subtask(&runner, "   ", "task-id", None, None, None, None, None, None).await,
+        Err(OmniFocusError::Validation(_))
+    ));
+    assert!(matches!(
+        create_subtask(&runner, "name", "   ", None, None, None, None, None, None).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -331,6 +354,44 @@ async fn create_task_script_contains_expected_escaped_values() {
         "const dueDateValue = {};",
         escape_for_jxa(due_date)
     )));
+}
+
+#[tokio::test]
+async fn create_subtask_script_contains_parent_lookup_and_insert_position() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "id": "child-1",
+            "name": "Child",
+            "parentTaskId": "parent-1",
+            "parentTaskName": "Parent"
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = create_subtask(
+        &runner,
+        "Child",
+        "parent-1",
+        Some("detail"),
+        Some("2026-03-10T10:00:00Z"),
+        Some("2026-03-09T10:00:00Z"),
+        Some(true),
+        Some(vec!["home".to_string()]),
+        Some(15),
+    )
+    .await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const parentTask = document.flattenedTasks.find"));
+    assert!(captured.contains("const task = new Task(taskName, parentTask.ending);"));
 }
 
 #[tokio::test]
