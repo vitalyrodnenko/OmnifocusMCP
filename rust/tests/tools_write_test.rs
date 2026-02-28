@@ -999,6 +999,6 @@ async fn append_to_note_script_targets_task_or_project_and_appends_text() {
         .expect("one script should be captured");
     assert!(captured.contains("const objectType = \"task\";"));
     assert!(captured.contains("const objectId = \"task-1\";"));
-    assert!(captured.contains("const textToAppend = \"more context\";"));
-    assert!(captured.contains("obj.appendStringToNote(textToAppend);"));
+    assert!(captured.contains("const textValue = \"more context\";"));
+    assert!(captured.contains("obj.appendStringToNote(textValue);"));
 }
