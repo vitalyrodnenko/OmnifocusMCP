@@ -270,3 +270,14 @@ EOF
 [22:56:49] 🔴 SHELL git status --short → exit 0
 [22:56:50] 🔴 SHELL git diff --staged; git diff → exit 0
 [22:56:50] 🔴 SHELL git log -8 --oneline → exit 0
+[22:56:54] 🔴 SHELL git add "python/src/omnifocus_mcp/server.py" "python/tests/test_tools_read.py" "RALPH_TASK.md" ".ralph/progress.md" ".ralph/activity.log" && git commit --trailer "Made-with: Cursor" -m "$(cat <<'EOF'
+ralph: add list_perspectives and read tool tests
+
+Complete phase 3 perspective listing and add mocked happy-path coverage for all read tools, including server import stubbing for FastMCP in tests.
+EOF
+)" && git status --short → exit 0
+[22:57:14] 🔴 TOKENS: 66179 / 80000 (82%) - approaching limit [read:253KB write:0KB assist:2KB shell:0KB]
+[22:57:18] 🔴 SHELL cd python && ruff check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test → exit 0
+[22:57:34] 🔴 SHELL git status --short → exit 0
+[22:57:34] 🔴 SHELL git log -8 --oneline → exit 0
+[22:57:34] 🔴 SHELL git diff --staged; git diff → exit 0

@@ -201,7 +201,7 @@ parameter (default 100).
 26. [x] Happy-path tests for every read tool (mocked `run_omnijs`): mock
         returns realistic JSON → verify correct parsing, field mapping,
         and return shape. One test per tool minimum.
-27. [ ] Error-path tests: task not found by ID → error response. Invalid
+27. [x] Error-path tests: task not found by ID → error response. Invalid
         filter value → validation error. Empty result set → empty array
         (not an error).
 28. [ ] `ruff check src/ && mypy src/ --strict && pytest tests/ -v` all pass.

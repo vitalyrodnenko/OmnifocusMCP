@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 3
-- Current status: Phase 3 in progress (criteria 16-26 complete).
+- Current status: Phase 3 in progress (criteria 16-27 complete).
 
 ## How This Works
 
@@ -19,14 +19,14 @@ This is how Ralph maintains continuity across iterations.
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
-| 3     | Python: Read Tools + Tests        | 16–28     | 11/13 |
+| 3     | Python: Read Tools + Tests        | 16–28     | 12/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 26 / 75 criteria complete**
+**Total: 27 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -252,3 +252,16 @@ This is how Ralph maintains continuity across iterations.
 - added test-local `FastMCP` stubbing so `omnifocus_mcp.server` imports cleanly in this environment
 - re-ran full command from `RALPH_TASK.md`; all checks passed
 - next up: phase 3 criterion 27 (error-path read-tool tests)
+
+### 2026-02-28 05:12:15
+**Session 4 update**
+- completed phase 3 criterion 27 (error-path read-tool tests)
+- extended `python/tests/test_tools_read.py` with error-path coverage:
+  - task-not-found path for `get_task`
+  - invalid `status` filter validation error for `list_tasks`
+  - empty result set handling returns `[]` for `list_tasks`
+- hardened runtime validation in `python/src/omnifocus_mcp/server.py`:
+  - `list_tasks` now validates allowed `status` values explicitly
+  - `list_projects` now validates allowed `status` values explicitly
+- re-ran full command from `RALPH_TASK.md`; all checks passed
+- next up: phase 3 criterion 28 (phase test command pass)

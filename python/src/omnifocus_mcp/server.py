@@ -69,6 +69,8 @@ async def list_tasks(
     """
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
+    if status not in ("available", "due_soon", "overdue", "completed", "all"):
+        raise ValueError("status must be one of: available, due_soon, overdue, completed, all.")
 
     project_filter = "null" if project is None else escape_for_jxa(project)
     tag_filter = "null" if tag is None else escape_for_jxa(tag)
@@ -237,6 +239,8 @@ async def list_projects(
     """
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
+    if status not in ("active", "on_hold", "completed", "dropped"):
+        raise ValueError("status must be one of: active, on_hold, completed, dropped.")
 
     folder_filter = "null" if folder is None else escape_for_jxa(folder)
     status_filter = escape_for_jxa(status)

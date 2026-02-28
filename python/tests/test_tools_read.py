@@ -287,3 +287,32 @@ async def test_list_perspectives_happy_path(mock_server_run_omnijs: Callable[[An
     assert len(state["calls"]) == 1
     assert "Perspective.BuiltIn.all" in state["calls"][0]["script"]
     assert "return unique.slice(0, 8);" in state["calls"][0]["script"]
+
+
+@pytest.mark.asyncio
+async def test_get_task_not_found_error(server_module: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        raise RuntimeError("Task not found: missing-id")
+
+    monkeypatch.setattr(server_module, "run_omnijs", fake_run_omnijs)
+
+    with pytest.raises(RuntimeError, match="Task not found: missing-id"):
+        await server_module.get_task("missing-id")
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_invalid_status_validation_error(server_module: Any) -> None:
+    with pytest.raises(ValueError, match="status must be one of"):
+        await server_module.list_tasks(status="invalid-status")  # type: ignore[arg-type]
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_empty_result_returns_empty_array(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    server = configured["server"]
+
+    result = await server.list_tasks(limit=4)
+
+    assert json.loads(result) == []
