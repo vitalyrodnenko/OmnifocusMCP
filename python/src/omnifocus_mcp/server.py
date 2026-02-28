@@ -222,3 +222,78 @@ return tasks.map(task => {{
 """.strip()
     result = await run_omnijs(script)
     return json.dumps(result)
+
+
+@_typed_tool(mcp)
+async def list_projects(
+    folder: str | None = None,
+    status: Literal["active", "on_hold", "completed", "dropped"] = "active",
+    limit: int = 100,
+) -> str:
+    """list projects with optional folder and status filters.
+
+    returns projects with id, name, status, folder name, task counts, defer/due
+    dates, note, sequential state, and review interval.
+    """
+    if limit < 1:
+        raise ValueError("limit must be greater than 0.")
+
+    folder_filter = "null" if folder is None else escape_for_jxa(folder)
+    status_filter = escape_for_jxa(status)
+
+    script = f"""
+const folderFilter = {folder_filter};
+const statusFilter = {status_filter};
+
+const projectCounts = new Map();
+document.flattenedTasks.forEach(task => {{
+  const project = task.containingProject;
+  if (!project) return;
+  const projectId = project.id.primaryKey;
+  const current = projectCounts.get(projectId) || {{ taskCount: 0, remainingTaskCount: 0 }};
+  current.taskCount += 1;
+  if (!task.completed) current.remainingTaskCount += 1;
+  projectCounts.set(projectId, current);
+}});
+
+const normalizeProjectStatus = (project) => {{
+  const rawStatus = String(project.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+    return "on_hold";
+  }}
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+}};
+
+const projects = document.flattenedProjects
+  .filter(project => {{
+    if (folderFilter !== null) {{
+      const folderName = project.folder ? project.folder.name : null;
+      if (folderName !== folderFilter) return false;
+    }}
+    return normalizeProjectStatus(project) === statusFilter;
+  }})
+  .slice(0, {limit});
+
+return projects.map(project => {{
+  const projectId = project.id.primaryKey;
+  const counts = projectCounts.get(projectId) || {{ taskCount: 0, remainingTaskCount: 0 }};
+  const reviewInterval = project.reviewInterval;
+  return {{
+    id: projectId,
+    name: project.name,
+    status: normalizeProjectStatus(project),
+    folderName: project.folder ? project.folder.name : null,
+    taskCount: counts.taskCount,
+    remainingTaskCount: counts.remainingTaskCount,
+    deferDate: project.deferDate ? project.deferDate.toISOString() : null,
+    dueDate: project.dueDate ? project.dueDate.toISOString() : null,
+    note: project.note,
+    sequential: project.sequential,
+    reviewInterval: reviewInterval === null || reviewInterval === undefined ? null : String(reviewInterval)
+  }};
+}});
+""".strip()
+    result = await run_omnijs(script)
+    return json.dumps(result)

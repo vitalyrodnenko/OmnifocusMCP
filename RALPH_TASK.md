@@ -180,7 +180,7 @@ parameter (default 100).
         `repetitionRule`, `completionDate`.
 19. [x] Tool `search_tasks` — accepts `query` string + optional `limit`.
         Searches task names AND notes. Returns matching tasks.
-20. [ ] Tool `list_projects` — optional filters: `folder` (name), `status`
+20. [x] Tool `list_projects` — optional filters: `folder` (name), `status`
         (active | on_hold | completed | dropped, default: active). Returns:
         `id`, `name`, `status`, `folderName`, `taskCount`,
         `remainingTaskCount`, `deferDate`, `dueDate`, `note`, `sequential`,

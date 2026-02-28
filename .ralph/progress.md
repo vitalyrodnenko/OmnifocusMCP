@@ -5,7 +5,7 @@
 ## Summary
 
 - Iterations completed: 2
-- Current status: Phase 3 in progress (criteria 16-19 complete).
+- Current status: Phase 3 in progress (criteria 16-20 complete).
 
 ## How This Works
 
@@ -19,14 +19,14 @@ This is how Ralph maintains continuity across iterations.
 |-------|-----------------------------------|-----------|------|
 | 1     | Repo Scaffolding                  | 1–3       | 3/3  |
 | 2     | Python: JXA Layer + Tests         | 4–15      | 12/12 |
-| 3     | Python: Read Tools + Tests        | 16–28     | 4/13 |
+| 3     | Python: Read Tools + Tests        | 16–28     | 5/13 |
 | 4     | Python: Write Tools + Tests       | 29–43     | 0/15 |
 | 5     | Python: Resources & Prompts + Tests | 44–53   | 0/10 |
 | 6     | Python: Polish                    | 54–59     | 0/6  |
 | 7     | TypeScript: Full Port + Tests     | 60–71     | 0/12 |
 | 8     | Final Polish                      | 72–75     | 0/4  |
 
-**Total: 19 / 75 criteria complete**
+**Total: 20 / 75 criteria complete**
 
 ## Key Decisions
 
@@ -167,3 +167,16 @@ This is how Ralph maintains continuity across iterations.
 
 ### 2026-02-27 22:50:41
 **Session 3 started** (model: auto)
+
+### 2026-02-27 22:51:36
+**Session 3 update**
+- completed phase 3 criterion 20 (`list_projects`)
+- extended `python/src/omnifocus_mcp/server.py` with `list_projects(folder, status, limit)`:
+  - validates `limit > 0`
+  - supports `status` filter: `active`, `on_hold`, `completed`, `dropped`
+  - optionally filters by folder name (sanitized via `escape_for_jxa`)
+  - computes `taskCount` and `remainingTaskCount` in OmniJS and returns required fields:
+    `id`, `name`, `status`, `folderName`, `taskCount`, `remainingTaskCount`,
+    `deferDate`, `dueDate`, `note`, `sequential`, `reviewInterval`
+- re-ran full command from `RALPH_TASK.md`; all checks passed
+- next up: phase 3 criterion 21 (`get_project`)
