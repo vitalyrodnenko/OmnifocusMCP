@@ -192,10 +192,27 @@ impl SmokeTest {
             require_string_key(&created_project, "id", "create_project result")?.to_string();
         self.created_project_ids.push(project_id.clone());
 
+        let folder_name = self.unique_name("smoke folder");
+        let created_folder = create_folder(runner, &folder_name, None).await?;
+        let folder_id =
+            require_string_key(&created_folder, "id", "create_folder result")?.to_string();
+        self.created_folder_ids.push(folder_id.clone());
+        let updated_folder_name = format!("{folder_name} updated");
+        let _ = update_folder(runner, &folder_id, Some(&updated_folder_name), Some("active")).await?;
+        let folder_value = get_folder(runner, &folder_id).await?;
+        let folder_obj = require_object(&folder_value, "get_folder result")?;
+        if folder_obj.get("name").and_then(Value::as_str) != Some(updated_folder_name.as_str()) {
+            return Err(OmniFocusError::Validation(
+                "update_folder did not apply the expected name.".to_string(),
+            ));
+        }
+
         let tag_name = self.unique_name("smoke tag");
         let created_tag = create_tag(runner, &tag_name, None).await?;
         let tag_id = require_string_key(&created_tag, "id", "create_tag result")?.to_string();
         self.created_tag_ids.push(tag_id.clone());
+        let updated_tag_name = format!("{tag_name} updated");
+        let _ = update_tag(runner, &tag_id, Some(&updated_tag_name), Some("on_hold")).await?;
 
         let created_task = create_task(
             runner,
