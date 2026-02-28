@@ -539,7 +539,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("const counts = {");
     expect(script).toContain("counts.dueSoon += 1;");
     expect(script).toContain("counts.deferred += 1;");
-    expect(parseToolResult(result)).toEqual({
+    expect(JSON.parse(result.content[0].text)).toEqual({
       total: 4,
       available: 2,
       completed: 1,

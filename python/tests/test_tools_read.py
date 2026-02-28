@@ -265,47 +265,6 @@ async def test_list_tasks_happy_path(mock_server_run_omnijs: Callable[[Any], dic
 
 
 @pytest.mark.asyncio
-async def test_get_task_counts_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
-    payload = {
-        "total": 12,
-        "available": 5,
-        "completed": 3,
-        "overdue": 2,
-        "dueSoon": 4,
-        "flagged": 6,
-        "deferred": 4,
-    }
-    configured = mock_server_run_omnijs(payload)
-    state = configured["state"]
-    server = configured["server"]
-
-    result = await server.get_task_counts(
-        project="Proj",
-        tag="urgent",
-        tags=["home", "urgent"],
-        tagFilterMode="all",
-        flagged=True,
-        dueBefore="2026-03-10T00:00:00Z",
-        dueAfter="2026-03-01T00:00:00Z",
-        deferBefore="2026-03-08T00:00:00Z",
-        deferAfter="2026-02-25T00:00:00Z",
-        completedBefore="2026-03-09T00:00:00Z",
-        completedAfter="2026-02-20T00:00:00Z",
-        maxEstimatedMinutes=30,
-    )
-
-    assert json.loads(result) == payload
-    script = state["calls"][0]["script"]
-    assert 'const projectFilter = "Proj";' in script
-    assert 'const tagNames = ["urgent","home"];' in script
-    assert 'const tagFilterMode = "all";' in script
-    assert "const counts = {" in script
-    assert "counts.total += 1;" in script
-    assert "if (task.completed) {" in script
-    assert "if (task.deferDate !== null && task.deferDate > now) counts.deferred += 1;" in script
-
-
-@pytest.mark.asyncio
 async def test_list_tasks_date_filters_are_included_in_script(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

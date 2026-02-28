@@ -14,8 +14,8 @@ use omnifocus_mcp::{
         projects::{get_project, list_projects, search_projects},
         tags::{list_tags, search_tags},
         tasks::{
-            get_inbox, get_task, get_task_counts, list_subtasks, list_tasks as list_tasks_with_duration,
-            search_tasks,
+            get_inbox, get_task, get_task_counts, list_subtasks,
+            list_tasks as list_tasks_with_duration, search_tasks,
         },
     },
 };
@@ -682,19 +682,7 @@ async fn get_task_counts_validation_errors() {
     ));
     assert!(matches!(
         get_task_counts(
-            &runner,
-            None,
-            None,
-            None,
-            "invalid",
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
-            None,
+            &runner, None, None, None, "invalid", None, None, None, None, None, None, None, None,
         )
         .await,
         Err(OmniFocusError::Validation(_))
