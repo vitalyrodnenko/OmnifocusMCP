@@ -185,6 +185,66 @@ return sortedProjects.slice(0, ${limit});
   );
 
   server.tool(
+    "get_project_counts",
+    "get aggregate project counts by status without listing individual projects.",
+    {
+      folder: z.string().min(1).optional().describe("optional folder name filter"),
+    },
+    async ({ folder }) => {
+      try {
+        const folderFilter = folder === undefined ? "null" : escapeForJxa(folder);
+        const script = `
+const folderFilter = ${folderFilter};
+
+const normalizeProjectStatus = (project) => {
+  const rawStatus = String(project.status || "").toLowerCase();
+  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
+    return "on_hold";
+  }
+  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("dropped")) return "dropped";
+  return "active";
+};
+
+const counts = {
+  total: 0,
+  active: 0,
+  onHold: 0,
+  completed: 0,
+  dropped: 0,
+  stalled: 0
+};
+
+document.flattenedProjects.forEach(project => {
+  if (folderFilter !== null) {
+    const folderName = project.folder ? project.folder.name : null;
+    if (folderName !== folderFilter) return;
+  }
+
+  const status = normalizeProjectStatus(project);
+  const isStalled = status === "active"
+    && project.flattenedTasks.some(t => !t.completed)
+    && project.nextTask === null;
+
+  counts.total += 1;
+  if (status === "active") counts.active += 1;
+  if (status === "on_hold") counts.onHold += 1;
+  if (status === "completed") counts.completed += 1;
+  if (status === "dropped") counts.dropped += 1;
+  if (isStalled) counts.stalled += 1;
+});
+
+return counts;
+`.trim();
+        const result = await runOmniJs(script);
+        return textResult(result);
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
+  server.tool(
     "search_projects",
     "search projects by query using omnifocus project matching.",
     {

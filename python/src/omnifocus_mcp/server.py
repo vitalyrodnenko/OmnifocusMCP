@@ -17,6 +17,7 @@ from omnifocus_mcp.tools.projects import (  # noqa: E402,F401
     create_project,
     delete_project,
     get_project,
+    get_project_counts,
     list_projects,
     move_project,
     search_projects,

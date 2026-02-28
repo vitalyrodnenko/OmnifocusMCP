@@ -73,6 +73,17 @@ pub struct TaskCountsResult {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ProjectCountsResult {
+    pub total: i32,
+    pub active: i32,
+    #[serde(rename = "onHold")]
+    pub on_hold: i32,
+    pub completed: i32,
+    pub dropped: i32,
+    pub stalled: i32,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ForecastDay {
     pub date: String,
     pub task_count: i32,

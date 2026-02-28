@@ -44,6 +44,371 @@ return tasks.map(task => {{
     parse_task_list(value)
 }
 
+#[allow(clippy::too_many_arguments)]
+pub async fn get_task_counts<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+) -> Result<TaskCountsResult> {
+    if let Some(project_name) = project {
+        if project_name.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "project must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if let Some(tag_name) = tag {
+        if tag_name.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "tag must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if let Some(tag_names) = &tags {
+        for tag_name in tag_names {
+            if tag_name.trim().is_empty() {
+                return Err(OmniFocusError::Validation(
+                    "tags entries must not be empty when provided.".to_string(),
+                ));
+            }
+        }
+    }
+    if !matches!(tag_filter_mode, "any" | "all") {
+        return Err(OmniFocusError::Validation(
+            "tagFilterMode must be one of: any, all.".to_string(),
+        ));
+    }
+    if let Some(max_minutes) = max_estimated_minutes {
+        if max_minutes < 0 {
+            return Err(OmniFocusError::Validation(
+                "maxEstimatedMinutes must be greater than or equal to 0.".to_string(),
+            ));
+        }
+    }
+
+    let project_filter = project
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let mut merged_tag_names: Vec<String> = Vec::new();
+    if let Some(tag_name) = tag {
+        let normalized_tag = tag_name.trim().to_string();
+        if !normalized_tag.is_empty() && !merged_tag_names.contains(&normalized_tag) {
+            merged_tag_names.push(normalized_tag);
+        }
+    }
+    if let Some(tag_names) = tags {
+        for tag_name in tag_names {
+            let normalized_tag = tag_name.trim().to_string();
+            if !normalized_tag.is_empty() && !merged_tag_names.contains(&normalized_tag) {
+                merged_tag_names.push(normalized_tag);
+            }
+        }
+    }
+    let tag_names_filter = if merged_tag_names.is_empty() {
+        "null".to_string()
+    } else {
+        serde_json::to_string(&merged_tag_names)?
+    };
+    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let flagged_filter = flagged
+        .map(|value| {
+            if value {
+                "true".to_string()
+            } else {
+                "false".to_string()
+            }
+        })
+        .unwrap_or_else(|| "null".to_string());
+    let due_before_filter = due_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let due_after_filter = due_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let defer_before_filter = defer_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let defer_after_filter = defer_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let completed_before_filter = completed_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let completed_after_filter = completed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let max_estimated_minutes_filter = max_estimated_minutes
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "null".to_string());
+    let script = format!(
+        r#"const projectFilter = {project_filter};
+const tagNames = {tag_names_filter};
+const tagFilterMode = {tag_filter_mode_filter};
+const flaggedFilter = {flagged_filter};
+const dueBeforeRaw = {due_before_filter};
+const dueAfterRaw = {due_after_filter};
+const deferBeforeRaw = {defer_before_filter};
+const deferAfterRaw = {defer_after_filter};
+const completedBeforeRaw = {completed_before_filter};
+const completedAfterRaw = {completed_after_filter};
+const maxEstimatedMinutes = {max_estimated_minutes_filter};
+const now = new Date();
+const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+const parseOptionalDate = (value, fieldName) => {{
+  if (value === null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {{
+    throw new Error(`${{fieldName}} must be a valid ISO 8601 date string.`);
+  }}
+  return parsed;
+}};
+const dueBefore = parseOptionalDate(dueBeforeRaw, "dueBefore");
+const dueAfter = parseOptionalDate(dueAfterRaw, "dueAfter");
+const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
+const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const filteredTasks = document.flattenedTasks.filter(task => {{
+  if (projectFilter !== null) {{
+    const projectName = task.containingProject ? task.containingProject.name : null;
+    if (projectName !== projectFilter) return false;
+  }}
+  if (tagNames !== null && tagNames.length > 0) {{
+    let tagMatches = false;
+    if (tagFilterMode === "all") {{
+      tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+    }} else {{
+      tagMatches = task.tags.some(t => tagNames.includes(t.name));
+    }}
+    if (!tagMatches) return false;
+  }}
+  if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
+  if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
+  if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
+  if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
+  if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
+  if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
+  if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+  if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
+  return true;
+}});
+const counts = {{
+  total: 0,
+  available: 0,
+  completed: 0,
+  overdue: 0,
+  dueSoon: 0,
+  flagged: 0,
+  deferred: 0
+}};
+filteredTasks.forEach(task => {{
+  counts.total += 1;
+  if (!task.completed && (task.deferDate === null || task.deferDate <= now)) counts.available += 1;
+  if (task.completed) counts.completed += 1;
+  if (!task.completed && task.dueDate !== null && task.dueDate < now) counts.overdue += 1;
+  if (!task.completed && task.dueDate !== null && task.dueDate >= now && task.dueDate <= soon) counts.dueSoon += 1;
+  if (task.flagged) counts.flagged += 1;
+  if (!task.completed && task.deferDate !== null && task.deferDate > now) counts.deferred += 1;
+}});
+return counts;"#
+    );
+
+    let value = runner.run_omnijs(&script).await?;
+    Ok(serde_json::from_value(value)?)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn get_task_counts<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+) -> Result<TaskCountsResult> {
+    if let Some(project_name) = project {
+        if project_name.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "project must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if let Some(tag_name) = tag {
+        if tag_name.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "tag must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if let Some(tag_names) = &tags {
+        for tag_name in tag_names {
+            if tag_name.trim().is_empty() {
+                return Err(OmniFocusError::Validation(
+                    "tags entries must not be empty when provided.".to_string(),
+                ));
+            }
+        }
+    }
+    if !matches!(tag_filter_mode, "any" | "all") {
+        return Err(OmniFocusError::Validation(
+            "tagFilterMode must be one of: any, all.".to_string(),
+        ));
+    }
+    if let Some(max_minutes) = max_estimated_minutes {
+        if max_minutes < 0 {
+            return Err(OmniFocusError::Validation(
+                "maxEstimatedMinutes must be greater than or equal to 0.".to_string(),
+            ));
+        }
+    }
+
+    let project_filter = project
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let mut merged_tag_names: Vec<String> = Vec::new();
+    if let Some(tag_name) = tag {
+        let normalized_tag = tag_name.trim().to_string();
+        if !normalized_tag.is_empty() && !merged_tag_names.contains(&normalized_tag) {
+            merged_tag_names.push(normalized_tag);
+        }
+    }
+    if let Some(tag_names) = tags {
+        for tag_name in tag_names {
+            let normalized_tag = tag_name.trim().to_string();
+            if !normalized_tag.is_empty() && !merged_tag_names.contains(&normalized_tag) {
+                merged_tag_names.push(normalized_tag);
+            }
+        }
+    }
+    let tag_names_filter = if merged_tag_names.is_empty() {
+        "null".to_string()
+    } else {
+        serde_json::to_string(&merged_tag_names)?
+    };
+    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let flagged_filter = flagged
+        .map(|value| {
+            if value {
+                "true".to_string()
+            } else {
+                "false".to_string()
+            }
+        })
+        .unwrap_or_else(|| "null".to_string());
+    let due_before_filter = due_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let due_after_filter = due_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let defer_before_filter = defer_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let defer_after_filter = defer_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let completed_before_filter = completed_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let completed_after_filter = completed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let max_estimated_minutes_filter = max_estimated_minutes
+        .map(|value| value.to_string())
+        .unwrap_or_else(|| "null".to_string());
+    let script = format!(
+        r#"const projectFilter = {project_filter};
+const tagNames = {tag_names_filter};
+const tagFilterMode = {tag_filter_mode_filter};
+const flaggedFilter = {flagged_filter};
+const dueBeforeRaw = {due_before_filter};
+const dueAfterRaw = {due_after_filter};
+const deferBeforeRaw = {defer_before_filter};
+const deferAfterRaw = {defer_after_filter};
+const completedBeforeRaw = {completed_before_filter};
+const completedAfterRaw = {completed_after_filter};
+const maxEstimatedMinutes = {max_estimated_minutes_filter};
+const now = new Date();
+const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+const parseOptionalDate = (value, fieldName) => {{
+  if (value === null) return null;
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {{
+    throw new Error(`${{fieldName}} must be a valid ISO 8601 date string.`);
+  }}
+  return parsed;
+}};
+const dueBefore = parseOptionalDate(dueBeforeRaw, "dueBefore");
+const dueAfter = parseOptionalDate(dueAfterRaw, "dueAfter");
+const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
+const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
+const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
+const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const filteredTasks = document.flattenedTasks.filter(task => {{
+  if (projectFilter !== null) {{
+    const projectName = task.containingProject ? task.containingProject.name : null;
+    if (projectName !== projectFilter) return false;
+  }}
+  if (tagNames !== null && tagNames.length > 0) {{
+    let tagMatches = false;
+    if (tagFilterMode === "all") {{
+      tagMatches = tagNames.every(tn => task.tags.some(t => t.name === tn));
+    }} else {{
+      tagMatches = task.tags.some(t => tagNames.includes(t.name));
+    }}
+    if (!tagMatches) return false;
+  }}
+  if (flaggedFilter !== null && task.flagged !== flaggedFilter) return false;
+  if (dueBefore !== null && !(task.dueDate !== null && task.dueDate < dueBefore)) return false;
+  if (dueAfter !== null && !(task.dueDate !== null && task.dueDate > dueAfter)) return false;
+  if (deferBefore !== null && !(task.deferDate !== null && task.deferDate < deferBefore)) return false;
+  if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
+  if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
+  if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+  if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
+  return true;
+}});
+const counts = {{
+  total: 0,
+  available: 0,
+  completed: 0,
+  overdue: 0,
+  dueSoon: 0,
+  flagged: 0,
+  deferred: 0
+}};
+filteredTasks.forEach(task => {{
+  counts.total += 1;
+  if (!task.completed && (task.deferDate === null || task.deferDate <= now)) counts.available += 1;
+  if (task.completed) counts.completed += 1;
+  if (!task.completed && task.dueDate !== null && task.dueDate < now) counts.overdue += 1;
+  if (!task.completed && task.dueDate !== null && task.dueDate >= now && task.dueDate <= soon) counts.dueSoon += 1;
+  if (task.flagged) counts.flagged += 1;
+  if (!task.completed && task.deferDate !== null && task.deferDate > now) counts.deferred += 1;
+}});
+return counts;"#
+    );
+
+    let value = runner.run_omnijs(&script).await?;
+    Ok(serde_json::from_value(value)?)
+}
 
 #[allow(clippy::too_many_arguments)]
 pub async fn list_tasks<R: JxaRunner>(
