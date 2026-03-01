@@ -282,7 +282,7 @@ required across Python/TypeScript/Rust with strict parity.
         - reject empty/whitespace ids.
         - return actionable validation errors.
 
-22. [ ] Implement move-to-parent logic in JXA/OmniJS for all 3
+22. [x] Implement move-to-parent logic in JXA/OmniJS for all 3
         implementations:
         - locate task by `task_id`
         - locate parent task by `parent_task_id`
@@ -290,7 +290,7 @@ required across Python/TypeScript/Rust with strict parity.
         - prevent cycles (cannot move task under its own descendant)
         - move task using OmniFocus move API (no delete/recreate)
 
-23. [ ] Support moving a subtask back out to non-subtask destinations:
+23. [x] Support moving a subtask back out to non-subtask destinations:
         - to another project via `project`
         - to inbox when destination omitted
         Ensure this keeps object identity and does not clone/recreate.
