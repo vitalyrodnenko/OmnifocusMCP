@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
   build:
     strategy:
@@ -29,8 +32,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: build release binary
-        working-directory: rust
-        run: cargo build --release --target "${{ matrix.target }}"
+        run: cargo build --manifest-path rust/Cargo.toml --release --target "${{ matrix.target }}"
 
       - name: package tarball and checksum
         run: |
@@ -40,17 +42,16 @@ jobs:
           mkdir -p "${STAGE_DIR}"
           cp "rust/target/${TARGET}/release/omnifocus-mcp" "${STAGE_DIR}/omnifocus-mcp"
           TAR_NAME="omnifocus-mcp-${VERSION}-${TARGET}.tar.gz"
-          tar -C "${STAGE_DIR}" -czf "${TAR_NAME}" omnifocus-mcp
-          SHA="$(shasum -a 256 "${TAR_NAME}" | awk '{print $1}')"
-          printf "%s  %s\n" "${SHA}" "${TAR_NAME}" > "${TAR_NAME}.sha256"
+          tar -C "${STAGE_DIR}" -czf "${STAGE_DIR}/${TAR_NAME}" omnifocus-mcp
+          SHA="$(shasum -a 256 "${STAGE_DIR}/${TAR_NAME}" | awk '{print $1}')"
+          printf "%s  %s\n" "${SHA}" "${TAR_NAME}" > "${STAGE_DIR}/${TAR_NAME}.sha256"
+          rm "${STAGE_DIR}/omnifocus-mcp"
 
       - name: upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: rust-${{ matrix.target }}
-          path: |
-            omnifocus-mcp-*.tar.gz
-            omnifocus-mcp-*.tar.gz.sha256
+          path: release-artifacts/*
 
   release:
     runs-on: ubuntu-latest
@@ -59,13 +60,8 @@ jobs:
       - name: download artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
-
-      - name: flatten artifacts
-        run: |
-          mkdir -p release
-          cp artifacts/**/*.tar.gz release/
-          cp artifacts/**/*.sha256 release/
+          path: release
+          merge-multiple: true
 
       - name: build release notes with shas
         run: |
@@ -82,130 +78,8 @@ jobs:
       - name: publish github release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_name }}
           files: |
             release/*.tar.gz
             release/*.sha256
           body_path: release-notes.md
-name: Release Rust Binary
-
-on:
-  push:
-    tags:
-      - "rust-v*"
-
-permissions:
-  contents: write
-
-env:
-  CARGO_TERM_COLOR: always
-
-jobs:
-  build_arm64:
-    name: Build macOS ARM64
-    runs-on: macos-latest
-    outputs:
-      version: ${{ steps.meta.outputs.version }}
-      sha256: ${{ steps.meta.outputs.sha256 }}
-      filename: ${{ steps.meta.outputs.filename }}
-      target: ${{ steps.meta.outputs.target }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-apple-darwin
-
-      - name: Build release binary
-        run: cargo build --manifest-path rust/Cargo.toml --release --target aarch64-apple-darwin
-
-      - name: Package release tarball and sha
-        id: meta
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME#rust-v}"
-          TARGET="aarch64-apple-darwin"
-          FILENAME="omnifocus-mcp-${VERSION}-${TARGET}.tar.gz"
-          mkdir -p release-assets
-          cp "rust/target/${TARGET}/release/omnifocus-mcp" "release-assets/omnifocus-mcp"
-          tar -czf "release-assets/${FILENAME}" -C release-assets omnifocus-mcp
-          SHA256="$(shasum -a 256 "release-assets/${FILENAME}" | awk '{print $1}')"
-          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "filename=${FILENAME}" >> "${GITHUB_OUTPUT}"
-          echo "sha256=${SHA256}" >> "${GITHUB_OUTPUT}"
-          echo "target=${TARGET}" >> "${GITHUB_OUTPUT}"
-          rm "release-assets/omnifocus-mcp"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.meta.outputs.filename }}
-          path: release-assets/${{ steps.meta.outputs.filename }}
-
-  build_intel:
-    name: Build macOS Intel
-    runs-on: macos-13
-    outputs:
-      version: ${{ steps.meta.outputs.version }}
-      sha256: ${{ steps.meta.outputs.sha256 }}
-      filename: ${{ steps.meta.outputs.filename }}
-      target: ${{ steps.meta.outputs.target }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-apple-darwin
-
-      - name: Build release binary
-        run: cargo build --manifest-path rust/Cargo.toml --release --target x86_64-apple-darwin
-
-      - name: Package release tarball and sha
-        id: meta
-        shell: bash
-        run: |
-          VERSION="${GITHUB_REF_NAME#rust-v}"
-          TARGET="x86_64-apple-darwin"
-          FILENAME="omnifocus-mcp-${VERSION}-${TARGET}.tar.gz"
-          mkdir -p release-assets
-          cp "rust/target/${TARGET}/release/omnifocus-mcp" "release-assets/omnifocus-mcp"
-          tar -czf "release-assets/${FILENAME}" -C release-assets omnifocus-mcp
-          SHA256="$(shasum -a 256 "release-assets/${FILENAME}" | awk '{print $1}')"
-          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "filename=${FILENAME}" >> "${GITHUB_OUTPUT}"
-          echo "sha256=${SHA256}" >> "${GITHUB_OUTPUT}"
-          echo "target=${TARGET}" >> "${GITHUB_OUTPUT}"
-          rm "release-assets/omnifocus-mcp"
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ steps.meta.outputs.filename }}
-          path: release-assets/${{ steps.meta.outputs.filename }}
-
-  release:
-    name: Create GitHub Release
-    runs-on: ubuntu-latest
-    needs:
-      - build_arm64
-      - build_intel
-    steps:
-      - name: Download artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: release-assets
-          merge-multiple: true
-
-      - name: Publish release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ github.ref_name }}
-          files: release-assets/*.tar.gz
-          body: |
-            Rust release assets for OmniFocus MCP.
-
-            - `${{ needs.build_arm64.outputs.filename }}` SHA256: `${{ needs.build_arm64.outputs.sha256 }}`
-            - `${{ needs.build_intel.outputs.filename }}` SHA256: `${{ needs.build_intel.outputs.sha256 }}`
