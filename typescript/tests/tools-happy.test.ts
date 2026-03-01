@@ -319,7 +319,7 @@ describe("tool happy paths", () => {
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain('const taskIds = ["task-1"');
     expect(script).toContain('const projectName = "Work";');
-    expect(script).toContain("moveTasks([task], destinationInfo.location);");
+    expect(script).toContain("moveTasks(movableTasks, destinationInfo.location);");
     expect(script).toContain("partial_success");
     expect(script).toContain("moved_count");
   });

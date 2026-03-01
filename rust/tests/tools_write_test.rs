@@ -674,6 +674,8 @@ async fn move_tasks_batch_script_includes_cycle_guard_and_parity_fields() {
     assert!(captured.contains("const taskIds = [\"task-1\",\"missing\"];"));
     assert!(captured.contains("const parentTaskId = \"parent-1\";"));
     assert!(captured.contains("Cannot move tasks under their own descendant."));
+    assert!(captured.contains("const movableTasks = Array.from(existingTasksById.values());"));
+    assert!(captured.contains("moveTasks(movableTasks, destinationInfo.location);"));
     assert!(captured.contains("destination: destinationInfo.summary"));
     assert!(captured.contains("partial_success: movedCount > 0 && failedCount > 0"));
 }
