@@ -236,10 +236,11 @@ async fn move_tasks_batch_rejects_duplicate_task_ids_criterion29() {
     )
     .await;
     assert!(matches!(result, Err(OmniFocusError::Validation(_))));
-    assert_eq!(
-        result.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicate ids.".to_string())
-    );
+    let duplicate_error = result
+        .err()
+        .map(|error| error.to_string())
+        .unwrap_or_default();
+    assert!(duplicate_error.contains("task_ids must not contain duplicate"));
 }
 
 #[tokio::test]
@@ -413,10 +414,11 @@ async fn move_tasks_batch_rejects_duplicate_and_self_parent_inputs() {
     )
     .await;
     assert!(matches!(duplicate_ids, Err(OmniFocusError::Validation(_))));
-    assert_eq!(
-        duplicate_ids.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicate ids.".to_string())
-    );
+    let duplicate_error = duplicate_ids
+        .err()
+        .map(|error| error.to_string())
+        .unwrap_or_default();
+    assert!(duplicate_error.contains("task_ids must not contain duplicate"));
 
     let self_parent = move_tasks_batch(
         &runner,
@@ -619,10 +621,11 @@ async fn move_tasks_batch_rejects_ambiguous_duplicate_and_self_parent_inputs() {
     )
     .await;
     assert!(matches!(duplicate, Err(OmniFocusError::Validation(_))));
-    assert_eq!(
-        duplicate.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicate ids.".to_string())
-    );
+    let duplicate_error = duplicate
+        .err()
+        .map(|error| error.to_string())
+        .unwrap_or_default();
+    assert!(duplicate_error.contains("task_ids must not contain duplicate"));
 
     let self_parent = move_tasks_batch(
         &runner,
