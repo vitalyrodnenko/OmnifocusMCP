@@ -326,12 +326,71 @@ required across Python/TypeScript/Rust with strict parity.
 
 ---
 
+## Phase 10 — Batch Task Move Capability
+
+### Success Criteria
+
+28. [ ] Add a new tool `move_tasks_batch` in all 3 implementations with
+        identical name, parameters, and response shape.
+        - input parameters:
+          - `task_ids: string[]` (required, non-empty)
+          - `project?: string`
+          - `parent_task_id?: string`
+        - destination modes:
+          (a) move to project, (b) move under parent task, (c) move to inbox.
+
+29. [ ] Add strict validation in all 3 implementations:
+        - reject empty `task_ids`
+        - reject empty/whitespace ids
+        - reject duplicate ids in request
+        - reject ambiguous destination (`project` + `parent_task_id`)
+        - reject self-parenting when parent id appears in `task_ids`
+        - reject cycle-causing moves (parent is a descendant of any moved task)
+        - return actionable validation errors.
+
+30. [ ] Implement batch move with OmniFocus move API (no delete/recreate):
+        - perform move in one OmniJS call per tool invocation
+        - preserve existing task object identity and ids
+        - support project destination, inbox destination, and parent-task destination
+        - never clone/recreate tasks as part of reorganization.
+
+31. [ ] Define and enforce a consistent response shape across Python,
+        TypeScript, Rust:
+        - include aggregate summary (requested/moved/failed counts)
+        - include per-task result objects with id, name (if available),
+          moved flag, destination summary, and error (if any)
+        - include `partial_success` indicator when some tasks fail.
+
+32. [ ] Add/extend tests in all 3 implementations covering:
+        - happy path: move multiple tasks to project
+        - happy path: move multiple tasks to inbox
+        - happy path: move multiple tasks under parent task
+        - ambiguous destination rejection
+        - duplicate ids rejection
+        - self-parenting rejection
+        - cycle rejection
+        - mixed found/not-found partial success behavior
+        - parity of params and response shape across all 3.
+
+33. [ ] Update docs/tool descriptions:
+        - add `move_tasks_batch` to README features + usage examples
+        - clarify this is non-destructive reorganization
+        - clarify delete confirmation policy remains separate.
+
+34. [ ] Run full quality gates after implementation:
+        - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+        - `cd typescript && npx tsc --noEmit && npm test`
+        - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+        - Ensure no regressions in existing move/update/delete behavior.
+
+---
+
 ## Ralph Instructions
 
 1. Work on the next incomplete criterion (marked `[ ]`)
 2. Check off completed criteria (change `[ ]` to `[x]`)
 3. For phases 1-8, follow docs/config-only constraints.
-4. For phase 9, modify code + tests in all 3 implementations with strict
+4. For phases 9-10, modify code + tests in all 3 implementations with strict
    parity (same tool names, params, response shapes).
 5. Read existing files before modifying — understand context first.
 6. Commit changes after completing each phase.
