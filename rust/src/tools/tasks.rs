@@ -2569,6 +2569,12 @@ pub async fn move_task<R: JxaRunner>(
             ));
         }
     }
+    if project.is_some() && parent_task_id.is_some() {
+        return Err(OmniFocusError::Validation(
+            "provide either project or parent_task_id, not both (destination is ambiguous)."
+                .to_string(),
+        ));
+    }
 
     let task_id_value = escape_for_jxa(task_id.trim());
     let project_value = project

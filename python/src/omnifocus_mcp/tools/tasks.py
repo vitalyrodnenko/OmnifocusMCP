@@ -1987,6 +1987,10 @@ async def move_task(
         raise ValueError("project must not be empty when provided.")
     if parent_task_id is not None and parent_task_id.strip() == "":
         raise ValueError("parent_task_id must not be empty when provided.")
+    if project is not None and parent_task_id is not None:
+        raise ValueError(
+            "provide either project or parent_task_id, not both (destination is ambiguous)."
+        )
 
     task_id_value = escape_for_jxa(task_id.strip())
     project_value = "null" if project is None else escape_for_jxa(project.strip())

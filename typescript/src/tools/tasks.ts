@@ -995,10 +995,30 @@ return {
     },
     async ({ task_id, project, parent_task_id }) => {
       try {
-        const taskId = escapeForJxa(task_id);
-        const projectName = project === undefined ? "null" : escapeForJxa(project.trim());
+        const normalizedTaskId = task_id.trim();
+        if (normalizedTaskId === "") {
+          throw new Error("task_id must not be empty.");
+        }
+        const normalizedProject = project === undefined ? undefined : project.trim();
+        if (project !== undefined && normalizedProject === "") {
+          throw new Error("project must not be empty when provided.");
+        }
+        const normalizedParentTaskId =
+          parent_task_id === undefined ? undefined : parent_task_id.trim();
+        if (parent_task_id !== undefined && normalizedParentTaskId === "") {
+          throw new Error("parent_task_id must not be empty when provided.");
+        }
+        if (normalizedProject !== undefined && normalizedParentTaskId !== undefined) {
+          throw new Error(
+            "provide either project or parent_task_id, not both (destination is ambiguous)."
+          );
+        }
+
+        const taskId = escapeForJxa(normalizedTaskId);
+        const projectName =
+          normalizedProject === undefined ? "null" : escapeForJxa(normalizedProject);
         const parentTaskId =
-          parent_task_id === undefined ? "null" : escapeForJxa(parent_task_id.trim());
+          normalizedParentTaskId === undefined ? "null" : escapeForJxa(normalizedParentTaskId);
         const script = `
 const taskId = ${taskId};
 const projectName = ${projectName};
@@ -1016,7 +1036,12 @@ if (parentTaskId !== null && parentTaskId !== "") {
   if (!targetProject) throw new Error(\`Project not found: \${projectName}\`);
   moveTasks([task], targetProject.ending);
 }
-return { id: task.id.primaryKey, name: task.name, projectName: task.containingProject ? task.containingProject.name : null };
+return {
+  id: task.id.primaryKey,
+  name: task.name,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  inInbox: task.inInbox
+};
 `.trim();
         return textResult(await runOmniJs(script));
       } catch (error: unknown) {

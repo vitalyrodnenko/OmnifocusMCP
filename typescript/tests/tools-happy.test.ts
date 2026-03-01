@@ -233,6 +233,32 @@ describe("tool happy paths", () => {
     expect(script).toContain("const updates = {\"name\":\"Updated task\",\"flagged\":true};");
   });
 
+  test("move_task supports parent_task_id destination", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-1",
+      name: "Task One",
+      projectName: "Work",
+      inInbox: false,
+    });
+    const handler = registeredTools.get("move_task");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_id: "task-1",
+      parent_task_id: "parent-1",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "task-1",
+      name: "Task One",
+      projectName: "Work",
+      inInbox: false,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const taskId = "task-1";');
+    expect(script).toContain('const parentTaskId = "parent-1";');
+    expect(script).toContain("moveTasks([task], parentTask.ending);");
+    expect(script).toContain("inInbox: task.inInbox");
+  });
+
   test("uncomplete_task marks completed task incomplete", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "t9", name: "Done", completed: false });
     const handler = registeredTools.get("uncomplete_task");
