@@ -1687,6 +1687,32 @@ async def test_project_planning_prompt_renders_structure_and_fetches_project_sta
 
 
 @pytest.mark.asyncio
+async def test_project_planning_prompt_falls_back_when_project_missing(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    scripts: list[str] = []
+
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        scripts.append(script)
+        if "const projectFilter =" in script and "document.flattenedProjects.find" in script:
+            raise RuntimeError("Project not found: Sauna Plan")
+        return []
+
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
+
+    prompt = await server_module.project_planning("Sauna Plan")
+
+    assert "plan this project into clear executable work." in prompt
+    assert "project_details_json:" in prompt
+    assert "'status': 'not_found'" in prompt
+    assert "project_available_tasks_json:" in prompt
+    assert len(scripts) == 2
+    assert any('const projectFilter = "Sauna Plan";' in script for script in scripts)
+    assert any('const statusFilter = "available";' in script for script in scripts)
+
+
+@pytest.mark.asyncio
 async def test_server_handles_rapid_sequential_tool_calls(
     server_module: Any,
     monkeypatch: pytest.MonkeyPatch,

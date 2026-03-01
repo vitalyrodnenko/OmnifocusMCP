@@ -1871,6 +1871,8 @@ return {{
 async def delete_task(task_id: str) -> str:
     """delete a task by id and return a confirmation payload.
 
+    destructive operation. use update_task or move_task for edits/reorganization,
+    and never delete then recreate as a substitute for updating.
     if the task has children, the response includes a warning message.
     """
     if task_id.strip() == "":
@@ -1908,6 +1910,9 @@ return {{
 async def delete_tasks_batch(task_ids: list[str]) -> str:
     """delete multiple tasks by id in a single omnijs call.
 
+    destructive operation. never use batch delete as a shortcut for edits or
+    reorganization. use update_task/move_task instead when preserving history
+    matters.
     IMPORTANT: before calling this tool, always show the user the list of tasks
     to be deleted and ask for explicit confirmation. do not proceed without user
     approval.

@@ -19,6 +19,13 @@ async def daily_review() -> str:
 4) produce exactly three top priorities for today with short rationale.
 5) call out anything that should be deferred, delegated, or dropped.
 
+engagement protocol:
+- ground recommendations in the omnifocus data provided below.
+- keep clarification questions minimal and only ask when blocked.
+- after presenting the plan, ask whether to apply the suggested changes in omnifocus now.
+- if the user approves, execute tool calls and report created/updated/completed object ids.
+- ask explicit confirmation before destructive changes (delete task/project/folder, batch delete).
+
 overdue_tasks_json:
 {overdue}
 
@@ -50,6 +57,12 @@ async def weekly_review() -> str:
    - key risks/blockers
    - cleanup actions (drop, defer, delegate, or someday/maybe)
 
+engagement protocol:
+- treat this as an active omnifocus workflow, not a detached document task.
+- after the review, ask whether to apply updates directly in omnifocus.
+- if approved, execute concrete tool calls for updates and summarize results with ids.
+- ask explicit confirmation before destructive operations.
+
 active_projects_json:
 {active_projects}
 
@@ -78,6 +91,11 @@ respond with:
 - concrete update recommendations per item
 - a short batch action plan for the first 5 items
 
+engagement protocol:
+- after showing recommendations, ask whether to apply them in omnifocus now.
+- if approved, execute the relevant create/update/move calls and report ids.
+- ask explicit confirmation before deleting any inbox item.
+
 inbox_items_json:
 {inbox_items}
 """
@@ -90,7 +108,34 @@ async def project_planning(project: str) -> str:
         raise ValueError("project must not be empty.")
 
     project_name = project.strip()
-    project_details = await get_project(project_id_or_name=project_name)
+    try:
+        project_details = await get_project(project_id_or_name=project_name)
+    except Exception as error:
+        message = str(error)
+        if "project not found" not in message.lower():
+            raise
+        project_details = {
+            "id": None,
+            "name": project_name,
+            "status": "not_found",
+            "folderName": None,
+            "taskCount": 0,
+            "remainingTaskCount": 0,
+            "completedTaskCount": 0,
+            "availableTaskCount": 0,
+            "deferDate": None,
+            "dueDate": None,
+            "completionDate": None,
+            "modified": None,
+            "note": None,
+            "sequential": None,
+            "isStalled": False,
+            "nextTaskId": None,
+            "nextTaskName": None,
+            "reviewInterval": None,
+            "rootTasks": [],
+            "lookupError": message,
+        }
     available_tasks = await list_tasks(
         project=project_name, status="available", limit=500
     )
@@ -114,6 +159,12 @@ output format:
   action, estimate, priority, dependency, suggested tags, due/defer recommendation, rationale
 - first 3 actions to execute immediately
 - risk/blocker list with mitigation ideas
+
+engagement protocol:
+- treat this as omnifocus execution planning, not just writing a detached document.
+- if the project is not found, keep planning from user intent and then ask whether to create it in omnifocus.
+- after presenting the plan, ask for confirmation to apply it in omnifocus (create project, create tasks, set metadata).
+- once approved, execute tool calls and return the created/updated ids.
 
 project_details_json:
 {project_details}

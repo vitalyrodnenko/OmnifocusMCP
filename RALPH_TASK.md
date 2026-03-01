@@ -3,19 +3,22 @@ task: OmniFocus MCP — Open source preparation and distribution readiness
 test_command: "cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v && cd ../typescript && npx tsc --noEmit && npm test && cd ../rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test"
 ---
 
-# Task: Open Source Preparation
+# Task: Open Source Preparation + Safe Task Reparenting
 
 Prepare the OmniFocus MCP project for public open-source distribution at
-`github.com/vitalyrodnenko/OmnifocusMCP`. The code is functionally
-complete — this task is purely about licensing, documentation, cleanup,
-and CI. No tool implementation code should be changed.
+`github.com/vitalyrodnenko/OmnifocusMCP`, and add safe task reparenting
+capabilities so assistants can reorganize tasks without delete/recreate
+workarounds.
 
 **License:** MIT
 **GitHub org:** `vitalyrodnenko`
 
-**CRITICAL:** Do NOT modify any tool implementation files in
+**CRITICAL (phases 1-8):** Do NOT modify any tool implementation files in
 `python/src/`, `typescript/src/`, or `rust/src/`. Do NOT modify test
-files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
+files.
+
+**CRITICAL (phase 9):** tool implementation and test file changes are
+required across Python/TypeScript/Rust with strict parity.
 
 ---
 
@@ -262,13 +265,74 @@ files. Do NOT modify `RALPH_TASK.md`. This task is docs/config only.
 
 ---
 
+## Phase 9 — Safe Task Reparenting (No Delete/Recreate)
+
+### Success Criteria
+
+20. [ ] Extend `move_task` in all 3 implementations to support moving an
+        existing task under another existing task (task -> subtask) while
+        preserving the original task object and id.
+        - Add optional `parent_task_id` parameter.
+        - Keep existing `project` behavior (move to project or inbox).
+        - Preserve backwards compatibility for current clients.
+
+21. [ ] Add destination validation in all 3 implementations:
+        - reject requests where both `project` and `parent_task_id` are
+          provided (ambiguous destination).
+        - reject empty/whitespace ids.
+        - return actionable validation errors.
+
+22. [ ] Implement move-to-parent logic in JXA/OmniJS for all 3
+        implementations:
+        - locate task by `task_id`
+        - locate parent task by `parent_task_id`
+        - prevent self-parenting
+        - prevent cycles (cannot move task under its own descendant)
+        - move task using OmniFocus move API (no delete/recreate)
+
+23. [ ] Support moving a subtask back out to non-subtask destinations:
+        - to another project via `project`
+        - to inbox when destination omitted
+        Ensure this keeps object identity and does not clone/recreate.
+
+24. [ ] Update tool descriptions/docs in all 3 implementations for
+        `move_task`:
+        - clearly document the 3 destination modes:
+          (a) `project`, (b) `parent_task_id`, (c) inbox default
+        - explicitly state preserve-by-default behavior
+        - explicitly state delete is never required for reorganization
+
+25. [ ] Add/extend tests in all 3 implementations covering:
+        - move task to project (existing behavior)
+        - move task to inbox (existing behavior)
+        - move task under parent task (new behavior)
+        - invalid both-destination input
+        - self-parenting rejection
+        - cycle rejection
+        - parity of parameter names/response shape across all 3
+
+26. [ ] Update user-facing docs:
+        - `README.md` features section mentions task reparenting support
+        - include one short usage example for `move_task` with
+          `parent_task_id`
+        - clarify that destructive delete confirmation is separate from
+          non-destructive move/update workflows
+
+27. [ ] Run full quality gates before marking phase complete:
+        - `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
+        - `cd typescript && npx tsc --noEmit && npm test`
+        - `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+        - Ensure no regressions in existing move/update/delete tests.
+
+---
+
 ## Ralph Instructions
 
 1. Work on the next incomplete criterion (marked `[ ]`)
 2. Check off completed criteria (change `[ ]` to `[x]`)
-3. **Do NOT modify any files in `python/src/`, `typescript/src/`,
-   `rust/src/`, or any test files.** This task is docs/config only.
-4. **Do NOT modify `RALPH_TASK.md`.** It is a separate active task.
+3. For phases 1-8, follow docs/config-only constraints.
+4. For phase 9, modify code + tests in all 3 implementations with strict
+   parity (same tool names, params, response shapes).
 5. Read existing files before modifying — understand context first.
 6. Commit changes after completing each phase.
 7. When ALL criteria are `[x]`, output: `<ralph>COMPLETE</ralph>`

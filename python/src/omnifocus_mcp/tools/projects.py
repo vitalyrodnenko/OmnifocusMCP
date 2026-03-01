@@ -479,7 +479,7 @@ return {{
 
 @typed_tool(mcp)
 async def delete_project(project_id_or_name: str) -> str:
-    """delete a project by id or name. IMPORTANT: this permanently removes the project and all its tasks from the database. before calling, show the user the project name and task count, and ask for explicit confirmation."""
+    """delete a project by id or name. IMPORTANT: this permanently removes the project and all its tasks from the database. never use delete+recreate to apply project changes; use update_project/move_project/set_project_status instead. before calling, show the user the project name and task count, and ask for explicit confirmation."""
     if project_id_or_name.strip() == "":
         raise ValueError("project_id_or_name must not be empty.")
 

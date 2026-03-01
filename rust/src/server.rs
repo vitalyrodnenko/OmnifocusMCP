@@ -766,7 +766,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "delete a task by id.")]
+    #[tool(
+        description = "delete a task by id. destructive operation: use update_task or move_task for edits/reorganization, and never delete then recreate as a substitute for updating. ask for explicit user confirmation before proceeding."
+    )]
     async fn delete_task(
         &self,
         Parameters(params): Parameters<TaskIdParams>,
@@ -778,7 +780,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "delete multiple tasks by id in a single omnijs call. IMPORTANT: before calling this tool, always show the user the list of tasks to be deleted and ask for explicit confirmation. do not proceed without user approval."
+        description = "delete multiple tasks by id in a single omnijs call. destructive operation: never use batch delete as a shortcut for edits or reorganization. use update_task/move_task instead when preserving history matters. before calling this tool, always show the user the list of tasks to be deleted and ask for explicit confirmation. do not proceed without user approval."
     )]
     async fn delete_tasks_batch(
         &self,
@@ -923,7 +925,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "delete a project by id or name. IMPORTANT: this permanently removes the project and all its tasks from the database. before calling, show the user the project name and task count, and ask for explicit confirmation."
+        description = "delete a project by id or name. IMPORTANT: this permanently removes the project and all its tasks from the database. never use delete+recreate to apply project changes; use update_project/move_project/set_project_status instead. before calling, show the user the project name and task count, and ask for explicit confirmation."
     )]
     async fn delete_project(
         &self,
@@ -1110,7 +1112,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "delete a folder by id or name. warning: this permanently removes the folder. contained projects may be moved to top level by omnifocus, so confirm with the user before proceeding."
+        description = "delete a folder by id or name. warning: this permanently removes the folder. do not use delete+recreate for folder edits or renames; use update_folder instead. contained projects may be moved to top level by omnifocus, so confirm with the user before proceeding."
     )]
     async fn delete_folder(
         &self,
@@ -1196,7 +1198,8 @@ impl<R: JxaRunner + Send + Sync + 'static> ServerHandler for OmniFocusServer<R> 
         let _ = &self.runner_dyn;
         ServerInfo {
             instructions: Some(
-                "OmniFocus MCP server exposing tools, resources, and prompts.".to_string(),
+                "OmniFocus MCP server exposing tools, resources, and prompts. treat conversations as active omnifocus workflows: ground responses in omnifocus data, engage users with concise clarifying questions when needed, propose concrete next actions, and offer to apply approved changes via tool calls. for user-requested changes, preserve existing objects by default and prefer update/move tools; never delete and recreate tasks/projects/folders as a shortcut unless the user explicitly asks for deletion. ask explicit confirmation before destructive operations and report resulting object ids after writes."
+                    .to_string(),
             ),
             capabilities: ServerCapabilities::builder()
                 .enable_tools()

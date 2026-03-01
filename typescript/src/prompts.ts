@@ -189,6 +189,13 @@ export function registerPrompts(server: Server): void {
 4) produce exactly three top priorities for today with short rationale.
 5) call out anything that should be deferred, delegated, or dropped.
 
+engagement protocol:
+- ground recommendations in the omnifocus data provided below.
+- keep clarification questions minimal and only ask when blocked.
+- after presenting the plan, ask whether to apply the suggested changes in omnifocus now.
+- if the user approves, execute tool calls and report created/updated/completed object ids.
+- ask explicit confirmation before destructive changes (delete task/project/folder, batch delete).
+
 overdue_tasks_json:
 ${JSON.stringify(overdue)}
 
@@ -222,6 +229,12 @@ ${JSON.stringify(flagged)}
    - key risks/blockers
    - cleanup actions (drop, defer, delegate, or someday/maybe)
 
+engagement protocol:
+- treat this as an active omnifocus workflow, not a detached document task.
+- after the review, ask whether to apply updates directly in omnifocus.
+- if approved, execute concrete tool calls for updates and summarize results with ids.
+- ask explicit confirmation before destructive operations.
+
 active_projects_json:
 ${JSON.stringify(activeProjects)}
 
@@ -252,6 +265,11 @@ respond with:
 - concrete update recommendations per item
 - a short batch action plan for the first 5 items
 
+engagement protocol:
+- after showing recommendations, ask whether to apply them in omnifocus now.
+- if approved, execute the relevant create/update/move calls and report ids.
+- ask explicit confirmation before deleting any inbox item.
+
 inbox_items_json:
 ${JSON.stringify(inboxItems)}
 `;
@@ -270,7 +288,37 @@ ${JSON.stringify(inboxItems)}
       if (projectName === "") {
         throw new Error("project must not be empty.");
       }
-      const projectDetails = await getProjectData(projectName);
+      let projectDetails: unknown;
+      try {
+        projectDetails = await getProjectData(projectName);
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (!message.toLowerCase().includes("project not found")) {
+          throw error;
+        }
+        projectDetails = {
+          id: null,
+          name: projectName,
+          status: "not_found",
+          folderName: null,
+          taskCount: 0,
+          remainingTaskCount: 0,
+          completedTaskCount: 0,
+          availableTaskCount: 0,
+          deferDate: null,
+          dueDate: null,
+          completionDate: null,
+          modified: null,
+          note: null,
+          sequential: null,
+          isStalled: false,
+          nextTaskId: null,
+          nextTaskName: null,
+          reviewInterval: null,
+          rootTasks: [],
+          lookupError: message,
+        };
+      }
       const availableTasks = await listTasksData({
         project: projectName,
         status: "available",
@@ -295,6 +343,12 @@ output format:
   action, estimate, priority, dependency, suggested tags, due/defer recommendation, rationale
 - first 3 actions to execute immediately
 - risk/blocker list with mitigation ideas
+
+engagement protocol:
+- treat this as omnifocus execution planning, not just writing a detached document.
+- if the project is not found, keep planning from user intent and then ask whether to create it in omnifocus.
+- after presenting the plan, ask for confirmation to apply it in omnifocus (create project, create tasks, set metadata).
+- once approved, execute tool calls and return the created/updated ids.
 
 project_details_json:
 ${JSON.stringify(projectDetails)}

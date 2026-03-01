@@ -182,7 +182,7 @@ return {{
 
 @typed_tool(mcp)
 async def delete_folder(folder_name_or_id: str) -> str:
-    """delete a folder by id or name. warning: this permanently removes the folder. contained projects may be moved to top level by omnifocus, so confirm with the user before proceeding."""
+    """delete a folder by id or name. warning: this permanently removes the folder. do not use delete+recreate for folder edits or renames; use update_folder instead. contained projects may be moved to top level by omnifocus, so confirm with the user before proceeding."""
     folder_filter = folder_name_or_id.strip()
     if folder_filter == "":
         raise ValueError("folder_name_or_id must not be empty.")

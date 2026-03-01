@@ -110,3 +110,38 @@ async fn project_planning_rejects_empty_project() {
         .expect_err("empty project must fail");
     assert!(matches!(error, OmniFocusError::Validation(_)));
 }
+
+#[derive(Clone)]
+struct MissingProjectRunner;
+
+impl JxaRunner for MissingProjectRunner {
+    fn run_omnijs<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        Box::pin(async move {
+            if script.contains("const projectFilter =")
+                && script.contains("document.flattenedProjects.find")
+            {
+                return Err(OmniFocusError::OmniFocus(
+                    "Project not found: new-idea".to_string(),
+                ));
+            }
+            if script.contains("const statusFilter =") {
+                return Ok(json!([]));
+            }
+            Ok(Value::Null)
+        })
+    }
+}
+
+#[tokio::test]
+async fn project_planning_falls_back_when_project_does_not_exist() {
+    let runner = MissingProjectRunner;
+    let planning = project_planning(&runner, "new-idea")
+        .await
+        .expect("project planning should still render");
+    assert!(planning.contains("project_details_json"));
+    assert!(planning.contains("\"status\":\"not_found\""));
+    assert!(planning.contains("project_available_tasks_json"));
+}

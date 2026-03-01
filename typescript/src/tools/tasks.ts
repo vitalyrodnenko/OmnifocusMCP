@@ -907,7 +907,7 @@ return {
     }
   );
 
-  server.tool("delete_task", "delete a task by id and return deletion status.", { task_id: z.string().min(1) }, async ({ task_id }) => {
+  server.tool("delete_task", "delete a task by id and return deletion status. destructive operation: use update_task or move_task for edits/reorganization, and never delete then recreate as a substitute for updating. ask for explicit user confirmation before proceeding.", { task_id: z.string().min(1) }, async ({ task_id }) => {
     try {
       const taskId = escapeForJxa(task_id);
       const script = `
@@ -926,7 +926,7 @@ return { id: taskId, name: taskName, deleted: true };
 
   server.tool(
     "delete_tasks_batch",
-    "delete multiple tasks by id in a single omnijs call. IMPORTANT: before calling this tool, always show the user the list of tasks to be deleted and ask for explicit confirmation. do not proceed without user approval.",
+    "delete multiple tasks by id in a single omnijs call. destructive operation: never use batch delete as a shortcut for edits or reorganization; use update_task/move_task instead when preserving history matters. before calling this tool, always show the user the list of tasks to be deleted and ask for explicit confirmation. do not proceed without user approval.",
     { task_ids: z.array(z.string().min(1)).min(1) },
     async ({ task_ids }) => {
       try {

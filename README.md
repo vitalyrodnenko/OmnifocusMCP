@@ -1,61 +1,26 @@
 # OmniFocus MCP
 
-MCP server that gives AI assistants full control over OmniFocus on macOS.
+MCP server that gives AI assistants full control over [OmniFocus](https://www.omnigroup.com/omnifocus) on macOS.
+
+44 tools, 3 resources, and 4 prompts covering tasks, projects, tags, folders, perspectives, forecast, notifications, and review workflows — all through the [Model Context Protocol](https://modelcontextprotocol.io).
 
 This project is not affiliated with, endorsed by, or associated with The Omni Group or OmniFocus. OmniFocus is a trademark of The Omni Group. This is an independent, non-commercial open-source project.
 
-## Why
-
-AI assistants are great at planning and execution, but they cannot natively read and update OmniFocus data. OmniFocus MCP bridges that gap by exposing a complete MCP toolset that maps to real OmniFocus objects. It enables reliable task, project, tag, folder, and forecast workflows from any MCP-compatible client.
-
-## Features
-
-- Task management: create, list, update, complete, uncomplete, delete, batch create/delete, create/list subtasks, repetition, move, notifications, duplicate, append note
-- Project management: create, list, get, update, complete, uncomplete, set status, delete, move, search, project counts
-- Tags and folders: full CRUD plus search/list views and hierarchy-aware folder operations
-- Utility: search tasks/projects/tags, forecast view, perspectives listing, aggregate counts
-- Resources: inbox snapshot, today snapshot, active projects snapshot
-- Prompts: daily review, weekly review, inbox processing, project planning
-
 ## Quick Start
 
-Install the Rust binary with Homebrew, then add it to Claude Desktop:
+Install via [Homebrew](https://brew.sh) (if you don't have Homebrew, see the [Homebrew installation guide](https://brew.sh)):
 
 ```bash
 brew tap vitalyrodnenko/omnifocus-mcp
 brew install omnifocus-mcp
 ```
 
-```json
-{
-  "mcpServers": {
-    "omnifocus": { "command": "omnifocus-mcp", "args": [] }
-  }
-}
-```
-
-## Implementations
-
-| implementation | language | install | status |
-| --- | --- | --- | --- |
-| rust | rust | Homebrew (preferred) or source build | active |
-| python | python 3.11+ | `uv` from source | active |
-| typescript | node.js 20+ | `npm` from source | active |
-
-## How It Works
-
-The server runs JXA scripts through `osascript` on macOS. Each script uses the OmniFocus `evaluateJavascript` bridge to execute Omni Automation JavaScript inside OmniFocus itself, where full APIs like `flattenedTasks` and `Task.Status` are available. Tool handlers shape this data into strict MCP responses with consistent schemas across Python, TypeScript, and Rust. This design keeps runtime behavior identical while allowing multiple implementation choices.
-
-## MCP client config examples
-
-### Claude Desktop
-
-Rust:
+Then add to your MCP client config (Claude Desktop, Cursor, etc.):
 
 ```json
 {
   "mcpServers": {
-    "omnifocus-rust": {
+    "omnifocus": {
       "command": "omnifocus-mcp",
       "args": []
     }
@@ -63,34 +28,126 @@ Rust:
 }
 ```
 
-Python:
+That's it. The AI assistant now has full OmniFocus access.
+
+## What It Can Do
+
+### Tasks (22 tools)
+
+Full lifecycle management for OmniFocus tasks:
+
+- **CRUD** — create, get, update, delete individual tasks
+- **Batch operations** — create or delete multiple tasks in a single call
+- **Subtasks** — create and list subtasks under any parent task
+- **Completion** — mark complete, mark incomplete (supports repeating tasks)
+- **Search** — full-text search across task names and notes with all filters applied
+- **Move** — relocate tasks between projects or back to inbox
+- **Duplicate** — clone a task with all properties and optional subtasks
+- **Notifications** — list, add, and remove notifications (absolute date or relative offset)
+- **Repetition** — set or clear repetition rules with schedule type (regularly/after completion)
+- **Notes** — append text to task notes without overwriting
+- **Aggregate counts** — fast "how many" queries without listing individual tasks
+
+#### Advanced Filtering
+
+`list_tasks` and `search_tasks` support powerful filter combinations:
+
+| Filter | Description |
+| --- | --- |
+| `project` | Scope to a single project by name |
+| `tag` / `tags` | Filter by one tag or multiple tags |
+| `tagFilterMode` | `"any"` (default) or `"all"` for multi-tag filtering |
+| `flagged` | Flagged tasks only |
+| `status` | `"available"`, `"remaining"`, `"completed"`, `"dropped"`, `"all"` |
+| `dueBefore` / `dueAfter` | Due date range (ISO 8601) |
+| `deferBefore` / `deferAfter` | Defer date range (ISO 8601) |
+| `completedBefore` / `completedAfter` | Completion date range (ISO 8601) |
+| `plannedBefore` / `plannedAfter` | Planned date range (ISO 8601) |
+| `maxEstimatedMinutes` | Tasks with estimated duration up to N minutes |
+
+#### Sorting
+
+All list/search tools support `sortBy` and `sortOrder`:
+
+- Sort by: `name`, `due`, `defer`, `added`, `modified`, `completed`, `estimated`, `planned`
+- Sort order: `asc` (default) or `desc`
+
+### Projects (11 tools)
+
+- **CRUD** — create, get, update, delete projects
+- **Lifecycle** — complete, uncomplete, set status (active/on-hold/dropped)
+- **Organization** — move between folders, search by name
+- **Filtering** — by folder, status, completion date range, stalled-only flag
+- **Sorting** — by name, due date, or other fields
+- **Aggregate counts** — project counts by status, optionally scoped to a folder
+
+### Tags (5 tools)
+
+- **CRUD** — create, update (name and status), delete
+- **List** — with status filter (active/on-hold/dropped/all), sorting, and limits
+- **Search** — fuzzy name matching
+
+### Folders (5 tools)
+
+- **CRUD** — create, get (with child projects and subfolders), update, delete
+- **Hierarchy** — create nested folders with parent parameter
+- **List** — all folders with limits
+
+### Forecast (1 tool)
+
+- Structured view with sections: overdue, due today, flagged, deferred, and due this week
+
+### Perspectives (1 tool)
+
+- List all available OmniFocus perspectives
+
+### Resources (3)
+
+Live snapshots available to MCP clients:
+
+| Resource | Description |
+| --- | --- |
+| Inbox | Current inbox tasks |
+| Today | Today's forecast (overdue + due today + flagged) |
+| Active Projects | All active projects with task counts |
+
+### Prompts (4)
+
+Ready-to-use review workflows:
+
+| Prompt | Description |
+| --- | --- |
+| Daily Review | Due-soon, overdue, and flagged tasks for daily planning |
+| Weekly Review | Active projects and next-action coverage analysis |
+| Inbox Processing | One-by-one inbox clarification decisions |
+| Project Planning | Guided planning for a specific project |
+
+## Implementations
+
+Three implementations with identical tool names, parameters, and response shapes:
+
+| Implementation | Language | Install | Recommended For |
+| --- | --- | --- | --- |
+| **Rust** | Rust | Homebrew (recommended) or source | Production use — single binary, fast startup |
+| Python | Python 3.11+ | `uv` from source | Local development, easy scripting |
+| TypeScript | Node.js 20+ | `npm` from source | Node.js ecosystems |
+
+Detailed setup guides: [Rust](docs/install-rust.md) · [Python](docs/install-python.md) · [TypeScript](docs/install-typescript.md)
+
+## How It Works
+
+The server runs JXA (JavaScript for Automation) scripts through macOS `osascript`. Each script uses the OmniFocus `evaluateJavascript` bridge to execute Omni Automation JavaScript inside OmniFocus itself, where full APIs like `flattenedTasks`, `Task.Status`, and `new Task()` are available. Data is serialized as JSON and returned through the MCP protocol with consistent schemas across all three implementations.
+
+## MCP Client Configuration
+
+### Claude Desktop
 
 ```json
 {
   "mcpServers": {
-    "omnifocus-python": {
-      "command": "uv",
-      "args": [
-        "run",
-        "--directory",
-        "/absolute/path/to/OmnifocusMCP/python",
-        "python",
-        "-m",
-        "omnifocus_mcp"
-      ]
-    }
-  }
-}
-```
-
-TypeScript:
-
-```json
-{
-  "mcpServers": {
-    "omnifocus-typescript": {
-      "command": "node",
-      "args": ["/absolute/path/to/OmnifocusMCP/typescript/dist/index.js"]
+    "omnifocus": {
+      "command": "omnifocus-mcp",
+      "args": []
     }
   }
 }
@@ -98,12 +155,10 @@ TypeScript:
 
 ### Cursor
 
-Rust:
-
 ```json
 {
   "mcpServers": {
-    "omnifocus-rust": {
+    "omnifocus": {
       "command": "omnifocus-mcp",
       "args": []
     }
@@ -111,12 +166,12 @@ Rust:
 }
 ```
 
-Python:
+### Python (source build)
 
 ```json
 {
   "mcpServers": {
-    "omnifocus-python": {
+    "omnifocus": {
       "command": "uv",
       "args": [
         "run",
@@ -131,12 +186,12 @@ Python:
 }
 ```
 
-TypeScript:
+### TypeScript (source build)
 
 ```json
 {
   "mcpServers": {
-    "omnifocus-typescript": {
+    "omnifocus": {
       "command": "node",
       "args": ["/absolute/path/to/OmnifocusMCP/typescript/dist/index.js"]
     }
@@ -144,23 +199,14 @@ TypeScript:
 }
 ```
 
-Compatibility snippets required by existing docs/tests:
+> Keep only one OmniFocus MCP server enabled at a time to avoid duplicate tool surfaces.
+
+Compatibility snippets:
 
 ```json
 {
   "mcpServers": {
-    "omnifocus-python": {
-      "command": "uv",
-      "args": ["run", "omnifocus-mcp"]
-    }
-  }
-}
-```
-
-```json
-{
-  "mcpServers": {
-    "omnifocus-python": {
+    "omnifocus": {
       "command": "python",
       "args": ["-m", "omnifocus_mcp"]
     }
@@ -171,41 +217,35 @@ Compatibility snippets required by existing docs/tests:
 ```json
 {
   "mcpServers": {
-    "omnifocus-typescript": {
+    "omnifocus": {
       "command": "node",
-      "args": ["dist/index.js"],
-      "cwd": "/absolute/path/to/OmnifocusMCP/typescript"
+      "args": ["dist/index.js"]
     }
   }
 }
 ```
 
-### switching between Rust, Python, and TypeScript
+## Switching Between Rust, Python, and TypeScript
 
-- use Rust when you want a single prebuilt binary (`omnifocus-mcp`)
-- use Python when you want `uv`/`python` execution and easier local script iteration
-- use TypeScript when you want `node` execution from `typescript/dist/index.js`
-- keep only one OmniFocus MCP server enabled to avoid duplicate tool surfaces
-
-## switching implementations
-
-1. choose one implementation block (Rust, Python, or TypeScript)
-2. replace your active OmniFocus MCP server entry with that block
-3. restart the MCP client so it reloads the server command
+- Use Rust when you want a single prebuilt `omnifocus-mcp` binary.
+- Use Python when you want `uv` or `python -m` execution and fast local iteration.
+- Use TypeScript when you want `node` execution from `typescript/dist/index.js`.
 
 ## Prerequisites
 
-- macOS host runtime
+- macOS (required — OmniFocus is macOS-only)
 - OmniFocus installed and running
-- automation permission granted to the terminal/editor process
-- python 3.11+ and `uv` (python implementation)
-- node.js 20+ and npm (typescript implementation)
-- rust toolchain (source builds only)
+- Automation permission granted to the terminal/editor (System Settings → Privacy & Security → Automation)
+
+For source builds only:
+- Python 3.11+ and [`uv`](https://docs.astral.sh/uv/) (Python implementation)
+- Node.js 20+ and npm (TypeScript implementation)
+- Rust toolchain via [`rustup`](https://rustup.rs) (Rust source build)
 
 ## Contributing
 
-Contributions are welcome through focused pull requests with clear scope and passing checks. Start with the setup and validation steps in [`CONTRIBUTING.md`](CONTRIBUTING.md), then open a PR with a concise summary and test evidence.
+Contributions are welcome through focused pull requests with clear scope and passing checks. See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup and validation steps.
 
 ## License
 
-MIT. This project is not affiliated with, endorsed by, or associated with The Omni Group or OmniFocus. OmniFocus is a trademark of The Omni Group.
+MIT. See [`LICENSE`](LICENSE) for details.
