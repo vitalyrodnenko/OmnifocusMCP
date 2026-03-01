@@ -269,7 +269,7 @@ required across Python/TypeScript/Rust with strict parity.
 
 ### Success Criteria
 
-20. [ ] Extend `move_task` in all 3 implementations to support moving an
+20. [x] Extend `move_task` in all 3 implementations to support moving an
         existing task under another existing task (task -> subtask) while
         preserving the original task object and id.
         - Add optional `parent_task_id` parameter.
