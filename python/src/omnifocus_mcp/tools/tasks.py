@@ -1929,7 +1929,9 @@ async def delete_tasks_batch(task_ids: list[str]) -> str:
         if normalized_task_id == "":
             raise ValueError("each task id must be a non-empty string.")
         if normalized_task_id in seen_task_ids:
-            raise ValueError(f"task_ids must not contain duplicates: {normalized_task_id}")
+            raise ValueError(
+                f"task_ids must not contain duplicates: {normalized_task_id}"
+            )
         seen_task_ids.add(normalized_task_id)
         normalized_task_ids.append(normalized_task_id)
     task_ids_value = json.dumps(normalized_task_ids)
@@ -2072,7 +2074,8 @@ async def move_tasks_batch(
     destination modes: (a) provide `project` to move tasks to a project,
     (b) provide `parent_task_id` to move tasks under an existing parent task,
     or (c) omit both to move tasks to inbox. runs one omnijs call per invocation
-    and returns per-task move results.
+    and returns per-task move results. destructive delete confirmation remains a
+    separate workflow.
     """
     if len(task_ids) == 0:
         raise ValueError("task_ids must contain at least one task id.")

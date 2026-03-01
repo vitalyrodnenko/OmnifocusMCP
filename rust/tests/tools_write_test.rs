@@ -210,7 +210,7 @@ async fn move_tasks_batch_rejects_duplicate_task_ids_criterion29() {
     assert!(matches!(result, Err(OmniFocusError::Validation(_))));
     assert_eq!(
         result.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicate ids.".to_string())
+        Some("task_ids must not contain duplicates: task-1".to_string())
     );
 }
 
@@ -387,7 +387,7 @@ async fn move_tasks_batch_rejects_duplicate_and_self_parent_inputs() {
     assert!(matches!(duplicate_ids, Err(OmniFocusError::Validation(_))));
     assert_eq!(
         duplicate_ids.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicate ids.".to_string())
+        Some("task_ids must not contain duplicates: task-1".to_string())
     );
 
     let self_parent = move_tasks_batch(
@@ -430,6 +430,201 @@ async fn move_tasks_batch_parent_destination_script_includes_cycle_guard() {
         .expect("scripts lock should succeed")
         .join("\n");
     assert!(captured.contains("Cannot move tasks under their own descendant."));
+}
+
+#[tokio::test]
+async fn move_tasks_batch_supports_project_inbox_parent_and_partial_success_payloads() {
+    let project_runner = MockRunner {
+        payload: json!({
+            "requested_count": 2,
+            "moved_count": 2,
+            "failed_count": 0,
+            "partial_success": false,
+            "results": [
+                {
+                    "id": "task-1",
+                    "name": "Task One",
+                    "moved": true,
+                    "destination": {"mode": "project", "projectName": "Work"},
+                    "error": null
+                },
+                {
+                    "id": "task-2",
+                    "name": "Task Two",
+                    "moved": true,
+                    "destination": {"mode": "project", "projectName": "Work"},
+                    "error": null
+                }
+            ]
+        }),
+    };
+    let project_result = move_tasks_batch(
+        &project_runner,
+        vec!["task-1".to_string(), "task-2".to_string()],
+        Some("Work"),
+        None,
+    )
+    .await
+    .expect("move_tasks_batch project destination should succeed");
+    assert_eq!(project_result["moved_count"], 2);
+    assert_eq!(project_result["partial_success"], false);
+
+    let inbox_runner = MockRunner {
+        payload: json!({
+            "requested_count": 2,
+            "moved_count": 2,
+            "failed_count": 0,
+            "partial_success": false,
+            "results": [
+                {
+                    "id": "task-3",
+                    "name": "Task Three",
+                    "moved": true,
+                    "destination": {"mode": "inbox"},
+                    "error": null
+                },
+                {
+                    "id": "task-4",
+                    "name": "Task Four",
+                    "moved": true,
+                    "destination": {"mode": "inbox"},
+                    "error": null
+                }
+            ]
+        }),
+    };
+    let inbox_result = move_tasks_batch(
+        &inbox_runner,
+        vec!["task-3".to_string(), "task-4".to_string()],
+        None,
+        None,
+    )
+    .await
+    .expect("move_tasks_batch inbox destination should succeed");
+    assert_eq!(inbox_result["moved_count"], 2);
+
+    let parent_runner = MockRunner {
+        payload: json!({
+            "requested_count": 2,
+            "moved_count": 1,
+            "failed_count": 1,
+            "partial_success": true,
+            "results": [
+                {
+                    "id": "task-5",
+                    "name": "Task Five",
+                    "moved": true,
+                    "destination": {"mode": "parent", "parentTaskId": "parent-1", "parentTaskName": "Parent One"},
+                    "error": null
+                },
+                {
+                    "id": "missing",
+                    "name": null,
+                    "moved": false,
+                    "destination": {"mode": "parent", "parentTaskId": "parent-1", "parentTaskName": "Parent One"},
+                    "error": "Task not found."
+                }
+            ]
+        }),
+    };
+    let parent_result = move_tasks_batch(
+        &parent_runner,
+        vec!["task-5".to_string(), "missing".to_string()],
+        None,
+        Some("parent-1"),
+    )
+    .await
+    .expect("move_tasks_batch parent destination should succeed");
+    assert_eq!(parent_result["moved_count"], 1);
+    assert_eq!(parent_result["failed_count"], 1);
+    assert_eq!(parent_result["partial_success"], true);
+}
+
+#[tokio::test]
+async fn move_tasks_batch_rejects_ambiguous_duplicate_and_self_parent_inputs() {
+    let runner = MockRunner { payload: json!({}) };
+
+    let ambiguous = move_tasks_batch(
+        &runner,
+        vec!["task-1".to_string()],
+        Some("Work"),
+        Some("parent-1"),
+    )
+    .await;
+    assert!(matches!(ambiguous, Err(OmniFocusError::Validation(_))));
+    assert_eq!(
+        ambiguous.err().map(|error| error.to_string()),
+        Some(
+            "provide either project or parent_task_id, not both (destination is ambiguous)."
+                .to_string()
+        )
+    );
+
+    let duplicate = move_tasks_batch(
+        &runner,
+        vec!["task-1".to_string(), "task-1".to_string()],
+        Some("Work"),
+        None,
+    )
+    .await;
+    assert!(matches!(duplicate, Err(OmniFocusError::Validation(_))));
+    assert_eq!(
+        duplicate.err().map(|error| error.to_string()),
+        Some("task_ids must not contain duplicates: task-1".to_string())
+    );
+
+    let self_parent = move_tasks_batch(
+        &runner,
+        vec!["task-1".to_string(), "task-2".to_string()],
+        None,
+        Some("task-1"),
+    )
+    .await;
+    assert!(matches!(self_parent, Err(OmniFocusError::Validation(_))));
+    assert_eq!(
+        self_parent.err().map(|error| error.to_string()),
+        Some(
+            "parent_task_id must not be included in task_ids (cannot move a task under itself)."
+                .to_string()
+        )
+    );
+}
+
+#[tokio::test]
+async fn move_tasks_batch_script_includes_cycle_guard_and_parity_fields() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "requested_count": 2,
+            "moved_count": 1,
+            "failed_count": 1,
+            "partial_success": true,
+            "results": []
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = move_tasks_batch(
+        &runner,
+        vec!["task-1".to_string(), "missing".to_string()],
+        None,
+        Some("parent-1"),
+    )
+    .await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("const taskIds = [\"task-1\",\"missing\"];"));
+    assert!(captured.contains("const parentTaskId = \"parent-1\";"));
+    assert!(captured.contains("Cannot move tasks under their own descendant."));
+    assert!(captured.contains("destination: destinationInfo.summary"));
+    assert!(captured.contains("partial_success: movedCount > 0 && failedCount > 0"));
 }
 
 #[tokio::test]

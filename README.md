@@ -37,7 +37,7 @@ That's it. The AI assistant now has full OmniFocus access.
 Full lifecycle management for OmniFocus tasks:
 
 - **CRUD** — create, get, update, delete individual tasks
-- **Batch operations** — create or delete multiple tasks in a single call
+- **Batch operations** — create, move, or delete multiple tasks in a single call
 - **Subtasks** — create and list subtasks under any parent task
 - **Completion** — mark complete, mark incomplete (supports repeating tasks)
 - **Search** — full-text search across task names and notes with all filters applied
@@ -62,6 +62,18 @@ Example reparent move:
 ```
 
 This move operation is non-destructive and preserves task identity; destructive deletion remains a separate workflow through delete tools.
+
+Example non-destructive batch move:
+
+```json
+{
+  "tool": "move_tasks_batch",
+  "arguments": {
+    "task_ids": ["task-a-id", "task-b-id"],
+    "project": "Work"
+  }
+}
+```
 
 #### Advanced Filtering
 
