@@ -2009,9 +2009,19 @@ if (!task) {{
 
 const destination = (() => {{
   if (parentTaskId !== null && parentTaskId !== "") {{
+    if (parentTaskId === taskId) {{
+      throw new Error("Cannot move a task under itself.");
+    }}
     const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
     if (!parentTask) {{
       throw new Error(`Parent task not found: ${{parentTaskId}}`);
+    }}
+    let ancestor = parentTask;
+    while (ancestor) {{
+      if (ancestor.id.primaryKey === taskId) {{
+        throw new Error("Cannot move a task under its own descendant.");
+      }}
+      ancestor = ancestor.containingTask;
     }}
     return parentTask.ending;
   }}

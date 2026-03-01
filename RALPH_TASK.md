@@ -276,7 +276,7 @@ required across Python/TypeScript/Rust with strict parity.
         - Keep existing `project` behavior (move to project or inbox).
         - Preserve backwards compatibility for current clients.
 
-21. [ ] Add destination validation in all 3 implementations:
+21. [x] Add destination validation in all 3 implementations:
         - reject requests where both `project` and `parent_task_id` are
           provided (ambiguous destination).
         - reject empty/whitespace ids.
