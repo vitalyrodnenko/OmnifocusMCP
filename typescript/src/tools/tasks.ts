@@ -1125,16 +1125,30 @@ for (const task of document.flattenedTasks) {
 }
 const destinationInfo = (() => {
   if (parentTaskId !== null && parentTaskId !== "") {
-    const parentTask = taskById.get(parentTaskId);
+    const parentTask =
+      taskById.get(parentTaskId) ||
+      document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
     if (!parentTask) throw new Error(\`Parent task not found: \${parentTaskId}\`);
-    return { mode: "parent", location: parentTask.ending };
+    return {
+      mode: "parent",
+      location: parentTask.ending,
+      summary: {
+        mode: "parent",
+        parentTaskId: parentTask.id.primaryKey,
+        parentTaskName: parentTask.name
+      }
+    };
   }
   if (projectName === null || projectName === "") {
-    return { mode: "inbox", location: inbox.ending };
+    return { mode: "inbox", location: inbox.ending, summary: { mode: "inbox" } };
   }
   const targetProject = document.flattenedProjects.byName(projectName);
   if (!targetProject) throw new Error(\`Project not found: \${projectName}\`);
-  return { mode: "project", location: targetProject.ending };
+  return {
+    mode: "project",
+    location: targetProject.ending,
+    summary: { mode: "project", projectName: targetProject.name }
+  };
 })();
 const results = taskIds.map(taskId => {
   const task = taskById.get(taskId);
@@ -1142,33 +1156,35 @@ const results = taskIds.map(taskId => {
     return {
       id: taskId,
       moved: false,
+      destination: destinationInfo.summary,
       error: "not found"
     };
   }
-  try {
-    const originalTaskId = task.id.primaryKey;
-    moveTasks([task], destinationInfo.location);
-    if (task.id.primaryKey !== originalTaskId) {
-      throw new Error("Task move did not preserve task identity.");
-    }
-    if (destinationInfo.mode !== "parent" && task.containingTask) {
-      throw new Error("Task move failed: task is still nested under a parent.");
-    }
-    return {
-      id: task.id.primaryKey,
-      name: task.name,
-      moved: true,
-      projectName: task.containingProject ? task.containingProject.name : null,
-      inInbox: task.inInbox
-    };
-  } catch (e) {
+
+  const originalTaskId = task.id.primaryKey;
+  moveTasks([task], destinationInfo.location);
+  if (task.id.primaryKey !== originalTaskId) {
     return {
       id: taskId,
-      name: task.name,
       moved: false,
-      error: e && e.message ? String(e.message) : "move failed"
+      destination: destinationInfo.summary,
+      error: "Task move did not preserve task identity."
     };
   }
+  if (destinationInfo.mode !== "parent" && task.containingTask) {
+    return {
+      id: taskId,
+      moved: false,
+      destination: destinationInfo.summary,
+      error: "Task move failed: task is still nested under a parent."
+    };
+  }
+  return {
+    id: task.id.primaryKey,
+    name: task.name,
+    moved: true,
+    destination: destinationInfo.summary
+  };
 });
 const movedCount = results.filter(result => result.moved).length;
 const failedCount = results.length - movedCount;

@@ -1921,13 +1921,21 @@ async def delete_tasks_batch(task_ids: list[str]) -> str:
         raise ValueError("task_ids must contain at least one task id.")
 
     normalized_task_ids: list[str] = []
+    seen_task_ids: set[str] = set()
     for task_id in task_ids:
         if not isinstance(task_id, str):
             raise ValueError("each task id must be a string.")
         normalized_task_id = task_id.strip()
         if normalized_task_id == "":
             raise ValueError("each task id must be a non-empty string.")
+        if normalized_task_id in seen_task_ids:
+            raise ValueError(f"task_ids must not contain duplicates: {normalized_task_id}")
+        seen_task_ids.add(normalized_task_id)
         normalized_task_ids.append(normalized_task_id)
+    if parent_task_id is not None and parent_task_id.strip() in seen_task_ids:
+        raise ValueError(
+            "parent_task_id cannot be included in task_ids (self-parenting in batch move)."
+        )
 
     task_ids_value = json.dumps(normalized_task_ids)
     script = f"""
@@ -2115,16 +2123,35 @@ const destinationInfo = (() => {{
     if (!parentTask) {{
       throw new Error(`Parent task not found: ${{parentTaskId}}`);
     }}
-    return {{ mode: "parent", location: parentTask.ending }};
+    let ancestor = parentTask;
+    while (ancestor) {{
+      if (taskIds.includes(ancestor.id.primaryKey)) {{
+        throw new Error("Cannot move tasks under their own descendant.");
+      }}
+      ancestor = ancestor.containingTask;
+    }}
+    return {{
+      mode: "parent",
+      location: parentTask.ending,
+      summary: {{
+        mode: "parent",
+        parentTaskId: parentTask.id.primaryKey,
+        parentTaskName: parentTask.name
+      }}
+    }};
   }}
   if (projectName === null || projectName === "") {{
-    return {{ mode: "inbox", location: inbox.ending }};
+    return {{ mode: "inbox", location: inbox.ending, summary: {{ mode: "inbox" }} }};
   }}
   const targetProject = document.flattenedProjects.byName(projectName);
   if (!targetProject) {{
     throw new Error(`Project not found: ${{projectName}}`);
   }}
-  return {{ mode: "project", location: targetProject.ending }};
+  return {{
+    mode: "project",
+    location: targetProject.ending,
+    summary: {{ mode: "project", projectName: targetProject.name }}
+  }};
 }})();
 
 const results = taskIds.map(taskId => {{
@@ -2132,8 +2159,10 @@ const results = taskIds.map(taskId => {{
   if (!task) {{
     return {{
       id: taskId,
+      name: null,
       moved: false,
-      error: "not found"
+      destination: destinationInfo.summary,
+      error: "Task not found."
     }};
   }}
   try {{
@@ -2149,14 +2178,15 @@ const results = taskIds.map(taskId => {{
       id: task.id.primaryKey,
       name: task.name,
       moved: true,
-      projectName: task.containingProject ? task.containingProject.name : null,
-      inInbox: task.inInbox
+      destination: destinationInfo.summary,
+      error: null
     }};
   }} catch (e) {{
     return {{
       id: taskId,
       name: task.name,
       moved: false,
+      destination: destinationInfo.summary,
       error: e && e.message ? String(e.message) : "move failed"
     }};
   }}
@@ -2166,9 +2196,10 @@ const movedCount = results.filter(result => result.moved).length;
 const failedCount = results.length - movedCount;
 
 return {{
-  requested_count: results.length,
+  requested_count: taskIds.length,
   moved_count: movedCount,
   failed_count: failedCount,
+  partial_success: movedCount > 0 && failedCount > 0,
   results: results
 }};
 """.strip()
