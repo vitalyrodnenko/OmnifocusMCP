@@ -2,7 +2,7 @@
 
 MCP server that gives AI assistants full control over [OmniFocus](https://www.omnigroup.com/omnifocus) on macOS.
 
-44 tools, 3 resources, and 4 prompts covering tasks, projects, tags, folders, perspectives, forecast, notifications, and review workflows — all through the [Model Context Protocol](https://modelcontextprotocol.io).
+45 tools, 3 resources, and 4 prompts covering tasks, projects, tags, folders, perspectives, forecast, notifications, and review workflows — all through the [Model Context Protocol](https://modelcontextprotocol.io).
 
 This project is not affiliated with, endorsed by, or associated with The Omni Group or OmniFocus. OmniFocus is a trademark of The Omni Group. This is an independent, non-commercial open-source project.
 
@@ -32,7 +32,7 @@ That's it. The AI assistant now has full OmniFocus access.
 
 ## What It Can Do
 
-### Tasks (22 tools)
+### Tasks (23 tools)
 
 Full lifecycle management for OmniFocus tasks:
 
@@ -48,32 +48,6 @@ Full lifecycle management for OmniFocus tasks:
 - **Notes** — append text to task notes without overwriting
 - **Safety model** — destructive delete confirmations stay separate from non-destructive move/update workflows
 - **Aggregate counts** — fast "how many" queries without listing individual tasks
-
-Example reparent move:
-
-```json
-{
-  "tool": "move_task",
-  "arguments": {
-    "task_id": "child-task-id",
-    "parent_task_id": "parent-task-id"
-  }
-}
-```
-
-This move operation is non-destructive and preserves task identity; destructive deletion remains a separate workflow through delete tools.
-
-Example non-destructive batch move:
-
-```json
-{
-  "tool": "move_tasks_batch",
-  "arguments": {
-    "task_ids": ["task-a-id", "task-b-id"],
-    "project": "Work"
-  }
-}
-```
 
 #### Advanced Filtering
 
@@ -234,18 +208,7 @@ The server runs JXA (JavaScript for Automation) scripts through macOS `osascript
 
 > Keep only one OmniFocus MCP server enabled at a time to avoid duplicate tool surfaces.
 
-Compatibility snippets:
-
-```json
-{
-  "mcpServers": {
-    "omnifocus": {
-      "command": "uv",
-      "args": ["run", "omnifocus-mcp"]
-    }
-  }
-}
-```
+Compatibility snippet:
 
 ```json
 {
@@ -270,9 +233,7 @@ Compatibility snippets:
 }
 ```
 
-## Switching Implementations
-
-### Switching Between Rust, Python, and TypeScript
+## Switching Between Rust, Python, and TypeScript
 
 - Use Rust when you want a single prebuilt `omnifocus-mcp` binary.
 - Use Python when you want `uv` or `python -m` execution and fast local iteration.
