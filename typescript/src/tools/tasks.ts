@@ -987,7 +987,7 @@ return {
 
   server.tool(
     "move_task",
-    "move a task to a different project or to inbox.",
+    "move a task without deleting or recreating it. destination modes: provide project to move to a project, provide parent_task_id to move under an existing parent task, or omit both to move to inbox. this preserves the original task object and id, and delete is not required for reorganization workflows.",
     {
       task_id: z.string().min(1),
       project: z.string().min(1).optional(),

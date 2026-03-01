@@ -1975,11 +1975,12 @@ return {{
 async def move_task(
     task_id: str, project: str | None = None, parent_task_id: str | None = None
 ) -> str:
-    """move a task to a named project or back to inbox.
+    """move a task without deleting or recreating it.
 
-    accepts a task id and optional destination fields. when parent_task_id is
-    provided, task is moved under that parent task. otherwise, project moves to
-    a project and omitted destination moves to inbox.
+    destination modes: provide `project` to move to a project, provide
+    `parent_task_id` to move under an existing parent task, or omit both to move
+    to inbox. this preserves the original task object and id, and delete is not
+    required for reorganization workflows.
     """
     if task_id.strip() == "":
         raise ValueError("task_id must not be empty.")

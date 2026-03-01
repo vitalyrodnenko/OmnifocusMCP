@@ -793,7 +793,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "move a task to a project or to inbox.")]
+    #[tool(
+        description = "move a task without deleting or recreating it. destination modes: provide project to move to a project, provide parent_task_id to move under an existing parent task, or omit both to move to inbox. this preserves the original task object and id, and delete is not required for reorganization workflows."
+    )]
     async fn move_task(
         &self,
         Parameters(params): Parameters<MoveTaskParams>,
