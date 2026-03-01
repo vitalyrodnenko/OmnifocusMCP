@@ -2064,14 +2064,23 @@ return {{
 async def move_tasks_batch(
     task_ids: list[str], project: str | None = None, parent_task_id: str | None = None
 ) -> str:
-    """move multiple tasks in one omnijs call without deleting or recreating them.
+    """move multiple tasks without deleting or recreating them.
 
-    destination modes: (a) provide `project` to move to a project,
-    (b) provide `parent_task_id` to move under an existing parent task,
-    or (c) omit both to move to inbox.
+    destination modes: (a) provide `project` to move tasks to a project,
+    (b) provide `parent_task_id` to move tasks under an existing parent task,
+    or (c) omit both to move tasks to inbox. runs one omnijs call per invocation
+    and returns per-task move results.
     """
     if len(task_ids) == 0:
         raise ValueError("task_ids must contain at least one task id.")
+    if project is not None and project.strip() == "":
+        raise ValueError("project must not be empty when provided.")
+    if parent_task_id is not None and parent_task_id.strip() == "":
+        raise ValueError("parent_task_id must not be empty when provided.")
+    if project is not None and parent_task_id is not None:
+        raise ValueError(
+            "provide either project or parent_task_id, not both (destination is ambiguous)."
+        )
 
     normalized_task_ids: list[str] = []
     for task_id in task_ids:
@@ -2081,11 +2090,6 @@ async def move_tasks_batch(
         if normalized_task_id == "":
             raise ValueError("each task id must be a non-empty string.")
         normalized_task_ids.append(normalized_task_id)
-
-    if project is not None and project.strip() == "":
-        raise ValueError("project must not be empty when provided.")
-    if parent_task_id is not None and parent_task_id.strip() == "":
-        raise ValueError("parent_task_id must not be empty when provided.")
 
     task_ids_value = json.dumps(normalized_task_ids)
     project_value = "null" if project is None else escape_for_jxa(project.strip())
@@ -2107,34 +2111,20 @@ for (const task of document.flattenedTasks) {{
 
 const destinationInfo = (() => {{
   if (parentTaskId !== null && parentTaskId !== "") {{
-    const parentTask = taskById.get(parentTaskId) || document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+    const parentTask = taskById.get(parentTaskId);
     if (!parentTask) {{
       throw new Error(`Parent task not found: ${{parentTaskId}}`);
     }}
-    return {{
-      mode: "parent",
-      location: parentTask.ending,
-      summary: {{
-        mode: "parent",
-        parentTaskId: parentTask.id.primaryKey,
-        parentTaskName: parentTask.name
-      }}
-    }};
+    return {{ mode: "parent", location: parentTask.ending }};
   }}
-
   if (projectName === null || projectName === "") {{
-    return {{ mode: "inbox", location: inbox.ending, summary: {{ mode: "inbox" }} }};
+    return {{ mode: "inbox", location: inbox.ending }};
   }}
-
   const targetProject = document.flattenedProjects.byName(projectName);
   if (!targetProject) {{
     throw new Error(`Project not found: ${{projectName}}`);
   }}
-  return {{
-    mode: "project",
-    location: targetProject.ending,
-    summary: {{ mode: "project", projectName: targetProject.name }}
-  }};
+  return {{ mode: "project", location: targetProject.ending }};
 }})();
 
 const results = taskIds.map(taskId => {{
@@ -2143,35 +2133,40 @@ const results = taskIds.map(taskId => {{
     return {{
       id: taskId,
       moved: false,
-      destination: destinationInfo.summary,
       error: "not found"
     }};
   }}
-
-  const originalTaskId = task.id.primaryKey;
-  moveTasks([task], destinationInfo.location);
-  if (task.id.primaryKey !== originalTaskId) {{
+  try {{
+    const originalTaskId = task.id.primaryKey;
+    moveTasks([task], destinationInfo.location);
+    if (task.id.primaryKey !== originalTaskId) {{
+      throw new Error("Task move did not preserve task identity.");
+    }}
+    if (destinationInfo.mode !== "parent" && task.containingTask) {{
+      throw new Error("Task move failed: task is still nested under a parent.");
+    }}
+    return {{
+      id: task.id.primaryKey,
+      name: task.name,
+      moved: true,
+      projectName: task.containingProject ? task.containingProject.name : null,
+      inInbox: task.inInbox
+    }};
+  }} catch (e) {{
     return {{
       id: taskId,
+      name: task.name,
       moved: false,
-      destination: destinationInfo.summary,
-      error: "Task move did not preserve task identity."
+      error: e && e.message ? String(e.message) : "move failed"
     }};
   }}
-
-  return {{
-    id: task.id.primaryKey,
-    name: task.name,
-    moved: true,
-    destination: destinationInfo.summary
-  }};
 }});
 
 const movedCount = results.filter(result => result.moved).length;
 const failedCount = results.length - movedCount;
 
 return {{
-  requested_count: taskIds.length,
+  requested_count: results.length,
   moved_count: movedCount,
   failed_count: failedCount,
   results: results

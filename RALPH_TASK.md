@@ -330,7 +330,7 @@ required across Python/TypeScript/Rust with strict parity.
 
 ### Success Criteria
 
-28. [ ] Add a new tool `move_tasks_batch` in all 3 implementations with
+28. [x] Add a new tool `move_tasks_batch` in all 3 implementations with
         identical name, parameters, and response shape.
         - input parameters:
           - `task_ids: string[]` (required, non-empty)
