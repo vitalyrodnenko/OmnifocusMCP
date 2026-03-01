@@ -257,7 +257,72 @@ describe("tool happy paths", () => {
     expect(script).toContain('const parentTaskId = "parent-1";');
     expect(script).toContain("moveTasks([task], destinationInfo.location);");
     expect(script).toContain('return { mode: "parent", location: parentTask.ending };');
+    expect(script).toContain('throw new Error("Cannot move a task under itself.");');
+    expect(script).toContain('throw new Error("Cannot move a task under its own descendant.");');
     expect(script).toContain("inInbox: task.inInbox");
+  });
+
+  test("move_task supports project destination mode", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-2",
+      name: "Task Two",
+      projectName: "Errands",
+      inInbox: false,
+    });
+    const handler = registeredTools.get("move_task");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_id: "task-2",
+      project: "Errands",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "task-2",
+      name: "Task Two",
+      projectName: "Errands",
+      inInbox: false,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const taskId = "task-2";');
+    expect(script).toContain('const projectName = "Errands";');
+    expect(script).toContain('return { mode: "project", location: targetProject.ending };');
+  });
+
+  test("move_task defaults to inbox when destination omitted", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-3",
+      name: "Task Three",
+      projectName: null,
+      inInbox: true,
+    });
+    const handler = registeredTools.get("move_task");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_id: "task-3",
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      id: "task-3",
+      name: "Task Three",
+      projectName: null,
+      inInbox: true,
+    });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain("const projectName = null;");
+    expect(script).toContain("const parentTaskId = null;");
+    expect(script).toContain('return { mode: "inbox", location: inbox.ending };');
+  });
+
+  test("move_task rejects ambiguous destination inputs", async () => {
+    const handler = registeredTools.get("move_task");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      task_id: "task-4",
+      project: "Work",
+      parent_task_id: "parent-1",
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "provide either project or parent_task_id, not both (destination is ambiguous).",
+    });
   });
 
   test("uncomplete_task marks completed task incomplete", async () => {

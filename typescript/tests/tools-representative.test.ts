@@ -1081,7 +1081,7 @@ describe("representative read and write tool handlers", () => {
     script = String(runOmniJsMock.mock.calls[1]?.[0]);
     expect(script).toContain("const projectName = null;");
     expect(script).toContain("const parentTaskId = null;");
-    expect(script).toContain('return { location: inbox.ending, mode: "inbox" };');
+    expect(script).toContain('return { mode: "inbox", location: inbox.ending };');
 
     runOmniJsMock.mockResolvedValueOnce({
       id: "task-5",
@@ -1095,7 +1095,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("if (parentTaskId === taskId) {");
     expect(script).toContain('throw new Error("Cannot move a task under itself.");');
     expect(script).toContain('throw new Error("Cannot move a task under its own descendant.");');
-    expect(script).toContain('return { location: parentTask.ending, mode: "parent" };');
+    expect(script).toContain('return { mode: "parent", location: parentTask.ending };');
   });
 
   test("move_task rejects ambiguous destination and empty ids", async () => {

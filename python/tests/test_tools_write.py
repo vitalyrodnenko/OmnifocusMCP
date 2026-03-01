@@ -1,5 +1,6 @@
 import json
 from collections.abc import Callable
+import inspect
 import importlib
 import sys
 import types
@@ -329,7 +330,14 @@ async def test_move_task_under_parent_happy_path(
     assert "if (parentTaskId === taskId) {" in script
     assert "throw new Error(\"Cannot move a task under itself.\");" in script
     assert "throw new Error(\"Cannot move a task under its own descendant.\");" in script
-    assert "return { location: parentTask.ending, mode: \"parent\" };" in script
+    assert "return { mode: \"parent\", location: parentTask.ending };" in script
+    assert set(json.loads(result).keys()) == {"id", "name", "projectName", "inInbox"}
+
+
+@pytest.mark.asyncio
+async def test_move_task_signature_uses_parity_parameter_names(server_module: Any) -> None:
+    signature = inspect.signature(server_module.move_task)
+    assert list(signature.parameters.keys()) == ["task_id", "project", "parent_task_id"]
 
 
 @pytest.mark.asyncio
@@ -1197,6 +1205,36 @@ async def test_move_task_both_destinations_validation_error(server_module: Any) 
         match="provide either project or parent_task_id, not both \\(destination is ambiguous\\)",
     ):
         await server_module.move_task("task-1", project="Work", parent_task_id="parent-1")
+
+
+@pytest.mark.asyncio
+async def test_move_task_self_parenting_rejection_error_propagates(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        raise RuntimeError("Cannot move a task under itself.")
+
+    tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
+    monkeypatch.setattr(tasks_mod, "run_omnijs", fake_run_omnijs)
+
+    with pytest.raises(RuntimeError, match="Cannot move a task under itself."):
+        await tasks_mod.move_task("task-1", parent_task_id="task-1")
+
+
+@pytest.mark.asyncio
+async def test_move_task_cycle_rejection_error_propagates(
+    server_module: Any,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        raise RuntimeError("Cannot move a task under its own descendant.")
+
+    tasks_mod = importlib.import_module("omnifocus_mcp.tools.tasks")
+    monkeypatch.setattr(tasks_mod, "run_omnijs", fake_run_omnijs)
+
+    with pytest.raises(RuntimeError, match="Cannot move a task under its own descendant."):
+        await tasks_mod.move_task("task-1", parent_task_id="parent-descendant")
 
 
 @pytest.mark.asyncio
