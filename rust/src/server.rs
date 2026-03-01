@@ -244,6 +244,7 @@ struct UpdateTaskParams {
 struct MoveTaskParams {
     task_id: String,
     project: Option<String>,
+    parent_task_id: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -801,6 +802,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             self.runner.as_ref(),
             &params.task_id,
             params.project.as_deref(),
+            params.parent_task_id.as_deref(),
         )
         .await
         .map_err(to_mcp_error)?;

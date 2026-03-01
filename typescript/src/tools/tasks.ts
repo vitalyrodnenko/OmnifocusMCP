@@ -988,17 +988,28 @@ return {
   server.tool(
     "move_task",
     "move a task to a different project or to inbox.",
-    { task_id: z.string().min(1), project: z.string().min(1).optional() },
-    async ({ task_id, project }) => {
+    {
+      task_id: z.string().min(1),
+      project: z.string().min(1).optional(),
+      parent_task_id: z.string().min(1).optional(),
+    },
+    async ({ task_id, project, parent_task_id }) => {
       try {
         const taskId = escapeForJxa(task_id);
         const projectName = project === undefined ? "null" : escapeForJxa(project.trim());
+        const parentTaskId =
+          parent_task_id === undefined ? "null" : escapeForJxa(parent_task_id.trim());
         const script = `
 const taskId = ${taskId};
 const projectName = ${projectName};
+const parentTaskId = ${parentTaskId};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) throw new Error(\`Task not found: \${taskId}\`);
-if (projectName === null || projectName === "") {
+if (parentTaskId !== null && parentTaskId !== "") {
+  const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+  if (!parentTask) throw new Error(\`Parent task not found: \${parentTaskId}\`);
+  moveTasks([task], parentTask.ending);
+} else if (projectName === null || projectName === "") {
   moveTasks([task], inbox.ending);
 } else {
   const targetProject = document.flattenedProjects.byName(projectName);

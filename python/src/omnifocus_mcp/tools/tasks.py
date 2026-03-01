@@ -1991,9 +1991,7 @@ async def move_task(
     task_id_value = escape_for_jxa(task_id.strip())
     project_value = "null" if project is None else escape_for_jxa(project.strip())
     parent_task_id_value = (
-        "null"
-        if parent_task_id is None
-        else escape_for_jxa(parent_task_id.strip())
+        "null" if parent_task_id is None else escape_for_jxa(parent_task_id.strip())
     )
 
     script = f"""

@@ -161,7 +161,7 @@ async fn write_task_tools_happy_path() {
         .expect("delete_tasks_batch should succeed");
     assert_eq!(deleted_batch["id"], "t1");
 
-    let moved = move_task(&runner, "t1", Some("project"))
+    let moved = move_task(&runner, "t1", Some("project"), None)
         .await
         .expect("move_task should succeed");
     assert_eq!(moved["id"], "t1");
@@ -456,7 +456,7 @@ async fn validation_errors_for_write_tools() {
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        move_task(&runner, "task-id", Some("   ")).await,
+        move_task(&runner, "task-id", Some("   "), None).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(

@@ -2548,6 +2548,7 @@ pub async fn move_task<R: JxaRunner>(
     runner: &R,
     task_id: &str,
     project: Option<&str>,
+    parent_task_id: Option<&str>,
 ) -> Result<Value> {
     if task_id.trim().is_empty() {
         return Err(OmniFocusError::Validation(
@@ -2561,20 +2562,38 @@ pub async fn move_task<R: JxaRunner>(
             ));
         }
     }
+    if let Some(parent_id) = parent_task_id {
+        if parent_id.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "parent_task_id must not be empty when provided.".to_string(),
+            ));
+        }
+    }
 
     let task_id_value = escape_for_jxa(task_id.trim());
     let project_value = project
         .map(|value| escape_for_jxa(value.trim()))
         .unwrap_or_else(|| "null".to_string());
+    let parent_task_id_value = parent_task_id
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
     let script = format!(
         r#"const taskId = {task_id_value};
 const projectName = {project_value};
+const parentTaskId = {parent_task_id_value};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
 if (!task) {{
   throw new Error(`Task not found: ${{taskId}}`);
 }}
 
 const destination = (() => {{
+  if (parentTaskId !== null && parentTaskId !== "") {{
+    const parentTask = document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+    if (!parentTask) {{
+      throw new Error(`Parent task not found: ${{parentTaskId}}`);
+    }}
+    return parentTask.ending;
+  }}
   if (projectName === null || projectName === "") return inbox.ending;
   const targetProject = document.flattenedProjects.byName(projectName);
   if (!targetProject) {{
@@ -2590,7 +2609,8 @@ return {{
   name: task.name,
   projectName: task.containingProject ? task.containingProject.name : null,
   inInbox: task.inInbox
-}};"#
+}};"#,
+        parent_task_id_value = parent_task_id_value
     );
     runner.run_omnijs(&script).await
 }
