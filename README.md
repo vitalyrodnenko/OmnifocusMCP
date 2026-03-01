@@ -1,5 +1,10 @@
 # OmniFocus MCP
 
+[![Platform: macOS](https://img.shields.io/badge/platform-macOS-black)](https://www.omnigroup.com/omnifocus)
+[![Protocol: MCP](https://img.shields.io/badge/protocol-MCP-6f42c1)](https://modelcontextprotocol.io)
+[![Language: Rust/Python/TypeScript](https://img.shields.io/badge/impl-rust%20%7C%20python%20%7C%20typescript-0ea5e9)](#implementations)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 MCP server that gives AI assistants full control over [OmniFocus](https://www.omnigroup.com/omnifocus) on macOS.
 
 45 tools, 3 resources, and 4 prompts covering tasks, projects, tags, folders, perspectives, forecast, notifications, and review workflows — all through the [Model Context Protocol](https://modelcontextprotocol.io).
