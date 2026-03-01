@@ -42,8 +42,8 @@ use crate::{
             add_notification, complete_task, create_subtask, create_task, create_tasks_batch,
             delete_task, delete_tasks_batch, duplicate_task, get_inbox, get_task, get_task_counts,
             list_notifications, list_subtasks, list_tasks_with_planned, move_task,
-            remove_notification, search_tasks_with_planned, set_task_repetition, uncomplete_task,
-            update_task, CreateTaskInput,
+            move_tasks_batch, remove_notification, search_tasks_with_planned,
+            set_task_repetition, uncomplete_task, update_task, CreateTaskInput,
         },
         utility::append_to_note as append_to_note_tool,
     },
@@ -243,6 +243,13 @@ struct UpdateTaskParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct MoveTaskParams {
     task_id: String,
+    project: Option<String>,
+    parent_task_id: Option<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct MoveTasksBatchParams {
+    task_ids: Vec<String>,
     project: Option<String>,
     parent_task_id: Option<String>,
 }
@@ -803,6 +810,24 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = move_task(
             self.runner.as_ref(),
             &params.task_id,
+            params.project.as_deref(),
+            params.parent_task_id.as_deref(),
+        )
+        .await
+        .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "move multiple tasks without deleting or recreating them. destination modes: (a) provide project to move tasks to a project, (b) provide parent_task_id to move tasks under an existing parent task, or (c) omit both to move tasks to inbox. runs as one omnijs call per invocation and returns per-task move results."
+    )]
+    async fn move_tasks_batch(
+        &self,
+        Parameters(params): Parameters<MoveTasksBatchParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = move_tasks_batch(
+            self.runner.as_ref(),
+            params.task_ids,
             params.project.as_deref(),
             params.parent_task_id.as_deref(),
         )

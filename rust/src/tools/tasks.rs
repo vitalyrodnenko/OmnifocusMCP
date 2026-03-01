@@ -2640,6 +2640,263 @@ return {{
     runner.run_omnijs(&script).await
 }
 
+pub async fn move_tasks_batch<R: JxaRunner>(
+    runner: &R,
+    task_ids: Vec<String>,
+    project: Option<&str>,
+    parent_task_id: Option<&str>,
+) -> Result<Value> {
+    if task_ids.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_ids must contain at least one task id.".to_string(),
+        ));
+    }
+    if let Some(project_name) = project {
+        if project_name.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "project must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if let Some(parent_id) = parent_task_id {
+        if parent_id.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "parent_task_id must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if project.is_some() && parent_task_id.is_some() {
+        return Err(OmniFocusError::Validation(
+            "provide either project or parent_task_id, not both (destination is ambiguous)."
+                .to_string(),
+        ));
+    }
+
+    let mut normalized_task_ids: Vec<String> = Vec::with_capacity(task_ids.len());
+    for task_id in task_ids {
+        let normalized_task_id = task_id.trim();
+        if normalized_task_id.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each task id must be a non-empty string.".to_string(),
+            ));
+        }
+        normalized_task_ids.push(normalized_task_id.to_string());
+    }
+
+    let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
+    let project_value = project
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let parent_task_id_value = parent_task_id
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let script = format!(
+        r#"const taskIds = {task_ids_value};
+const projectName = {project_value};
+const parentTaskId = {parent_task_id_value};
+const taskById = new Map();
+for (const task of document.flattenedTasks) {{
+  try {{
+    taskById.set(task.id.primaryKey, task);
+  }} catch (e) {{
+  }}
+}}
+
+const destinationInfo = (() => {{
+  if (parentTaskId !== null && parentTaskId !== "") {{
+    const parentTask = taskById.get(parentTaskId);
+    if (!parentTask) {{
+      throw new Error(`Parent task not found: ${{parentTaskId}}`);
+    }}
+    return {{ mode: "parent", location: parentTask.ending }};
+  }}
+  if (projectName === null || projectName === "") {{
+    return {{ mode: "inbox", location: inbox.ending }};
+  }}
+  const targetProject = document.flattenedProjects.byName(projectName);
+  if (!targetProject) {{
+    throw new Error(`Project not found: ${{projectName}}`);
+  }}
+  return {{ mode: "project", location: targetProject.ending }};
+}})();
+
+const results = taskIds.map(taskId => {{
+  const task = taskById.get(taskId);
+  if (!task) {{
+    return {{
+      id: taskId,
+      moved: false,
+      error: "not found"
+    }};
+  }}
+
+  try {{
+    const originalTaskId = task.id.primaryKey;
+    moveTasks([task], destinationInfo.location);
+    if (task.id.primaryKey !== originalTaskId) {{
+      throw new Error("Task move did not preserve task identity.");
+    }}
+    if (destinationInfo.mode !== "parent" && task.containingTask) {{
+      throw new Error("Task move failed: task is still nested under a parent.");
+    }}
+    return {{
+      id: task.id.primaryKey,
+      name: task.name,
+      moved: true,
+      projectName: task.containingProject ? task.containingProject.name : null,
+      inInbox: task.inInbox
+    }};
+  }} catch (e) {{
+    return {{
+      id: taskId,
+      name: task.name,
+      moved: false,
+      error: e && e.message ? String(e.message) : "move failed"
+    }};
+  }}
+}});
+
+const movedCount = results.filter(result => result.moved).length;
+const failedCount = results.length - movedCount;
+
+return {{
+  requested_count: results.length,
+  moved_count: movedCount,
+  failed_count: failedCount,
+  results: results
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn move_tasks_batch<R: JxaRunner>(
+    runner: &R,
+    task_ids: Vec<String>,
+    project: Option<&str>,
+    parent_task_id: Option<&str>,
+) -> Result<Value> {
+    if task_ids.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "task_ids must contain at least one task id.".to_string(),
+        ));
+    }
+
+    let mut normalized_task_ids: Vec<String> = Vec::with_capacity(task_ids.len());
+    for task_id in task_ids {
+        let normalized_task_id = task_id.trim();
+        if normalized_task_id.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each task id must be a non-empty string.".to_string(),
+            ));
+        }
+        normalized_task_ids.push(normalized_task_id.to_string());
+    }
+
+    if let Some(project_name) = project {
+        if project_name.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "project must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+    if let Some(parent_id) = parent_task_id {
+        if parent_id.trim().is_empty() {
+            return Err(OmniFocusError::Validation(
+                "parent_task_id must not be empty when provided.".to_string(),
+            ));
+        }
+    }
+
+    let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
+    let project_value = project
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let parent_task_id_value = parent_task_id
+        .map(|value| escape_for_jxa(value.trim()))
+        .unwrap_or_else(|| "null".to_string());
+    let script = format!(
+        r#"const taskIds = {task_ids_value};
+const projectName = {project_value};
+const parentTaskId = {parent_task_id_value};
+const taskById = new Map();
+for (const task of document.flattenedTasks) {{
+  try {{
+    taskById.set(task.id.primaryKey, task);
+  }} catch (e) {{
+  }}
+}}
+
+const destinationInfo = (() => {{
+  if (parentTaskId !== null && parentTaskId !== "") {{
+    const parentTask = taskById.get(parentTaskId) || document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
+    if (!parentTask) {{
+      throw new Error(`Parent task not found: ${{parentTaskId}}`);
+    }}
+    return {{
+      mode: "parent",
+      location: parentTask.ending,
+      summary: {{
+        mode: "parent",
+        parentTaskId: parentTask.id.primaryKey,
+        parentTaskName: parentTask.name
+      }}
+    }};
+  }}
+  if (projectName === null || projectName === "") {{
+    return {{ mode: "inbox", location: inbox.ending, summary: {{ mode: "inbox" }} }};
+  }}
+  const targetProject = document.flattenedProjects.byName(projectName);
+  if (!targetProject) {{
+    throw new Error(`Project not found: ${{projectName}}`);
+  }}
+  return {{
+    mode: "project",
+    location: targetProject.ending,
+    summary: {{ mode: "project", projectName: targetProject.name }}
+  }};
+}})();
+
+const results = taskIds.map(taskId => {{
+  const task = taskById.get(taskId);
+  if (!task) {{
+    return {{
+      id: taskId,
+      moved: false,
+      destination: destinationInfo.summary,
+      error: "not found"
+    }};
+  }}
+  const originalTaskId = task.id.primaryKey;
+  moveTasks([task], destinationInfo.location);
+  if (task.id.primaryKey !== originalTaskId) {{
+    return {{
+      id: taskId,
+      moved: false,
+      destination: destinationInfo.summary,
+      error: "Task move did not preserve task identity."
+    }};
+  }}
+  return {{
+    id: task.id.primaryKey,
+    name: task.name,
+    moved: true,
+    destination: destinationInfo.summary
+  }};
+}});
+
+const movedCount = results.filter(result => result.moved).length;
+const failedCount = results.length - movedCount;
+
+return {{
+  requested_count: taskIds.length,
+  moved_count: movedCount,
+  failed_count: failedCount,
+  results: results
+}};"#,
+    );
+    runner.run_omnijs(&script).await
+}
+
 pub async fn uncomplete_task<R: JxaRunner>(runner: &R, task_id: &str) -> Result<Value> {
     if task_id.trim().is_empty() {
         return Err(OmniFocusError::Validation(
