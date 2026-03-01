@@ -483,9 +483,9 @@ describe("tool happy paths", () => {
       project: "Work",
     });
     expect(duplicateResult.isError).toBe(true);
-    expect(JSON.parse(duplicateResult.content[0].text)).toEqual({
-      error: "task_ids must not contain duplicate ids.",
-    });
+    expect(JSON.parse(duplicateResult.content[0].text).error).toContain(
+      "task_ids must not contain duplicate"
+    );
 
     const selfParentResult = await handler!({
       task_ids: ["task-1", "task-2"],
@@ -518,9 +518,9 @@ describe("tool happy paths", () => {
       task_ids: ["task-1", "task-1"],
     });
     expect(result.isError).toBe(true);
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "task_ids must not contain duplicate ids.",
-    });
+    expect(JSON.parse(result.content[0].text).error).toContain(
+      "task_ids must not contain duplicate"
+    );
   });
 
   test("move_tasks_batch returns error when parent_task_id appears in task_ids", async () => {

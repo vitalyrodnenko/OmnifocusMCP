@@ -1468,7 +1468,7 @@ async def test_move_tasks_batch_validation_errors(server_module: Any) -> None:
         await server_module.move_tasks_batch(
             ["task-1"], project="Work", parent_task_id="parent-1"
         )
-    with pytest.raises(ValueError, match="task_ids must not contain duplicate ids."):
+    with pytest.raises(ValueError, match="task_ids must not contain duplicates: task-1"):
         await server_module.move_tasks_batch(["task-1", "task-1"], project="Work")
     with pytest.raises(
         ValueError,
