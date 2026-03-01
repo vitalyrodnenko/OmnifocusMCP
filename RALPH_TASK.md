@@ -348,13 +348,13 @@ required across Python/TypeScript/Rust with strict parity.
         - reject cycle-causing moves (parent is a descendant of any moved task)
         - return actionable validation errors.
 
-30. [ ] Implement batch move with OmniFocus move API (no delete/recreate):
+30. [x] Implement batch move with OmniFocus move API (no delete/recreate):
         - perform move in one OmniJS call per tool invocation
         - preserve existing task object identity and ids
         - support project destination, inbox destination, and parent-task destination
         - never clone/recreate tasks as part of reorganization.
 
-31. [ ] Define and enforce a consistent response shape across Python,
+31. [x] Define and enforce a consistent response shape across Python,
         TypeScript, Rust:
         - include aggregate summary (requested/moved/failed counts)
         - include per-task result objects with id, name (if available),

@@ -2689,9 +2689,9 @@ pub async fn move_tasks_batch<R: JxaRunner>(
             ));
         }
         if !seen_task_ids.insert(normalized_task_id.to_string()) {
-            return Err(OmniFocusError::Validation(format!(
-                "task_ids must not contain duplicates: {normalized_task_id}"
-            )));
+            return Err(OmniFocusError::Validation(
+                "task_ids must not contain duplicate ids.".to_string(),
+            ));
         }
         normalized_task_ids.push(normalized_task_id.to_string());
     }

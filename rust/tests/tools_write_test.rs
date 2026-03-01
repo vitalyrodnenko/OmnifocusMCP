@@ -210,7 +210,7 @@ async fn move_tasks_batch_rejects_duplicate_task_ids_criterion29() {
     assert!(matches!(result, Err(OmniFocusError::Validation(_))));
     assert_eq!(
         result.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicates: task-1".to_string())
+        Some("task_ids must not contain duplicate ids.".to_string())
     );
 }
 
@@ -387,7 +387,7 @@ async fn move_tasks_batch_rejects_duplicate_and_self_parent_inputs() {
     assert!(matches!(duplicate_ids, Err(OmniFocusError::Validation(_))));
     assert_eq!(
         duplicate_ids.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicates: task-1".to_string())
+        Some("task_ids must not contain duplicate ids.".to_string())
     );
 
     let self_parent = move_tasks_batch(
@@ -570,7 +570,7 @@ async fn move_tasks_batch_rejects_ambiguous_duplicate_and_self_parent_inputs() {
     assert!(matches!(duplicate, Err(OmniFocusError::Validation(_))));
     assert_eq!(
         duplicate.err().map(|error| error.to_string()),
-        Some("task_ids must not contain duplicates: task-1".to_string())
+        Some("task_ids must not contain duplicate ids.".to_string())
     );
 
     let self_parent = move_tasks_batch(

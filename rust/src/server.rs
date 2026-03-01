@@ -819,7 +819,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "move multiple tasks without deleting or recreating them. destination modes: (a) provide project to move tasks to a project, (b) provide parent_task_id to move tasks under an existing parent task, or (c) omit both to move tasks to inbox. runs as one omnijs call per invocation and returns per-task move results."
+        description = "move multiple tasks without deleting or recreating them. destination modes: (a) provide project to move tasks to a project, (b) provide parent_task_id to move tasks under an existing parent task, or (c) omit both to move tasks to inbox. runs as one omnijs call per invocation and returns per-task move results. destructive delete confirmation remains a separate workflow."
     )]
     async fn move_tasks_batch(
         &self,

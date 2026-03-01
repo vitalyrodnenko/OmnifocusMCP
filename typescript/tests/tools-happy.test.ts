@@ -468,7 +468,7 @@ describe("tool happy paths", () => {
     });
     expect(duplicateResult.isError).toBe(true);
     expect(JSON.parse(duplicateResult.content[0].text)).toEqual({
-      error: "task_ids must not contain duplicate ids.",
+      error: "task_ids must not contain duplicates: task-1",
     });
 
     const selfParentResult = await handler!({
@@ -477,7 +477,7 @@ describe("tool happy paths", () => {
     });
     expect(selfParentResult.isError).toBe(true);
     expect(JSON.parse(selfParentResult.content[0].text)).toEqual({
-      error: "parent_task_id must not be included in task_ids (cannot move a task under itself).",
+      error: "parent_task_id cannot be included in task_ids (self-parenting in batch move).",
     });
   });
 
@@ -503,7 +503,7 @@ describe("tool happy paths", () => {
     });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "task_ids must not contain duplicate ids.",
+      error: "task_ids must not contain duplicates: task-1",
     });
   });
 
@@ -516,7 +516,7 @@ describe("tool happy paths", () => {
     });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "parent_task_id must not be included in task_ids (cannot move a task under itself).",
+      error: "parent_task_id cannot be included in task_ids (self-parenting in batch move).",
     });
   });
 
