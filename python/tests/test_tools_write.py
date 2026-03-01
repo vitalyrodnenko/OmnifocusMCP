@@ -274,6 +274,45 @@ async def test_move_task_happy_path(mock_server_run_omnijs: Callable[[Any], dict
 
 
 @pytest.mark.asyncio
+async def test_move_task_to_inbox_when_destination_omitted(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "t4", "name": "Move me", "projectName": None, "inInbox": True}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_task(task_id="t4")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert "const projectName = null;" in script
+    assert "const parentTaskId = null;" in script
+    assert "if (projectName === null || projectName === \"\") {" in script
+    assert "return { location: inbox.ending, mode: \"inbox\" };" in script
+
+
+@pytest.mark.asyncio
+async def test_move_task_under_parent_happy_path(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "child-1", "name": "Child", "projectName": "Work", "inInbox": False}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.move_task(task_id="child-1", parent_task_id="parent-1")
+
+    assert json.loads(result) == payload
+    script = state["calls"][0]["script"]
+    assert 'const parentTaskId = "parent-1";' in script
+    assert "if (parentTaskId === taskId) {" in script
+    assert "throw new Error(\"Cannot move a task under itself.\");" in script
+    assert "throw new Error(\"Cannot move a task under its own descendant.\");" in script
+    assert "return { location: parentTask.ending, mode: \"parent\" };" in script
+
+
+@pytest.mark.asyncio
 async def test_create_project_happy_path(mock_server_run_omnijs: Callable[[Any], dict[str, Any]]) -> None:
     payload = {"id": "p1"}
     configured = mock_server_run_omnijs(payload)
@@ -1129,6 +1168,15 @@ async def test_set_task_repetition_invalid_schedule_type_validation_error(server
 async def test_move_task_empty_project_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="project must not be empty when provided"):
         await server_module.move_task("task-1", project="   ")
+
+
+@pytest.mark.asyncio
+async def test_move_task_both_destinations_validation_error(server_module: Any) -> None:
+    with pytest.raises(
+        ValueError,
+        match="provide either project or parent_task_id, not both \\(destination is ambiguous\\)",
+    ):
+        await server_module.move_task("task-1", project="Work", parent_task_id="parent-1")
 
 
 @pytest.mark.asyncio

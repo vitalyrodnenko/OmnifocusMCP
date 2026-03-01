@@ -1048,6 +1048,74 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual({ id: "task-4", name: "updated" });
   });
 
+  test("move_task supports project, inbox default, and parent destinations", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-5",
+      name: "moved",
+      projectName: "Errands",
+      inInbox: false,
+    });
+    const toProject = await getTool("move_task")({
+      task_id: "task-5",
+      project: "Errands",
+    });
+    let script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const taskId = "task-5";');
+    expect(script).toContain('const projectName = "Errands";');
+    expect(script).toContain("const parentTaskId = null;");
+    expect(script).toContain("moveTasks([task], destinationInfo.location);");
+    expect(JSON.parse(toProject.content[0].text)).toEqual({
+      id: "task-5",
+      name: "moved",
+      projectName: "Errands",
+      inInbox: false,
+    });
+
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-5",
+      name: "moved",
+      projectName: null,
+      inInbox: true,
+    });
+    await getTool("move_task")({ task_id: "task-5" });
+    script = String(runOmniJsMock.mock.calls[1]?.[0]);
+    expect(script).toContain("const projectName = null;");
+    expect(script).toContain("const parentTaskId = null;");
+    expect(script).toContain('return { location: inbox.ending, mode: "inbox" };');
+
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-5",
+      name: "moved",
+      projectName: "Errands",
+      inInbox: false,
+    });
+    await getTool("move_task")({ task_id: "task-5", parent_task_id: "parent-1" });
+    script = String(runOmniJsMock.mock.calls[2]?.[0]);
+    expect(script).toContain('const parentTaskId = "parent-1";');
+    expect(script).toContain("if (parentTaskId === taskId) {");
+    expect(script).toContain('throw new Error("Cannot move a task under itself.");');
+    expect(script).toContain('throw new Error("Cannot move a task under its own descendant.");');
+    expect(script).toContain('return { location: parentTask.ending, mode: "parent" };');
+  });
+
+  test("move_task rejects ambiguous destination and empty ids", async () => {
+    let result = await getTool("move_task")({
+      task_id: "task-6",
+      project: "Errands",
+      parent_task_id: "parent-1",
+    });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "provide either project or parent_task_id, not both (destination is ambiguous).",
+    });
+
+    result = await getTool("move_task")({ task_id: "   " });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "task_id must not be empty.",
+    });
+  });
+
   test("complete_project marks project complete in script", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "proj-2", completed: true });
     const result = await getTool("complete_project")({
