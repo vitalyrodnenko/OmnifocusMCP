@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::HashSet;
 
 use crate::{
     error::{OmniFocusError, Result},
@@ -2493,6 +2494,7 @@ pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>)
     }
 
     let mut normalized_task_ids: Vec<String> = Vec::with_capacity(task_ids.len());
+    let mut seen_task_ids: std::collections::HashSet<String> = std::collections::HashSet::new();
     for task_id in task_ids {
         let normalized_task_id = task_id.trim();
         if normalized_task_id.is_empty() {
@@ -2500,7 +2502,21 @@ pub async fn delete_tasks_batch<R: JxaRunner>(runner: &R, task_ids: Vec<String>)
                 "each task id must be a non-empty string.".to_string(),
             ));
         }
+        if seen_task_ids.contains(normalized_task_id) {
+            return Err(OmniFocusError::Validation(format!(
+                "task_ids must not contain duplicates: {normalized_task_id}"
+            )));
+        }
+        seen_task_ids.insert(normalized_task_id.to_string());
         normalized_task_ids.push(normalized_task_id.to_string());
+    }
+    if let Some(parent_id) = parent_task_id {
+        if seen_task_ids.contains(parent_id.trim()) {
+            return Err(OmniFocusError::Validation(
+                "parent_task_id cannot be included in task_ids (self-parenting in batch move)."
+                    .to_string(),
+            ));
+        }
     }
 
     let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
@@ -2673,6 +2689,7 @@ pub async fn move_tasks_batch<R: JxaRunner>(
     }
 
     let mut normalized_task_ids: Vec<String> = Vec::with_capacity(task_ids.len());
+    let mut seen_task_ids: HashSet<String> = HashSet::with_capacity(task_ids.len());
     for task_id in task_ids {
         let normalized_task_id = task_id.trim();
         if normalized_task_id.is_empty() {
@@ -2680,15 +2697,29 @@ pub async fn move_tasks_batch<R: JxaRunner>(
                 "each task id must be a non-empty string.".to_string(),
             ));
         }
+        if !seen_task_ids.insert(normalized_task_id.to_string()) {
+            return Err(OmniFocusError::Validation(
+                "task_ids must not contain duplicate ids.".to_string(),
+            ));
+        }
         normalized_task_ids.push(normalized_task_id.to_string());
+    }
+    let normalized_parent_task_id = parent_task_id.map(str::trim);
+    if let Some(parent_id) = normalized_parent_task_id {
+        if seen_task_ids.contains(parent_id) {
+            return Err(OmniFocusError::Validation(
+                "parent_task_id must not be included in task_ids (cannot move a task under itself)."
+                    .to_string(),
+            ));
+        }
     }
 
     let task_ids_value = serde_json::to_string(&normalized_task_ids)?;
     let project_value = project
         .map(|value| escape_for_jxa(value.trim()))
         .unwrap_or_else(|| "null".to_string());
-    let parent_task_id_value = parent_task_id
-        .map(|value| escape_for_jxa(value.trim()))
+    let parent_task_id_value = normalized_parent_task_id
+        .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
     let script = format!(
         r#"const taskIds = {task_ids_value};
@@ -2707,6 +2738,13 @@ const destinationInfo = (() => {{
     const parentTask = taskById.get(parentTaskId) || document.flattenedTasks.find(item => item.id.primaryKey === parentTaskId);
     if (!parentTask) {{
       throw new Error(`Parent task not found: ${{parentTaskId}}`);
+    }}
+    let ancestor = parentTask;
+    while (ancestor) {{
+      if (taskIds.includes(ancestor.id.primaryKey)) {{
+        throw new Error("Cannot move tasks under their own descendant.");
+      }}
+      ancestor = ancestor.containingTask;
     }}
     return {{
       mode: "parent",
@@ -2737,45 +2775,47 @@ const results = taskIds.map(taskId => {{
   if (!task) {{
     return {{
       id: taskId,
+      name: null,
       moved: false,
       destination: destinationInfo.summary,
-      error: "not found"
+      error: "Task not found."
     }};
   }}
-
-  const originalTaskId = task.id.primaryKey;
-  moveTasks([task], destinationInfo.location);
-  if (task.id.primaryKey !== originalTaskId) {{
+  try {{
+    const originalTaskId = task.id.primaryKey;
+    moveTasks([task], destinationInfo.location);
+    if (task.id.primaryKey !== originalTaskId) {{
+      throw new Error("Task move did not preserve task identity.");
+    }}
+    if (destinationInfo.mode !== "parent" && task.containingTask) {{
+      throw new Error("Task move failed: task is still nested under a parent.");
+    }}
+    return {{
+      id: task.id.primaryKey,
+      name: task.name,
+      moved: true,
+      destination: destinationInfo.summary,
+      error: null
+    }};
+  }} catch (e) {{
     return {{
       id: taskId,
+      name: task.name,
       moved: false,
       destination: destinationInfo.summary,
-      error: "Task move did not preserve task identity."
+      error: e && e.message ? String(e.message) : "move failed"
     }};
   }}
-  if (destinationInfo.mode !== "parent" && task.containingTask) {{
-    return {{
-      id: taskId,
-      moved: false,
-      destination: destinationInfo.summary,
-      error: "Task move failed: task is still nested under a parent."
-    }};
-  }}
-  return {{
-    id: task.id.primaryKey,
-    name: task.name,
-    moved: true,
-    destination: destinationInfo.summary
-  }};
 }});
 
 const movedCount = results.filter(result => result.moved).length;
 const failedCount = results.length - movedCount;
 
 return {{
-  requested_count: results.length,
+  requested_count: taskIds.length,
   moved_count: movedCount,
   failed_count: failedCount,
+  partial_success: movedCount > 0 && failedCount > 0,
   results: results
 }};"#
     );

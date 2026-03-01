@@ -1106,7 +1106,7 @@ return {
             throw new Error("each task id must be a non-empty string.");
           }
           if (seenTaskIds.has(normalizedTaskId)) {
-            throw new Error(`task_ids must not contain duplicates: ${normalizedTaskId}`);
+            throw new Error("task_ids must not contain duplicate ids.");
           }
           seenTaskIds.add(normalizedTaskId);
           normalizedTaskIds.push(normalizedTaskId);
@@ -1116,7 +1116,7 @@ return {
           seenTaskIds.has(normalizedParentTaskId)
         ) {
           throw new Error(
-            "parent_task_id cannot be included in task_ids (self-parenting in batch move)."
+            "parent_task_id must not be included in task_ids (cannot move a task under itself)."
           );
         }
 
