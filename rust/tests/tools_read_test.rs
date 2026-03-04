@@ -1382,6 +1382,28 @@ async fn list_tags_name_sort_is_in_script() {
 }
 
 #[tokio::test]
+async fn list_perspectives_script_includes_custom_and_built_in_sources() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{"id": "persp1", "name": "inbox"}]),
+        last_script: last_script.clone(),
+    };
+
+    let perspectives = list_perspectives(&runner, 8)
+        .await
+        .expect("perspectives should parse");
+    assert!(perspectives.is_array());
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("Perspective.BuiltIn.all"));
+    assert!(script.contains("Perspective.Custom.all"));
+    assert!(script.contains("return unique.slice(0, 8);"));
+}
+
+#[tokio::test]
 async fn get_project_script_includes_stalled_and_count_fields() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {

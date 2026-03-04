@@ -1126,4 +1126,14 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("project.markComplete();");
     expect(JSON.parse(result.content[0].text)).toEqual({ id: "proj-2", completed: true });
   });
+
+  test("list_perspectives includes built-in and custom perspective sources", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "persp-1", name: "Inbox" }]);
+    const result = await getTool("list_perspectives")({ limit: 8 });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("Perspective.BuiltIn.all");
+    expect(script).toContain("Perspective.Custom.all");
+    expect(script).toContain("return unique.slice(0, 8);");
+    expect(JSON.parse(result.content[0].text)).toEqual([{ id: "persp-1", name: "Inbox" }]);
+  });
 });

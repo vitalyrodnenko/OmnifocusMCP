@@ -35,6 +35,12 @@ if (typeof Perspective !== "undefined" && Perspective.BuiltIn && Perspective.Bui
   }});
 }}
 
+if (typeof Perspective !== "undefined" && Perspective.Custom && Perspective.Custom.all) {{
+  Perspective.Custom.all.forEach(perspective => {{
+    collected.push(normalizePerspective(perspective));
+  }});
+}}
+
 if (document.perspectives) {{
   document.perspectives.forEach(perspective => {{
     collected.push(normalizePerspective(perspective));

@@ -23,7 +23,7 @@ Target outcome:
 
 ### success criteria
 
-1. [ ] confirm the current perspective sources used in:
+1. [x] confirm the current perspective sources used in:
       - `python/src/omnifocus_mcp/tools/perspectives.py`
       - `typescript/src/tools/perspectives.ts`
       - `rust/src/tools/perspectives.rs`

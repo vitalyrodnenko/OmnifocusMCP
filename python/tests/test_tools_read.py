@@ -1405,6 +1405,7 @@ async def test_list_perspectives_happy_path(
     assert json.loads(result) == payload
     assert len(state["calls"]) == 1
     assert "Perspective.BuiltIn.all" in state["calls"][0]["script"]
+    assert "Perspective.Custom.all" in state["calls"][0]["script"]
     assert "return unique.slice(0, 8);" in state["calls"][0]["script"]
 
 

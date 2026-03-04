@@ -22,6 +22,9 @@ const collected = [];
 if (typeof Perspective !== "undefined" && Perspective.BuiltIn && Perspective.BuiltIn.all) {
   Perspective.BuiltIn.all.forEach(perspective => collected.push(normalizePerspective(perspective)));
 }
+if (typeof Perspective !== "undefined" && Perspective.Custom && Perspective.Custom.all) {
+  Perspective.Custom.all.forEach(perspective => collected.push(normalizePerspective(perspective)));
+}
 if (document.perspectives) {
   document.perspectives.forEach(perspective => collected.push(normalizePerspective(perspective)));
 }
