@@ -39,7 +39,7 @@ implementation source contract (all runtimes must match):
 - null-safe source reads: treat missing/undefined sources as empty lists
 - output contract unchanged: emit only `{ id, name }` objects after dedupe and `limit`
 
-3. [ ] preserve current tool contract:
+3. [x] preserve current tool contract:
       - tool name remains `list_perspectives`
       - input remains `limit` with existing validation behavior
       - output remains objects with `id` and `name` only
@@ -50,18 +50,18 @@ implementation source contract (all runtimes must match):
 
 ### success criteria
 
-4. [ ] update Python `list_perspectives` JXA/OmniJS script to include
+4. [x] update Python `list_perspectives` JXA/OmniJS script to include
       `Perspective.Custom.all` with defensive guards.
 
-5. [ ] update TypeScript `list_perspectives` script with identical behavior and
+5. [x] update TypeScript `list_perspectives` script with identical behavior and
       matching source order/logic.
 
-6. [ ] update Rust `list_perspectives` script with identical behavior and matching
+6. [x] update Rust `list_perspectives` script with identical behavior and matching
       source order/logic.
 
-7. [ ] keep dedupe behavior by stable identifier and preserve `limit` slicing.
+7. [x] keep dedupe behavior by stable identifier and preserve `limit` slicing.
 
-8. [ ] ensure null-safe/undefined-safe checks for all perspective sources to avoid
+8. [x] ensure null-safe/undefined-safe checks for all perspective sources to avoid
       runtime errors on environment/version differences.
 
 ---
@@ -70,16 +70,16 @@ implementation source contract (all runtimes must match):
 
 ### success criteria
 
-9. [ ] Python tests assert updated script includes `Perspective.Custom.all` and
+9. [x] Python tests assert updated script includes `Perspective.Custom.all` and
       still enforces limit slicing.
 
-10. [ ] TypeScript tests assert updated script includes `Perspective.Custom.all`
+10. [x] TypeScript tests assert updated script includes `Perspective.Custom.all`
        and existing behavior remains intact.
 
-11. [ ] Rust tests assert updated script includes `Perspective.Custom.all`
+11. [x] Rust tests assert updated script includes `Perspective.Custom.all`
        and existing behavior remains intact.
 
-12. [ ] no unrelated test behavior is changed.
+12. [x] no unrelated test behavior is changed.
 
 ---
 
@@ -87,15 +87,15 @@ implementation source contract (all runtimes must match):
 
 ### success criteria
 
-13. [ ] run targeted perspective tests using `test_command` from frontmatter.
+13. [x] run targeted perspective tests using `test_command` from frontmatter.
 
-14. [ ] if targeted tests pass, run broader per-language checks as needed for
+14. [x] if targeted tests pass, run broader per-language checks as needed for
        confidence:
        - Python: `cd python && pytest tests/ -v`
        - TypeScript: `cd typescript && npm test`
        - Rust: `cd rust && cargo test`
 
-15. [ ] verify user-reported expectation:
+15. [x] verify user-reported expectation:
        - custom perspectives can be listed
        - built-in perspectives remain listed
        - no response-shape changes
