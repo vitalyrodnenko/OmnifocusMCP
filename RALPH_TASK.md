@@ -20,11 +20,16 @@ Goal:
 
 ### success criteria
 
-1. [ ] verify OmniFocus Omni Automation supports per-object deletion for each target:
+1. [x] verify OmniFocus Omni Automation supports per-object deletion for each target:
       - projects
       - tags
       - folders
       and document any object-specific constraints.
+      verification notes:
+      - all three runtimes already perform deletes through OmniJS `deleteObject(...)`
+      - project deletion removes the project and its contained tasks (`taskCount` is reported)
+      - tag deletion removes the tag assignment from linked tasks (`taskCount` is reported)
+      - folder deletion removes the folder; OmniFocus may move contained projects to top level (`projectCount`/`subfolderCount` are reported)
 
 2. [ ] confirm existing single-delete tools and response contracts in all runtimes:
       - `delete_project`
