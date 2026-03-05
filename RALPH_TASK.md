@@ -187,17 +187,37 @@ Goal:
         behavior checks, and validation error tests for empty arrays, empty trimmed
         identifiers, and duplicate identifiers.
 
-14. [ ] add/extend tests in Rust with the same cases and response-shape checks.
+14. [x] add/extend tests in Rust with the same cases and response-shape checks.
+      implementation notes:
+      - confirmed Rust tests in `rust/tests/tools_write_test.rs` cover
+        `delete_projects_batch`, `delete_tags_batch`, and `delete_folders_batch`.
+      - each tool includes happy-path, partial-success, and validation-error tests
+        (empty array, empty item, duplicates).
+      - assertions verify shared response keys and per-item batch result shape.
 
-15. [ ] verify tool registration parity:
+15. [x] verify tool registration parity:
        - tool names identical across runtimes
        - parameter names identical across runtimes
        - response keys identical across runtimes.
+      parity notes:
+      - tool names aligned across runtimes:
+        `delete_projects_batch`, `delete_tags_batch`, `delete_folders_batch`.
+      - parameter names aligned across runtimes:
+        `project_ids_or_names`, `tag_ids_or_names`, `folder_ids_or_names`.
+      - response keys aligned across runtimes:
+        top-level `{ summary, partial_success, results }`,
+        summary `{ requested, deleted, failed }`,
+        per-item `{ id_or_name, id, name, deleted, error }`.
 
-16. [ ] run quality gates:
+16. [x] run quality gates:
        - Python: `cd python && ruff check src/ && ruff format --check src/ && mypy src/ --strict && pytest tests/ -v`
        - TypeScript: `cd typescript && npx tsc --noEmit && npm test`
        - Rust: `cd rust && cargo fmt --check && cargo clippy -- -D warnings && cargo test`
+      quality gate notes:
+      - Python gate passed after formatting updates in new batch-delete tool files.
+      - TypeScript gate passed (`/opt/homebrew/bin/npx tsc --noEmit` and `/opt/homebrew/bin/npm test`).
+      - Rust gate passed after `cargo fmt` normalization, then
+        `cargo fmt --check`, `cargo clippy -- -D warnings`, and `cargo test`.
 
 ---
 
