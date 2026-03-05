@@ -271,59 +271,67 @@ return {
 
   server.tool(
     "delete_tags_batch",
-    "delete multiple tags by id or exact name in a single omnijs call.",
+    "delete multiple tags by id or exact name in a single omnijs call. destructive operation: this removes tags and unassigns them from linked tasks. use update_tag for non-destructive edits. before calling this tool, always show the user the target tag list and ask for explicit confirmation.",
     {
-      tag_ids_or_names: z
-        .array(z.string().min(1))
-        .min(1)
-        .describe("required non-empty array of tag ids or exact names"),
+      tag_ids_or_names: z.array(z.string()).min(1).describe("tag ids or exact names to delete"),
     },
     async ({ tag_ids_or_names }) => {
       try {
         if (tag_ids_or_names.length === 0) {
-          throw new Error("tag_ids_or_names must contain at least one tag identifier.");
+          throw new Error("tag_ids_or_names must contain at least one tag id or name.");
         }
-        const normalizedIdentifiers = tag_ids_or_names.map((identifier) => {
-          const normalizedIdentifier = identifier.trim();
-          if (normalizedIdentifier === "") {
-            throw new Error("each tag identifier must be a non-empty string.");
+        const normalizedTagIdsOrNames = tag_ids_or_names.map((tagIdOrName) => {
+          const normalizedTagIdOrName = tagIdOrName.trim();
+          if (normalizedTagIdOrName === "") {
+            throw new Error("each tag id or name must be a non-empty string.");
           }
-          return normalizedIdentifier;
+          return normalizedTagIdOrName;
         });
-        const identifiersValue = JSON.stringify(normalizedIdentifiers);
+        const seenTagIdsOrNames = new Set<string>();
+        for (const normalizedTagIdOrName of normalizedTagIdsOrNames) {
+          if (seenTagIdsOrNames.has(normalizedTagIdOrName)) {
+            throw new Error(`tag_ids_or_names must not contain duplicates: ${normalizedTagIdOrName}`);
+          }
+          seenTagIdsOrNames.add(normalizedTagIdOrName);
+        }
+
+        const tagIdsOrNamesValue = JSON.stringify(normalizedTagIdsOrNames);
         const script = `
-const tagIdentifiers = ${identifiersValue};
-const tagById = new Map();
-const tagByName = new Map();
-for (const tag of document.flattenedTags) {
-  try {
-    tagById.set(tag.id.primaryKey, tag);
-    if (!tagByName.has(tag.name)) tagByName.set(tag.name, tag);
-  } catch (e) {
-  }
-}
-const results = tagIdentifiers.map(identifier => {
-  const tag = tagById.get(identifier) || tagByName.get(identifier);
+const tagIdsOrNames = ${tagIdsOrNamesValue};
+const tags = document.flattenedTags.slice();
+const results = tagIdsOrNames.map(idOrName => {
+  const tag = tags.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
   if (!tag) {
     return {
-      id_or_name: identifier,
+      id_or_name: idOrName,
       id: null,
       name: null,
       deleted: false,
-      error: "Tag not found."
+      error: "not found"
     };
   }
 
-  const tagId = tag.id.primaryKey;
-  const tagName = tag.name;
-  deleteObject(tag);
-  return {
-    id_or_name: identifier,
-    id: tagId,
-    name: tagName,
-    deleted: true,
-    error: null
-  };
+  const resolvedId = tag.id.primaryKey;
+  const resolvedName = tag.name;
+  try {
+    deleteObject(tag);
+    return {
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    };
+  } catch (e) {
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    };
+  }
 });
 
 const deletedCount = results.filter(result => result.deleted).length;
@@ -331,7 +339,7 @@ const failedCount = results.length - deletedCount;
 
 return {
   summary: {
-    requested: tagIdentifiers.length,
+    requested: results.length,
     deleted: deletedCount,
     failed: failedCount
   },

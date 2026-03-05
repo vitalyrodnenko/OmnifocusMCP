@@ -283,60 +283,74 @@ pub async fn delete_tags_batch<R: JxaRunner>(
 ) -> Result<Value> {
     if tag_ids_or_names.is_empty() {
         return Err(OmniFocusError::Validation(
-            "tag_ids_or_names must contain at least one tag identifier.".to_string(),
+            "tag_ids_or_names must contain at least one tag id or name.".to_string(),
         ));
     }
 
-    let mut normalized_identifiers: Vec<String> = Vec::with_capacity(tag_ids_or_names.len());
+    let mut normalized_tag_ids_or_names: Vec<String> = Vec::with_capacity(tag_ids_or_names.len());
+    let mut seen_tag_ids_or_names: std::collections::HashSet<String> =
+        std::collections::HashSet::new();
     for tag_id_or_name in tag_ids_or_names {
-        let normalized_identifier = tag_id_or_name.trim();
-        if normalized_identifier.is_empty() {
+        let normalized_tag_id_or_name = tag_id_or_name.trim();
+        if normalized_tag_id_or_name.is_empty() {
             return Err(OmniFocusError::Validation(
-                "each tag identifier must be a non-empty string.".to_string(),
+                "each tag id or name must be a non-empty string.".to_string(),
             ));
         }
-        normalized_identifiers.push(normalized_identifier.to_string());
+        if seen_tag_ids_or_names.contains(normalized_tag_id_or_name) {
+            return Err(OmniFocusError::Validation(format!(
+                "tag_ids_or_names must not contain duplicates: {normalized_tag_id_or_name}"
+            )));
+        }
+        seen_tag_ids_or_names.insert(normalized_tag_id_or_name.to_string());
+        normalized_tag_ids_or_names.push(normalized_tag_id_or_name.to_string());
     }
 
-    let identifiers_value = serde_json::to_string(&normalized_identifiers)?;
+    let tag_ids_or_names_value = serde_json::to_string(&normalized_tag_ids_or_names)?;
     let script = format!(
-        r#"const tagIdentifiers = {identifiers_value};
-const tagById = new Map();
-const tagByName = new Map();
-for (const tag of document.flattenedTags) {{
-  try {{
-    tagById.set(tag.id.primaryKey, tag);
-    if (!tagByName.has(tag.name)) tagByName.set(tag.name, tag);
-  }} catch (e) {{
-  }}
-}}
-const results = tagIdentifiers.map(identifier => {{
-  const tag = tagById.get(identifier) || tagByName.get(identifier);
+        r#"const tagIdsOrNames = {tag_ids_or_names_value};
+const tags = document.flattenedTags.slice();
+const results = tagIdsOrNames.map(idOrName => {{
+  const tag = tags.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
   if (!tag) {{
     return {{
-      id_or_name: identifier,
+      id_or_name: idOrName,
       id: null,
       name: null,
       deleted: false,
-      error: "Tag not found."
+      error: "not found"
     }};
   }}
-  const tagId = tag.id.primaryKey;
-  const tagName = tag.name;
-  deleteObject(tag);
-  return {{
-    id_or_name: identifier,
-    id: tagId,
-    name: tagName,
-    deleted: true,
-    error: null
-  }};
+
+  const resolvedId = tag.id.primaryKey;
+  const resolvedName = tag.name;
+  try {{
+    deleteObject(tag);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    }};
+  }} catch (e) {{
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    }};
+  }}
 }});
+
 const deletedCount = results.filter(result => result.deleted).length;
 const failedCount = results.length - deletedCount;
+
 return {{
   summary: {{
-    requested: tagIdentifiers.length,
+    requested: results.length,
     deleted: deletedCount,
     failed: failedCount
   }},
@@ -346,3 +360,4 @@ return {{
     );
     runner.run_omnijs(&script).await
 }
+

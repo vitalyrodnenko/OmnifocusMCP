@@ -122,8 +122,13 @@ Goal:
         returns `{ summary, partial_success, results }` with per-item
         `{ id_or_name, id, name, deleted, error }`.
 
-8. [ ] implement `delete_tags_batch` in all three runtimes with one OmniJS call
+8. [x] implement `delete_tags_batch` in all three runtimes with one OmniJS call
       per invocation and per-item result reporting.
+      implementation notes:
+      - removed duplicate `delete_tags_batch` implementations so each runtime now
+        has one canonical tool path (python/typescript/rust).
+      - validated shared behavior: one OmniJS call, per-item results with
+        `{ id_or_name, id, name, deleted, error }`, and batch summary fields.
 
 9. [ ] implement `delete_folders_batch` in all three runtimes with one OmniJS call
       per invocation and per-item result reporting.

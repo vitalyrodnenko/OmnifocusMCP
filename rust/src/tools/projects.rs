@@ -620,98 +620,25 @@ const results = projectIdsOrNames.map(projectIdOrName => {{
 
   const resolvedId = project.id.primaryKey;
   const resolvedName = project.name;
-  deleteObject(project);
-  return {{
-    id_or_name: projectIdOrName,
-    id: resolvedId,
-    name: resolvedName,
-    deleted: true,
-    error: null
-  }};
-}});
-
-const deletedCount = results.filter(result => result.deleted).length;
-const failedCount = results.length - deletedCount;
-return {{
-  summary: {{
-    requested: results.length,
-    deleted: deletedCount,
-    failed: failedCount
-  }},
-  partial_success: deletedCount > 0 && failedCount > 0,
-  results: results
-}};"#
-    );
-
-    runner.run_omnijs(&script).await
-}
-
-pub async fn delete_projects_batch<R: JxaRunner>(
-    runner: &R,
-    project_ids_or_names: Vec<String>,
-) -> Result<Value> {
-    if project_ids_or_names.is_empty() {
-        return Err(OmniFocusError::Validation(
-            "project_ids_or_names must contain at least one project identifier.".to_string(),
-        ));
-    }
-
-    let mut normalized_ids_or_names: Vec<String> = Vec::new();
-    let mut seen_ids_or_names = std::collections::HashSet::new();
-    for project_id_or_name in project_ids_or_names {
-        let normalized_id_or_name = project_id_or_name.trim().to_string();
-        if normalized_id_or_name.is_empty() {
-            return Err(OmniFocusError::Validation(
-                "each project identifier must be a non-empty string.".to_string(),
-            ));
-        }
-        if seen_ids_or_names.contains(&normalized_id_or_name) {
-            return Err(OmniFocusError::Validation(format!(
-                "project_ids_or_names must not contain duplicates: {normalized_id_or_name}"
-            )));
-        }
-        seen_ids_or_names.insert(normalized_id_or_name.clone());
-        normalized_ids_or_names.push(normalized_id_or_name);
-    }
-
-    let project_ids_or_names_value = serde_json::to_string(&normalized_ids_or_names)?;
-    let script = format!(
-        r#"const projectIdsOrNames = {project_ids_or_names_value};
-const projectById = new Map();
-const projectByName = new Map();
-for (const project of document.flattenedProjects) {{
   try {{
-    const projectId = project.id.primaryKey;
-    projectById.set(projectId, project);
-    if (!projectByName.has(project.name)) {{
-      projectByName.set(project.name, project);
-    }}
-  }} catch (e) {{
-  }}
-}}
-
-const results = projectIdsOrNames.map(projectIdOrName => {{
-  const project = projectById.get(projectIdOrName) || projectByName.get(projectIdOrName);
-  if (!project) {{
+    deleteObject(project);
     return {{
       id_or_name: projectIdOrName,
-      id: null,
-      name: null,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    }};
+  }} catch (e) {{
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {{
+      id_or_name: projectIdOrName,
+      id: resolvedId,
+      name: resolvedName,
       deleted: false,
-      error: "not found"
+      error: errorMessage
     }};
   }}
-
-  const resolvedId = project.id.primaryKey;
-  const resolvedName = project.name;
-  deleteObject(project);
-  return {{
-    id_or_name: projectIdOrName,
-    id: resolvedId,
-    name: resolvedName,
-    deleted: true,
-    error: null
-  }};
 }});
 
 const deletedCount = results.filter(result => result.deleted).length;
@@ -790,6 +717,181 @@ const failedCount = results.length - deletedCount;
 return {{
   summary: {{
     requested: projectIdentifiers.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn delete_projects_batch<R: JxaRunner>(
+    runner: &R,
+    project_ids_or_names: Vec<String>,
+) -> Result<Value> {
+    if project_ids_or_names.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "project_ids_or_names must contain at least one project id or name.".to_string(),
+        ));
+    }
+
+    let mut normalized_project_ids_or_names: Vec<String> =
+        Vec::with_capacity(project_ids_or_names.len());
+    let mut seen_project_ids_or_names: std::collections::HashSet<String> =
+        std::collections::HashSet::new();
+    for project_id_or_name in project_ids_or_names {
+        let normalized_project_id_or_name = project_id_or_name.trim();
+        if normalized_project_id_or_name.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each project id or name must be a non-empty string.".to_string(),
+            ));
+        }
+        if seen_project_ids_or_names.contains(normalized_project_id_or_name) {
+            return Err(OmniFocusError::Validation(format!(
+                "project_ids_or_names must not contain duplicates: {normalized_project_id_or_name}"
+            )));
+        }
+        seen_project_ids_or_names.insert(normalized_project_id_or_name.to_string());
+        normalized_project_ids_or_names.push(normalized_project_id_or_name.to_string());
+    }
+
+    let project_ids_or_names_value = serde_json::to_string(&normalized_project_ids_or_names)?;
+    let script = format!(
+        r#"const projectIdsOrNames = {project_ids_or_names_value};
+const projects = document.flattenedProjects.slice();
+const results = projectIdsOrNames.map(idOrName => {{
+  const project = projects.find(item => {{
+    return item.id.primaryKey === idOrName || item.name === idOrName;
+  }});
+  if (!project) {{
+    return {{
+      id_or_name: idOrName,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const resolvedId = project.id.primaryKey;
+  const resolvedName = project.name;
+  try {{
+    deleteObject(project);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    }};
+  }} catch (e) {{
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    }};
+  }}
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {{
+  summary: {{
+    requested: results.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn delete_projects_batch<R: JxaRunner>(
+    runner: &R,
+    project_ids_or_names: Vec<String>,
+) -> Result<Value> {
+    if project_ids_or_names.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "project_ids_or_names must contain at least one project id or name.".to_string(),
+        ));
+    }
+
+    let mut normalized_project_ids_or_names: Vec<String> =
+        Vec::with_capacity(project_ids_or_names.len());
+    let mut seen_project_ids_or_names: std::collections::HashSet<String> =
+        std::collections::HashSet::new();
+    for project_id_or_name in project_ids_or_names {
+        let normalized_project_id_or_name = project_id_or_name.trim();
+        if normalized_project_id_or_name.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each project id or name must be a non-empty string.".to_string(),
+            ));
+        }
+        if seen_project_ids_or_names.contains(normalized_project_id_or_name) {
+            return Err(OmniFocusError::Validation(format!(
+                "project_ids_or_names must not contain duplicates: {}",
+                normalized_project_id_or_name
+            )));
+        }
+        seen_project_ids_or_names.insert(normalized_project_id_or_name.to_string());
+        normalized_project_ids_or_names.push(normalized_project_id_or_name.to_string());
+    }
+
+    let project_ids_or_names_value = serde_json::to_string(&normalized_project_ids_or_names)?;
+    let script = format!(
+        r#"const projectIdsOrNames = {project_ids_or_names_value};
+const projects = document.flattenedProjects.slice();
+const results = projectIdsOrNames.map(idOrName => {{
+  const project = projects.find(item => {{
+    return item.id.primaryKey === idOrName || item.name === idOrName;
+  }});
+  if (!project) {{
+    return {{
+      id_or_name: idOrName,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const resolvedId = project.id.primaryKey;
+  const resolvedName = project.name;
+  try {{
+    deleteObject(project);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    }};
+  }} catch (e) {{
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    }};
+  }}
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {{
+  summary: {{
+    requested: results.length,
     deleted: deletedCount,
     failed: failedCount
   }},

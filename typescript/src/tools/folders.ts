@@ -333,4 +333,91 @@ return {
     }
   );
 
+  server.tool(
+    "delete_folders_batch",
+    "delete multiple folders by id or exact name in a single omnijs call. destructive operation: this permanently removes folders and may move contained projects depending on omnifocus behavior. use update_folder for non-destructive edits. before calling this tool, always show the user the target folder list and ask for explicit confirmation.",
+    {
+      folder_ids_or_names: z.array(z.string()).min(1).describe("folder ids or exact names to delete"),
+    },
+    async ({ folder_ids_or_names }) => {
+      try {
+        if (folder_ids_or_names.length === 0) {
+          throw new Error("folder_ids_or_names must contain at least one folder id or name.");
+        }
+        const normalizedFolderIdsOrNames = folder_ids_or_names.map((folderIdOrName) => {
+          const normalizedFolderIdOrName = folderIdOrName.trim();
+          if (normalizedFolderIdOrName === "") {
+            throw new Error("each folder id or name must be a non-empty string.");
+          }
+          return normalizedFolderIdOrName;
+        });
+        const seenFolderIdsOrNames = new Set<string>();
+        for (const normalizedFolderIdOrName of normalizedFolderIdsOrNames) {
+          if (seenFolderIdsOrNames.has(normalizedFolderIdOrName)) {
+            throw new Error(
+              `folder_ids_or_names must not contain duplicates: ${normalizedFolderIdOrName}`
+            );
+          }
+          seenFolderIdsOrNames.add(normalizedFolderIdOrName);
+        }
+
+        const folderIdsOrNamesValue = JSON.stringify(normalizedFolderIdsOrNames);
+        const script = `
+const folderIdsOrNames = ${folderIdsOrNamesValue};
+const folders = document.flattenedFolders.slice();
+const results = folderIdsOrNames.map(idOrName => {
+  const folder = folders.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
+  if (!folder) {
+    return {
+      id_or_name: idOrName,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "not found"
+    };
+  }
+
+  const resolvedId = folder.id.primaryKey;
+  const resolvedName = folder.name;
+  try {
+    deleteObject(folder);
+    return {
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    };
+  } catch (e) {
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    };
+  }
+});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {
+  summary: {
+    requested: results.length,
+    deleted: deletedCount,
+    failed: failedCount
+  },
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+};
+`.trim();
+        return textResult(await runOmniJs(script));
+      } catch (error: unknown) {
+        return errorResult(normalizeError(error));
+      }
+    }
+  );
+
 }

@@ -27,7 +27,8 @@ use crate::{
     },
     tools::{
         folders::{
-            create_folder, delete_folder as delete_folder_tool, get_folder, list_folders,
+            create_folder, delete_folder as delete_folder_tool,
+            delete_folders_batch as delete_folders_batch_tool, get_folder, list_folders,
             update_folder as update_folder_tool,
         },
         forecast::get_forecast,
@@ -37,7 +38,7 @@ use crate::{
             get_project_counts, list_projects, move_project, search_projects, set_project_status,
             uncomplete_project, update_project,
         },
-        tags::{create_tag, delete_tag, list_tags, search_tags, update_tag},
+        tags::{create_tag, delete_tag, delete_tags_batch, list_tags, search_tags, update_tag},
         tasks::{
             add_notification, complete_task, create_subtask, create_task, create_tasks_batch,
             delete_task, delete_tasks_batch, duplicate_task, get_inbox, get_task, get_task_counts,
@@ -404,6 +405,16 @@ struct UpdateTagParams {
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
 struct TagNameOrIdParams {
     tag_name_or_id: String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct DeleteTagsBatchParams {
+    tag_ids_or_names: Vec<String>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
+struct DeleteFoldersBatchParams {
+    folder_ids_or_names: Vec<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, JsonSchema)]
@@ -978,7 +989,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "delete multiple projects by id or exact name in a single omnijs call. destructive operation: this permanently removes each matched project and its tasks. before calling, always show the user which projects are targeted and ask for explicit confirmation."
+        description = "delete multiple projects by id or exact name in a single omnijs call. destructive operation: this permanently removes each matched project and its tasks. use update_project, move_project, or set_project_status for non-destructive changes. before calling, always show the user which projects are targeted and ask for explicit confirmation."
     )]
     async fn delete_projects_batch(
         &self,
@@ -1117,6 +1128,19 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
+    #[tool(
+        description = "delete multiple tags by id or exact name in a single omnijs call. destructive operation: this removes tags and unassigns them from linked tasks. use update_tag for non-destructive edits. before calling, always show the user which tags are targeted and ask for explicit confirmation."
+    )]
+    async fn delete_tags_batch(
+        &self,
+        Parameters(params): Parameters<DeleteTagsBatchParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result = delete_tags_batch(self.runner.as_ref(), params.tag_ids_or_names)
+            .await
+            .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
     #[tool(description = "list folders.")]
     async fn list_folders(
         &self,
@@ -1176,6 +1200,20 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         let result = delete_folder_tool(self.runner.as_ref(), &params.folder_name_or_id)
             .await
             .map_err(to_mcp_error)?;
+        as_call_tool_result(&result)
+    }
+
+    #[tool(
+        description = "delete multiple folders by id or exact name in a single omnijs call. destructive operation: this permanently removes folders and may move contained projects depending on omnifocus behavior. use update_folder for non-destructive edits. before calling, always show the user which folders are targeted and ask for explicit confirmation."
+    )]
+    async fn delete_folders_batch(
+        &self,
+        Parameters(params): Parameters<DeleteFoldersBatchParams>,
+    ) -> std::result::Result<CallToolResult, McpError> {
+        let result =
+            delete_folders_batch_tool(self.runner.as_ref(), params.folder_ids_or_names)
+                .await
+                .map_err(to_mcp_error)?;
         as_call_tool_result(&result)
     }
 

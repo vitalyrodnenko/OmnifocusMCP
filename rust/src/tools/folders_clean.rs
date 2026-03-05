@@ -242,3 +242,158 @@ return {{
     );
     runner.run_omnijs(&script).await
 }
+
+pub async fn delete_folders_batch<R: JxaRunner>(
+    runner: &R,
+    folder_ids_or_names: Vec<String>,
+) -> Result<Value> {
+    if folder_ids_or_names.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "folder_ids_or_names must contain at least one folder id or name.".to_string(),
+        ));
+    }
+
+    let mut normalized_folder_ids_or_names: Vec<String> =
+        Vec::with_capacity(folder_ids_or_names.len());
+    let mut seen_folder_ids_or_names: std::collections::HashSet<String> =
+        std::collections::HashSet::new();
+    for folder_id_or_name in folder_ids_or_names {
+        let normalized_folder_id_or_name = folder_id_or_name.trim();
+        if normalized_folder_id_or_name.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each folder id or name must be a non-empty string.".to_string(),
+            ));
+        }
+        if seen_folder_ids_or_names.contains(normalized_folder_id_or_name) {
+            return Err(OmniFocusError::Validation(format!(
+                "folder_ids_or_names must not contain duplicates: {normalized_folder_id_or_name}"
+            )));
+        }
+        seen_folder_ids_or_names.insert(normalized_folder_id_or_name.to_string());
+        normalized_folder_ids_or_names.push(normalized_folder_id_or_name.to_string());
+    }
+
+    let folder_ids_or_names_value = serde_json::to_string(&normalized_folder_ids_or_names)?;
+    let script = format!(
+        r#"const folderIdsOrNames = {folder_ids_or_names_value};
+const folders = document.flattenedFolders.slice();
+const results = folderIdsOrNames.map(idOrName => {{
+  const folder = folders.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
+  if (!folder) {{
+    return {{
+      id_or_name: idOrName,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "not found"
+    }};
+  }}
+
+  const resolvedId = folder.id.primaryKey;
+  const resolvedName = folder.name;
+  try {{
+    deleteObject(folder);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: true,
+      error: null
+    }};
+  }} catch (e) {{
+    const errorMessage = e && e.message ? String(e.message) : String(e);
+    return {{
+      id_or_name: idOrName,
+      id: resolvedId,
+      name: resolvedName,
+      deleted: false,
+      error: errorMessage
+    }};
+  }}
+}});
+
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+
+return {{
+  summary: {{
+    requested: results.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
+
+pub async fn delete_folders_batch<R: JxaRunner>(
+    runner: &R,
+    folder_ids_or_names: Vec<String>,
+) -> Result<Value> {
+    if folder_ids_or_names.is_empty() {
+        return Err(OmniFocusError::Validation(
+            "folder_ids_or_names must contain at least one folder identifier.".to_string(),
+        ));
+    }
+
+    let mut normalized_identifiers: Vec<String> = Vec::with_capacity(folder_ids_or_names.len());
+    for folder_id_or_name in folder_ids_or_names {
+        let normalized_identifier = folder_id_or_name.trim();
+        if normalized_identifier.is_empty() {
+            return Err(OmniFocusError::Validation(
+                "each folder identifier must be a non-empty string.".to_string(),
+            ));
+        }
+        normalized_identifiers.push(normalized_identifier.to_string());
+    }
+
+    let identifiers_value = serde_json::to_string(&normalized_identifiers)?;
+    let script = format!(
+        r#"const folderIdentifiers = {identifiers_value};
+const folderById = new Map();
+const folderByName = new Map();
+for (const folder of document.flattenedFolders) {{
+  try {{
+    folderById.set(folder.id.primaryKey, folder);
+    if (!folderByName.has(folder.name)) folderByName.set(folder.name, folder);
+  }} catch (e) {{
+  }}
+}}
+const results = folderIdentifiers.map(identifier => {{
+  const folder = folderById.get(identifier) || folderByName.get(identifier);
+  if (!folder) {{
+    return {{
+      id_or_name: identifier,
+      id: null,
+      name: null,
+      deleted: false,
+      error: "Folder not found."
+    }};
+  }}
+  const folderId = folder.id.primaryKey;
+  const folderName = folder.name;
+  deleteObject(folder);
+  return {{
+    id_or_name: identifier,
+    id: folderId,
+    name: folderName,
+    deleted: true,
+    error: null
+  }};
+}});
+const deletedCount = results.filter(result => result.deleted).length;
+const failedCount = results.length - deletedCount;
+return {{
+  summary: {{
+    requested: folderIdentifiers.length,
+    deleted: deletedCount,
+    failed: failedCount
+  }},
+  partial_success: deletedCount > 0 && failedCount > 0,
+  results: results
+}};"#
+    );
+    runner.run_omnijs(&script).await
+}
