@@ -19,7 +19,7 @@ export function register(server: Server): void {
 
   server.tool(
     "list_tasks",
-    "list tasks with optional filters for project, tag/tags, flagged state, status, and date ranges.",
+    "list tasks with optional filters for project, tag/tags, flagged state, status, and date ranges. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp.",
     {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
@@ -33,6 +33,10 @@ export function register(server: Server): void {
       deferAfter: z.string().optional(),
       completedBefore: z.string().optional(),
       completedAfter: z.string().optional(),
+      added_after: z.string().optional(),
+      added_before: z.string().optional(),
+      changed_after: z.string().optional(),
+      changed_before: z.string().optional(),
       plannedBefore: z.string().optional(),
       plannedAfter: z.string().optional(),
       maxEstimatedMinutes: z.number().int().min(0).optional(),
@@ -63,6 +67,10 @@ export function register(server: Server): void {
       deferAfter,
       completedBefore,
       completedAfter,
+      added_after,
+      added_before,
+      changed_after,
+      changed_before,
       plannedBefore,
       plannedAfter,
       maxEstimatedMinutes,
@@ -85,6 +93,10 @@ export function register(server: Server): void {
             deferAfter,
             completedBefore,
             completedAfter,
+            added_after,
+            added_before,
+            changed_after,
+            changed_before,
             plannedBefore,
             plannedAfter,
             maxEstimatedMinutes,
@@ -101,7 +113,7 @@ export function register(server: Server): void {
 
   server.tool(
     "get_task_counts",
-    "get aggregate task counts for any filter combination without listing individual tasks. much faster than list_tasks for answering 'how many' questions.",
+    "get aggregate task counts for any filter combination without listing individual tasks. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp. much faster than list_tasks for answering 'how many' questions.",
     {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
@@ -114,6 +126,10 @@ export function register(server: Server): void {
       deferAfter: z.string().optional(),
       completedBefore: z.string().optional(),
       completedAfter: z.string().optional(),
+      added_after: z.string().optional(),
+      added_before: z.string().optional(),
+      changed_after: z.string().optional(),
+      changed_before: z.string().optional(),
       maxEstimatedMinutes: z.number().int().min(0).optional(),
     },
     async ({
@@ -128,6 +144,10 @@ export function register(server: Server): void {
       deferAfter,
       completedBefore,
       completedAfter,
+      added_after,
+      added_before,
+      changed_after,
+      changed_before,
       maxEstimatedMinutes,
     }) => {
       try {
@@ -144,6 +164,10 @@ export function register(server: Server): void {
             deferAfter,
             completedBefore,
             completedAfter,
+            added_after,
+            added_before,
+            changed_after,
+            changed_before,
             maxEstimatedMinutes
           )
         );
@@ -166,6 +190,8 @@ return {
   note: task.note,
   flagged: task.flagged,
   dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  addedDate: task.added ? task.added.toISOString() : null,
+  changedDate: task.modified ? task.modified.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null,
   effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null,
@@ -242,6 +268,8 @@ return subtasks.map(subtask => {
     note: subtask.note,
     flagged: subtask.flagged,
     dueDate: subtask.dueDate ? subtask.dueDate.toISOString() : null,
+    addedDate: subtask.added ? subtask.added.toISOString() : null,
+    changedDate: subtask.modified ? subtask.modified.toISOString() : null,
     deferDate: subtask.deferDate ? subtask.deferDate.toISOString() : null,
     completed: subtask.completed,
     tags: tags,
@@ -487,6 +515,8 @@ return {
   note: duplicatedTask.note,
   flagged: duplicatedTask.flagged,
   dueDate: duplicatedTask.dueDate ? duplicatedTask.dueDate.toISOString() : null,
+  addedDate: duplicatedTask.added ? duplicatedTask.added.toISOString() : null,
+  changedDate: duplicatedTask.modified ? duplicatedTask.modified.toISOString() : null,
   deferDate: duplicatedTask.deferDate ? duplicatedTask.deferDate.toISOString() : null,
   completed: duplicatedTask.completed,
   completionDate: duplicatedTask.completionDate ? duplicatedTask.completionDate.toISOString() : null,
@@ -508,7 +538,7 @@ return {
 
   server.tool(
     "search_tasks",
-    "search tasks by case-insensitive query across name and note.",
+    "search tasks by case-insensitive query across name and note. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp.",
     {
       query: z.string().min(1),
       project: z.string().min(1).optional(),
@@ -523,6 +553,10 @@ return {
       deferAfter: z.string().optional(),
       completedBefore: z.string().optional(),
       completedAfter: z.string().optional(),
+      added_after: z.string().optional(),
+      added_before: z.string().optional(),
+      changed_after: z.string().optional(),
+      changed_before: z.string().optional(),
       plannedBefore: z.string().optional(),
       plannedAfter: z.string().optional(),
       maxEstimatedMinutes: z.number().int().min(0).optional(),
@@ -554,6 +588,10 @@ return {
       deferAfter,
       completedBefore,
       completedAfter,
+      added_after,
+      added_before,
+      changed_after,
+      changed_before,
       plannedBefore,
       plannedAfter,
       maxEstimatedMinutes,
@@ -577,6 +615,10 @@ return {
             deferAfter,
             completedBefore,
             completedAfter,
+            added_after,
+            added_before,
+            changed_after,
+            changed_before,
             plannedBefore,
             plannedAfter,
             maxEstimatedMinutes,
@@ -896,7 +938,13 @@ if (updates.tags !== undefined) {
 return {
   id: task.id.primaryKey,
   name: task.name,
+  note: task.note,
   flagged: task.flagged,
+  dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  addedDate: task.added ? task.added.toISOString() : null,
+  changedDate: task.modified ? task.modified.toISOString() : null,
+  deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+  completed: task.completed,
   projectName: task.containingProject ? task.containingProject.name : null
 };
 `.trim();
@@ -1300,6 +1348,8 @@ return tasks.map(task => ({
   note: task.note,
   flagged: task.flagged,
   dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  addedDate: task.added ? task.added.toISOString() : null,
+  changedDate: task.modified ? task.modified.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   completionDate: task.completionDate ? task.completionDate.toISOString() : null,
   tags: task.tags.map(tag => tag.name),
@@ -1449,6 +1499,10 @@ export async function listTasksData(
   deferAfter: string | undefined,
   completedBefore: string | undefined,
   completedAfter: string | undefined,
+  addedAfter: string | undefined,
+  addedBefore: string | undefined,
+  changedAfter: string | undefined,
+  changedBefore: string | undefined,
   plannedBefore: string | undefined,
   plannedAfter: string | undefined,
   maxEstimatedMinutes: number | undefined,
@@ -1500,6 +1554,10 @@ export async function listTasksData(
   const deferAfterFilter = deferAfter === undefined ? "null" : escapeForJxa(deferAfter);
   const completedBeforeFilter = completedBefore === undefined ? "null" : escapeForJxa(completedBefore);
   const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
+  const addedAfterFilter = addedAfter === undefined ? "null" : escapeForJxa(addedAfter);
+  const addedBeforeFilter = addedBefore === undefined ? "null" : escapeForJxa(addedBefore);
+  const changedAfterFilter = changedAfter === undefined ? "null" : escapeForJxa(changedAfter);
+  const changedBeforeFilter = changedBefore === undefined ? "null" : escapeForJxa(changedBefore);
   const plannedBeforeFilter = plannedBefore === undefined ? "null" : escapeForJxa(plannedBefore);
   const plannedAfterFilter = plannedAfter === undefined ? "null" : escapeForJxa(plannedAfter);
   const maxEstimatedMinutesFilter = maxEstimatedMinutes === undefined ? "null" : String(maxEstimatedMinutes);
@@ -1517,6 +1575,10 @@ const deferBeforeRaw = ${deferBeforeFilter};
 const deferAfterRaw = ${deferAfterFilter};
 const completedBeforeRaw = ${completedBeforeFilter};
 const completedAfterRaw = ${completedAfterFilter};
+const addedAfterRaw = ${addedAfterFilter};
+const addedBeforeRaw = ${addedBeforeFilter};
+const changedAfterRaw = ${changedAfterFilter};
+const changedBeforeRaw = ${changedBeforeFilter};
 const plannedBeforeRaw = ${plannedBeforeFilter};
 const plannedAfterRaw = ${plannedAfterFilter};
 const maxEstimatedMinutes = ${maxEstimatedMinutesFilter};
@@ -1538,6 +1600,10 @@ const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
 const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const addedAfter = parseOptionalDate(addedAfterRaw, "added_after");
+const addedBefore = parseOptionalDate(addedBeforeRaw, "added_before");
+const changedAfter = parseOptionalDate(changedAfterRaw, "changed_after");
+const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");
 const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
 const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
@@ -1600,6 +1666,10 @@ const filteredTasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;
+    if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;
+    if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;
+    if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;
     if (supportsPlannedDate) {
       const plannedDate = getPlannedDate(task);
       if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
@@ -1659,6 +1729,8 @@ return tasks.map(task => ({
   note: task.note,
   flagged: task.flagged,
   dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  addedDate: task.added ? task.added.toISOString() : null,
+  changedDate: task.modified ? task.modified.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   completed: task.completed,
   completionDate: task.completionDate ? task.completionDate.toISOString() : null,
@@ -1698,6 +1770,10 @@ export async function getTaskCountsData(
   deferAfter: string | undefined,
   completedBefore: string | undefined,
   completedAfter: string | undefined,
+  addedAfter: string | undefined,
+  addedBefore: string | undefined,
+  changedAfter: string | undefined,
+  changedBefore: string | undefined,
   maxEstimatedMinutes: number | undefined
 ): Promise<unknown> {
   const projectFilter = project === undefined ? "null" : escapeForJxa(project.trim());
@@ -1725,6 +1801,10 @@ export async function getTaskCountsData(
   const deferAfterFilter = deferAfter === undefined ? "null" : escapeForJxa(deferAfter);
   const completedBeforeFilter = completedBefore === undefined ? "null" : escapeForJxa(completedBefore);
   const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
+  const addedAfterFilter = addedAfter === undefined ? "null" : escapeForJxa(addedAfter);
+  const addedBeforeFilter = addedBefore === undefined ? "null" : escapeForJxa(addedBefore);
+  const changedAfterFilter = changedAfter === undefined ? "null" : escapeForJxa(changedAfter);
+  const changedBeforeFilter = changedBefore === undefined ? "null" : escapeForJxa(changedBefore);
   const maxEstimatedMinutesFilter = maxEstimatedMinutes === undefined ? "null" : String(maxEstimatedMinutes);
   const script = `
 const projectFilter = ${projectFilter};
@@ -1737,6 +1817,10 @@ const deferBeforeRaw = ${deferBeforeFilter};
 const deferAfterRaw = ${deferAfterFilter};
 const completedBeforeRaw = ${completedBeforeFilter};
 const completedAfterRaw = ${completedAfterFilter};
+const addedAfterRaw = ${addedAfterFilter};
+const addedBeforeRaw = ${addedBeforeFilter};
+const changedAfterRaw = ${changedAfterFilter};
+const changedBeforeRaw = ${changedBeforeFilter};
 const maxEstimatedMinutes = ${maxEstimatedMinutesFilter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
@@ -1754,6 +1838,10 @@ const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
 const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const addedAfter = parseOptionalDate(addedAfterRaw, "added_after");
+const addedBefore = parseOptionalDate(addedBeforeRaw, "added_before");
+const changedAfter = parseOptionalDate(changedAfterRaw, "changed_after");
+const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");
 
 const counts = {
   total: 0,
@@ -1788,6 +1876,10 @@ for (const task of document.flattenedTasks) {
   if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) continue;
   if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) continue;
   if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) continue;
+  if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) continue;
+  if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) continue;
+  if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) continue;
+  if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) continue;
   if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) continue;
 
   counts.total += 1;
@@ -1825,6 +1917,10 @@ export async function searchTasksData(
   deferAfter: string | undefined,
   completedBefore: string | undefined,
   completedAfter: string | undefined,
+  addedAfter: string | undefined,
+  addedBefore: string | undefined,
+  changedAfter: string | undefined,
+  changedBefore: string | undefined,
   plannedBefore: string | undefined,
   plannedAfter: string | undefined,
   maxEstimatedMinutes: number | undefined,
@@ -1876,6 +1972,10 @@ export async function searchTasksData(
   const deferAfterFilter = deferAfter === undefined ? "null" : escapeForJxa(deferAfter);
   const completedBeforeFilter = completedBefore === undefined ? "null" : escapeForJxa(completedBefore);
   const completedAfterFilter = completedAfter === undefined ? "null" : escapeForJxa(completedAfter);
+  const addedAfterFilter = addedAfter === undefined ? "null" : escapeForJxa(addedAfter);
+  const addedBeforeFilter = addedBefore === undefined ? "null" : escapeForJxa(addedBefore);
+  const changedAfterFilter = changedAfter === undefined ? "null" : escapeForJxa(changedAfter);
+  const changedBeforeFilter = changedBefore === undefined ? "null" : escapeForJxa(changedBefore);
   const plannedBeforeFilter = plannedBefore === undefined ? "null" : escapeForJxa(plannedBefore);
   const plannedAfterFilter = plannedAfter === undefined ? "null" : escapeForJxa(plannedAfter);
   const maxEstimatedMinutesFilter = maxEstimatedMinutes === undefined ? "null" : String(maxEstimatedMinutes);
@@ -1895,6 +1995,10 @@ const deferBeforeRaw = ${deferBeforeFilter};
 const deferAfterRaw = ${deferAfterFilter};
 const completedBeforeRaw = ${completedBeforeFilter};
 const completedAfterRaw = ${completedAfterFilter};
+const addedAfterRaw = ${addedAfterFilter};
+const addedBeforeRaw = ${addedBeforeFilter};
+const changedAfterRaw = ${changedAfterFilter};
+const changedBeforeRaw = ${changedBeforeFilter};
 const plannedBeforeRaw = ${plannedBeforeFilter};
 const plannedAfterRaw = ${plannedAfterFilter};
 const maxEstimatedMinutes = ${maxEstimatedMinutesFilter};
@@ -1916,6 +2020,10 @@ const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
 const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const addedAfter = parseOptionalDate(addedAfterRaw, "added_after");
+const addedBefore = parseOptionalDate(addedBeforeRaw, "added_before");
+const changedAfter = parseOptionalDate(changedAfterRaw, "changed_after");
+const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");
 const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
 const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
@@ -1981,6 +2089,10 @@ const filteredTasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;
+    if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;
+    if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;
+    if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;
     if (supportsPlannedDate) {
       const plannedDate = getPlannedDate(task);
       if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
@@ -2040,6 +2152,8 @@ return tasks.map(task => ({
   note: task.note,
   flagged: task.flagged,
   dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  addedDate: task.added ? task.added.toISOString() : null,
+  changedDate: task.modified ? task.modified.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   completed: task.completed,
   completionDate: task.completionDate ? task.completionDate.toISOString() : null,

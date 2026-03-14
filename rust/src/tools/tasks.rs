@@ -13,7 +13,7 @@ fn parse_task_list(value: Value) -> Result<Vec<TaskResult>> {
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn get_task_counts<R: JxaRunner>(
+pub async fn get_task_counts_with_added_changed<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
     tag: Option<&str>,
@@ -26,6 +26,10 @@ pub async fn get_task_counts<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
+    added_after: Option<&str>,
+    added_before: Option<&str>,
+    changed_after: Option<&str>,
+    changed_before: Option<&str>,
     max_estimated_minutes: Option<i32>,
 ) -> Result<TaskCountsResult> {
     if let Some(project_name) = project {
@@ -115,6 +119,18 @@ pub async fn get_task_counts<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let added_after_filter = added_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let added_before_filter = added_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let changed_after_filter = changed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let changed_before_filter = changed_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
@@ -130,6 +146,10 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
+const addedAfterRaw = {added_after_filter};
+const addedBeforeRaw = {added_before_filter};
+const changedAfterRaw = {changed_after_filter};
+const changedBeforeRaw = {changed_before_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
 const now = new Date();
 const soon = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
@@ -147,6 +167,10 @@ const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
 const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const addedAfter = parseOptionalDate(addedAfterRaw, "added_after");
+const addedBefore = parseOptionalDate(addedBeforeRaw, "added_before");
+const changedAfter = parseOptionalDate(changedAfterRaw, "changed_after");
+const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");
 
 const counts = {{
   total: 0,
@@ -179,6 +203,10 @@ for (const task of document.flattenedTasks) {{
   if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) continue;
   if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) continue;
   if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) continue;
+  if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) continue;
+  if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) continue;
+  if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) continue;
+  if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) continue;
   if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) continue;
 
   counts.total += 1;
@@ -198,6 +226,44 @@ return counts;"#
 
     let value = runner.run_omnijs(&script).await?;
     Ok(serde_json::from_value(value)?)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub async fn get_task_counts<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+) -> Result<TaskCountsResult> {
+    get_task_counts_with_added_changed(
+        runner,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
+        None,
+        None,
+        None,
+        max_estimated_minutes,
+    )
+    .await
 }
 
 pub async fn get_inbox<R: JxaRunner>(runner: &R, limit: i32) -> Result<Vec<TaskResult>> {
@@ -221,6 +287,8 @@ return tasks.map(task => {{
     flagged: task.flagged,
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+    addedDate: task.added ? task.added.toISOString() : null,
+    changedDate: task.modified ? task.modified.toISOString() : null,
     completionDate: task.completionDate ? task.completionDate.toISOString() : null,
     tags: tags,
     estimatedMinutes: task.estimatedMinutes,
@@ -399,6 +467,10 @@ const filteredTasks = document.flattenedTasks.filter(task => {{
   if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
   if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
   if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+  if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;
+  if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;
+  if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;
+  if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;
   if (maxEstimatedMinutes !== null && !(task.estimatedMinutes !== null && task.estimatedMinutes <= maxEstimatedMinutes)) return false;
   return true;
 }});
@@ -611,7 +683,7 @@ return counts;"#
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn list_tasks_with_planned<R: JxaRunner>(
+pub async fn list_tasks_with_added_changed<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
     tag: Option<&str>,
@@ -625,6 +697,10 @@ pub async fn list_tasks_with_planned<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
+    added_after: Option<&str>,
+    added_before: Option<&str>,
+    changed_after: Option<&str>,
+    changed_before: Option<&str>,
     planned_before: Option<&str>,
     planned_after: Option<&str>,
     max_estimated_minutes: Option<i32>,
@@ -766,6 +842,18 @@ pub async fn list_tasks_with_planned<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let added_after_filter = added_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let added_before_filter = added_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let changed_after_filter = changed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let changed_before_filter = changed_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
     let max_estimated_minutes_filter = max_estimated_minutes
         .map(|value| value.to_string())
         .unwrap_or_else(|| "null".to_string());
@@ -792,6 +880,10 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
+const addedAfterRaw = {added_after_filter};
+const addedBeforeRaw = {added_before_filter};
+const changedAfterRaw = {changed_after_filter};
+const changedBeforeRaw = {changed_before_filter};
 const plannedBeforeRaw = {planned_before_filter};
 const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
@@ -813,6 +905,10 @@ const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
 const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const addedAfter = parseOptionalDate(addedAfterRaw, "added_after");
+const addedBefore = parseOptionalDate(addedBeforeRaw, "added_before");
+const changedAfter = parseOptionalDate(changedAfterRaw, "changed_after");
+const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");
 const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
 const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
@@ -879,6 +975,10 @@ const filteredTasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;
+    if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;
+    if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;
+    if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;
     if (supportsPlannedDate) {{
       const plannedDate = getPlannedDate(task);
       if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
@@ -945,6 +1045,8 @@ return tasks.map(task => {{
     note: task.note,
     flagged: task.flagged,
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    addedDate: task.added ? task.added.toISOString() : null,
+    changedDate: task.modified ? task.modified.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
     completed: task.completed,
     completionDate: task.completionDate ? task.completionDate.toISOString() : null,
@@ -973,6 +1075,56 @@ return tasks.map(task => {{
 }
 
 #[allow(clippy::too_many_arguments)]
+pub async fn list_tasks_with_planned<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    planned_before: Option<&str>,
+    planned_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+    sort_by: Option<&str>,
+    sort_order: &str,
+    limit: i32,
+) -> Result<Vec<TaskResult>> {
+    list_tasks_with_added_changed(
+        runner,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        status,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
+        None,
+        None,
+        None,
+        planned_before,
+        planned_after,
+        max_estimated_minutes,
+        sort_by,
+        sort_order,
+        limit,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
 pub async fn list_tasks<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
@@ -994,7 +1146,7 @@ pub async fn list_tasks<R: JxaRunner>(
     sort_order: &str,
     limit: i32,
 ) -> Result<Vec<TaskResult>> {
-    list_tasks_with_planned(
+    list_tasks_with_added_changed(
         runner,
         project,
         tag,
@@ -1008,6 +1160,10 @@ pub async fn list_tasks<R: JxaRunner>(
         defer_after,
         completed_before,
         completed_after,
+        None,
+        None,
+        None,
+        None,
         planned_before,
         planned_after,
         max_estimated_minutes,
@@ -1254,6 +1410,8 @@ return {{
   effectiveFlagged: task.effectiveFlagged,
   completed: task.completed,
   completionDate: task.completionDate ? task.completionDate.toISOString() : null,
+  addedDate: task.added ? task.added.toISOString() : null,
+  changedDate: task.modified ? task.modified.toISOString() : null,
   modified: task.modified ? task.modified.toISOString() : null,
   plannedDate: plannedDate ? plannedDate.toISOString() : null,
   effectivePlannedDate: effectivePlannedDate ? effectivePlannedDate.toISOString() : null,
@@ -1314,6 +1472,8 @@ return subtasks.map(subtask => {{
     note: subtask.note,
     flagged: subtask.flagged,
     dueDate: subtask.dueDate ? subtask.dueDate.toISOString() : null,
+    addedDate: subtask.added ? subtask.added.toISOString() : null,
+    changedDate: subtask.modified ? subtask.modified.toISOString() : null,
     deferDate: subtask.deferDate ? subtask.deferDate.toISOString() : null,
     completed: subtask.completed,
     tags: tags,
@@ -1475,7 +1635,7 @@ return {{
 }
 
 #[allow(clippy::too_many_arguments)]
-pub async fn search_tasks_with_planned<R: JxaRunner>(
+pub async fn search_tasks_with_added_changed<R: JxaRunner>(
     runner: &R,
     query: &str,
     project: Option<&str>,
@@ -1490,6 +1650,10 @@ pub async fn search_tasks_with_planned<R: JxaRunner>(
     defer_after: Option<&str>,
     completed_before: Option<&str>,
     completed_after: Option<&str>,
+    added_after: Option<&str>,
+    added_before: Option<&str>,
+    changed_after: Option<&str>,
+    changed_before: Option<&str>,
     planned_before: Option<&str>,
     planned_after: Option<&str>,
     max_estimated_minutes: Option<i32>,
@@ -1636,6 +1800,18 @@ pub async fn search_tasks_with_planned<R: JxaRunner>(
     let completed_after_filter = completed_after
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let added_after_filter = added_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let added_before_filter = added_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let changed_after_filter = changed_after
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
+    let changed_before_filter = changed_before
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
     let planned_before_filter = planned_before
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
@@ -1663,6 +1839,10 @@ const deferBeforeRaw = {defer_before_filter};
 const deferAfterRaw = {defer_after_filter};
 const completedBeforeRaw = {completed_before_filter};
 const completedAfterRaw = {completed_after_filter};
+const addedAfterRaw = {added_after_filter};
+const addedBeforeRaw = {added_before_filter};
+const changedAfterRaw = {changed_after_filter};
+const changedBeforeRaw = {changed_before_filter};
 const plannedBeforeRaw = {planned_before_filter};
 const plannedAfterRaw = {planned_after_filter};
 const maxEstimatedMinutes = {max_estimated_minutes_filter};
@@ -1684,6 +1864,10 @@ const deferBefore = parseOptionalDate(deferBeforeRaw, "deferBefore");
 const deferAfter = parseOptionalDate(deferAfterRaw, "deferAfter");
 const completedBefore = parseOptionalDate(completedBeforeRaw, "completedBefore");
 const completedAfter = parseOptionalDate(completedAfterRaw, "completedAfter");
+const addedAfter = parseOptionalDate(addedAfterRaw, "added_after");
+const addedBefore = parseOptionalDate(addedBeforeRaw, "added_before");
+const changedAfter = parseOptionalDate(changedAfterRaw, "changed_after");
+const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");
 const plannedBefore = parseOptionalDate(plannedBeforeRaw, "plannedBefore");
 const plannedAfter = parseOptionalDate(plannedAfterRaw, "plannedAfter");
 const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;
@@ -1755,6 +1939,10 @@ const filteredTasks = document.flattenedTasks
     if (deferAfter !== null && !(task.deferDate !== null && task.deferDate > deferAfter)) return false;
     if (completedBefore !== null && !(task.completionDate !== null && task.completionDate < completedBefore)) return false;
     if (completedAfter !== null && !(task.completionDate !== null && task.completionDate > completedAfter)) return false;
+    if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;
+    if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;
+    if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;
+    if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;
     if (supportsPlannedDate) {{
       const plannedDate = getPlannedDate(task);
       if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;
@@ -1822,6 +2010,8 @@ return tasks.map(task => {{
     note: task.note,
     flagged: task.flagged,
     dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+    addedDate: task.added ? task.added.toISOString() : null,
+    changedDate: task.modified ? task.modified.toISOString() : null,
     deferDate: task.deferDate ? task.deferDate.toISOString() : null,
     completed: task.completed,
     completionDate: task.completionDate ? task.completionDate.toISOString() : null,
@@ -1850,6 +2040,58 @@ return tasks.map(task => {{
 }
 
 #[allow(clippy::too_many_arguments)]
+pub async fn search_tasks_with_planned<R: JxaRunner>(
+    runner: &R,
+    query: &str,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    planned_before: Option<&str>,
+    planned_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+    sort_by: Option<&str>,
+    sort_order: &str,
+    limit: i32,
+) -> Result<Vec<TaskResult>> {
+    search_tasks_with_added_changed(
+        runner,
+        query,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        status,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
+        None,
+        None,
+        None,
+        planned_before,
+        planned_after,
+        max_estimated_minutes,
+        sort_by,
+        sort_order,
+        limit,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
 pub async fn search_tasks<R: JxaRunner>(
     runner: &R,
     query: &str,
@@ -1870,7 +2112,7 @@ pub async fn search_tasks<R: JxaRunner>(
     sort_order: &str,
     limit: i32,
 ) -> Result<Vec<TaskResult>> {
-    search_tasks_with_planned(
+    search_tasks_with_added_changed(
         runner,
         query,
         project,
@@ -1885,6 +2127,10 @@ pub async fn search_tasks<R: JxaRunner>(
         defer_after,
         completed_before,
         completed_after,
+        None,
+        None,
+        None,
+        None,
         None,
         None,
         max_estimated_minutes,
@@ -2171,6 +2417,8 @@ return {{
   note: duplicatedTask.note,
   flagged: duplicatedTask.flagged,
   dueDate: duplicatedTask.dueDate ? duplicatedTask.dueDate.toISOString() : null,
+  addedDate: duplicatedTask.added ? duplicatedTask.added.toISOString() : null,
+  changedDate: duplicatedTask.modified ? duplicatedTask.modified.toISOString() : null,
   deferDate: duplicatedTask.deferDate ? duplicatedTask.deferDate.toISOString() : null,
   completed: duplicatedTask.completed,
   completionDate: duplicatedTask.completionDate ? duplicatedTask.completionDate.toISOString() : null,
@@ -2441,6 +2689,8 @@ return {{
   note: task.note,
   flagged: task.flagged,
   dueDate: task.dueDate ? task.dueDate.toISOString() : null,
+  addedDate: task.added ? task.added.toISOString() : null,
+  changedDate: task.modified ? task.modified.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null,
   effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null,

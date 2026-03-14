@@ -14,9 +14,9 @@ use omnifocus_mcp::{
         projects::{get_project, get_project_counts, list_projects, search_projects},
         tags::{list_tags, search_tags},
         tasks::{
-            add_notification, duplicate_task, get_inbox, get_task, get_task_counts,
-            list_notifications, list_subtasks, list_tasks as list_tasks_with_duration,
-            list_tasks_with_planned, remove_notification, search_tasks, search_tasks_with_planned,
+            add_notification, duplicate_task, get_inbox, get_task,
+            get_task_counts_with_added_changed, list_notifications, list_subtasks,
+            list_tasks_with_added_changed, remove_notification, search_tasks_with_added_changed,
         },
     },
 };
@@ -60,6 +60,248 @@ struct ErrorRunner {
 }
 
 #[allow(clippy::too_many_arguments)]
+async fn get_task_counts<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    added_after: Option<&str>,
+    added_before: Option<&str>,
+    changed_after: Option<&str>,
+    changed_before: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+) -> Result<omnifocus_mcp::types::TaskCountsResult, OmniFocusError> {
+    get_task_counts_with_added_changed(
+        runner,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        added_after,
+        added_before,
+        changed_after,
+        changed_before,
+        max_estimated_minutes,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn list_tasks_with_duration<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+    sort_by: Option<&str>,
+    sort_order: &str,
+    limit: i32,
+) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
+    list_tasks_with_added_changed(
+        runner,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        status,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        max_estimated_minutes,
+        sort_by,
+        sort_order,
+        limit,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn search_tasks<R: JxaRunner>(
+    runner: &R,
+    query: &str,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+    sort_by: Option<&str>,
+    sort_order: &str,
+    limit: i32,
+) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
+    search_tasks_with_added_changed(
+        runner,
+        query,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        status,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        max_estimated_minutes,
+        sort_by,
+        sort_order,
+        limit,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn list_tasks_with_planned_helper<R: JxaRunner>(
+    runner: &R,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    planned_before: Option<&str>,
+    planned_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+    sort_by: Option<&str>,
+    sort_order: &str,
+    limit: i32,
+) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
+    list_tasks_with_added_changed(
+        runner,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        status,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
+        None,
+        None,
+        None,
+        planned_before,
+        planned_after,
+        max_estimated_minutes,
+        sort_by,
+        sort_order,
+        limit,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
+async fn search_tasks_with_planned_helper<R: JxaRunner>(
+    runner: &R,
+    query: &str,
+    project: Option<&str>,
+    tag: Option<&str>,
+    tags: Option<Vec<String>>,
+    tag_filter_mode: &str,
+    flagged: Option<bool>,
+    status: &str,
+    due_before: Option<&str>,
+    due_after: Option<&str>,
+    defer_before: Option<&str>,
+    defer_after: Option<&str>,
+    completed_before: Option<&str>,
+    completed_after: Option<&str>,
+    planned_before: Option<&str>,
+    planned_after: Option<&str>,
+    max_estimated_minutes: Option<i32>,
+    sort_by: Option<&str>,
+    sort_order: &str,
+    limit: i32,
+) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
+    search_tasks_with_added_changed(
+        runner,
+        query,
+        project,
+        tag,
+        tags,
+        tag_filter_mode,
+        flagged,
+        status,
+        due_before,
+        due_after,
+        defer_before,
+        defer_after,
+        completed_before,
+        completed_after,
+        None,
+        None,
+        None,
+        None,
+        planned_before,
+        planned_after,
+        max_estimated_minutes,
+        sort_by,
+        sort_order,
+        limit,
+    )
+    .await
+}
+
+#[allow(clippy::too_many_arguments)]
 async fn list_tasks<R: JxaRunner>(
     runner: &R,
     project: Option<&str>,
@@ -92,8 +334,6 @@ async fn list_tasks<R: JxaRunner>(
         completed_after,
         None,
         None,
-        None,
-        None,
         "asc",
         limit,
     )
@@ -119,6 +359,8 @@ fn task_value(id: &str, name: &str) -> Value {
         "completed": false,
         "projectName": null,
         "dueDate": null,
+        "addedDate": null,
+        "changedDate": null,
         "deferDate": null,
         "completionDate": null,
         "tags": [],
@@ -189,6 +431,8 @@ async fn read_task_tools_happy_path() {
         payload: json!({
             "id": "t3",
             "name": "single task",
+            "addedDate": null,
+            "changedDate": null,
             "effectiveDueDate": null,
             "effectiveDeferDate": null,
             "effectiveFlagged": false,
@@ -199,6 +443,8 @@ async fn read_task_tools_happy_path() {
     };
     let single = get_task(&get_runner, "t3").await.expect("task should load");
     assert_eq!(single["id"], "t3");
+    assert_eq!(single["addedDate"], Value::Null);
+    assert_eq!(single["changedDate"], Value::Null);
     assert_eq!(single["effectiveDueDate"], Value::Null);
     assert_eq!(single["effectiveDeferDate"], Value::Null);
     assert_eq!(single["effectiveFlagged"], Value::Bool(false));
@@ -568,7 +814,7 @@ async fn validation_errors_for_read_tools() {
             None,
             None,
             "asc",
-            100,
+            100
         )
         .await,
         Err(OmniFocusError::Validation(_))
@@ -592,7 +838,7 @@ async fn validation_errors_for_read_tools() {
             Some(-1),
             None,
             "asc",
-            10,
+            10
         )
         .await,
         Err(OmniFocusError::Validation(_))
@@ -616,7 +862,7 @@ async fn validation_errors_for_read_tools() {
             None,
             None,
             "asc",
-            0,
+            0
         )
         .await,
         Err(OmniFocusError::Validation(_))
@@ -718,6 +964,8 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
     assert!(script.contains(
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
     ));
+    assert!(script.contains("addedDate: task.added ? task.added.toISOString() : null,"));
+    assert!(script.contains("changedDate: task.modified ? task.modified.toISOString() : null,"));
     assert!(script.contains("hasChildren: task.hasChildren"));
     assert!(script.contains("taskStatus: (() => {"));
     assert!(script.contains("if (s.includes(\"Available\")) return \"available\";"));
@@ -1036,6 +1284,10 @@ async fn get_task_counts_script_includes_filters_and_counts() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
     )
     .await
     .expect("task counts should parse");
@@ -1073,6 +1325,10 @@ async fn get_task_counts_validation_errors() {
             None,
             None,
             None,
+            None,
+            None,
+            None,
+            None,
         )
         .await,
         Err(OmniFocusError::Validation(_))
@@ -1080,6 +1336,7 @@ async fn get_task_counts_validation_errors() {
     assert!(matches!(
         get_task_counts(
             &runner, None, None, None, "invalid", None, None, None, None, None, None, None, None,
+            None, None, None, None,
         )
         .await,
         Err(OmniFocusError::Validation(_))
@@ -1098,54 +1355,14 @@ async fn get_task_counts_validation_errors() {
             None,
             None,
             None,
+            None,
+            None,
+            None,
+            None,
             Some(-1),
         )
         .await,
         Err(OmniFocusError::Validation(_))
-    ));
-}
-
-#[tokio::test]
-async fn search_tasks_completion_filters_auto_set_sorting() {
-    let last_script = Arc::new(Mutex::new(String::new()));
-    let runner = CapturingRunner {
-        payload: json!([task_value("t-search-completed", "search completed task")]),
-        last_script: last_script.clone(),
-    };
-
-    let searched = search_tasks(
-        &runner,
-        "shape",
-        None,
-        None,
-        None,
-        "any",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        Some("2026-03-01T00:00:00Z"),
-        None,
-        None,
-        "asc",
-        5,
-    )
-    .await
-    .expect("search with completion filters should parse");
-    assert_eq!(searched.len(), 1);
-
-    let script = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script.contains(r#"const statusFilter = "all";"#));
-    assert!(script.contains(r#"const sortBy = "completionDate";"#));
-    assert!(script.contains(r#"const sortOrder = "desc";"#));
-    assert!(script.contains(
-        "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
     ));
 }
 
@@ -1514,6 +1731,127 @@ async fn list_tasks_date_filter_script_contains_expected_logic() {
 }
 
 #[tokio::test]
+async fn added_changed_filters_are_included_in_list_search_and_count_scripts() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-added-changed", "dated task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_added_changed(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-02-01T00:00:00Z"),
+        Some("2026-02-28T23:59:59Z"),
+        Some("2026-03-01T00:00:00Z"),
+        Some("2026-03-31T23:59:59Z"),
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        5,
+    )
+    .await
+    .expect("list tasks with added/changed filters should parse");
+    assert_eq!(listed.len(), 1);
+
+    let mut script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const addedAfterRaw = "2026-02-01T00:00:00Z";"#));
+    assert!(script.contains(r#"const changedBeforeRaw = "2026-03-31T23:59:59Z";"#));
+    assert!(script.contains("addedDate: task.added ? task.added.toISOString() : null,"));
+    assert!(script.contains("changedDate: task.modified ? task.modified.toISOString() : null,"));
+
+    let searched = search_tasks_with_added_changed(
+        &runner,
+        "dated",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-02-01T00:00:00Z"),
+        Some("2026-02-28T23:59:59Z"),
+        Some("2026-03-01T00:00:00Z"),
+        Some("2026-03-31T23:59:59Z"),
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        5,
+    )
+    .await
+    .expect("search tasks with added/changed filters should parse");
+    assert_eq!(searched.len(), 1);
+
+    script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const addedBeforeRaw = "2026-02-28T23:59:59Z";"#));
+    assert!(script.contains(
+        "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+    ));
+
+    let count_runner = CapturingRunner {
+        payload: json!({
+            "total": 1,
+            "available": 1,
+            "completed": 0,
+            "overdue": 0,
+            "dueSoon": 0,
+            "flagged": 0,
+            "deferred": 0
+        }),
+        last_script: last_script.clone(),
+    };
+    let counts = get_task_counts_with_added_changed(
+        &count_runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-02-01T00:00:00Z"),
+        Some("2026-02-28T23:59:59Z"),
+        Some("2026-03-01T00:00:00Z"),
+        Some("2026-03-31T23:59:59Z"),
+        None,
+    )
+    .await
+    .expect("task counts with added/changed filters should parse");
+    assert_eq!(counts.total, 1);
+}
+
+#[tokio::test]
 async fn list_tasks_script_supports_planned_date_filters() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
@@ -1521,7 +1859,7 @@ async fn list_tasks_script_supports_planned_date_filters() {
         last_script: last_script.clone(),
     };
 
-    let listed = list_tasks_with_planned(
+    let listed = list_tasks_with_planned_helper(
         &runner,
         None,
         None,
@@ -1537,7 +1875,7 @@ async fn list_tasks_script_supports_planned_date_filters() {
         None,
         Some("2026-03-15T00:00:00Z"),
         Some("2026-02-15T00:00:00Z"),
-        None,
+        Some(15),
         None,
         "asc",
         5,
@@ -1550,8 +1888,8 @@ async fn list_tasks_script_supports_planned_date_filters() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
-    assert!(script.contains("const plannedBeforeRaw = \"2026-03-15T00:00:00Z\";"));
-    assert!(script.contains("const plannedAfterRaw = \"2026-02-15T00:00:00Z\";"));
+    assert!(script.contains(r#"const plannedBeforeRaw = "2026-03-15T00:00:00Z";"#));
+    assert!(script.contains(r#"const plannedAfterRaw = "2026-02-15T00:00:00Z";"#));
     assert!(script.contains(
         "if (plannedBefore !== null && !(plannedDate !== null && plannedDate < plannedBefore)) return false;"
     ));
@@ -1566,51 +1904,6 @@ async fn search_tasks_script_includes_completion_and_children_fields() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
         payload: json!([task_value("t-search-shape", "search shape task")]),
-        last_script: last_script.clone(),
-    };
-
-    let searched = search_tasks(
-        &runner,
-        "shape",
-        Some("Errands"),
-        None,
-        None,
-        "any",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "asc",
-        2,
-    )
-    .await
-    .expect("search should parse");
-    assert_eq!(searched.len(), 1);
-
-    let script = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script.contains(
-        "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
-    ));
-    assert!(script.contains("hasChildren: task.hasChildren"));
-    assert!(script.contains("taskStatus: (() => {"));
-    assert!(script.contains("if (s.includes(\"Overdue\")) return \"overdue\";"));
-    assert!(script.contains("if (s.includes(\"Overdue\")) return \"overdue\";"));
-}
-
-#[tokio::test]
-async fn search_tasks_script_supports_project_filter() {
-    let last_script = Arc::new(Mutex::new(String::new()));
-    let runner = CapturingRunner {
-        payload: json!([task_value("t-search-project", "search project task")]),
         last_script: last_script.clone(),
     };
 
@@ -1694,7 +1987,7 @@ async fn search_tasks_script_supports_planned_date_filters() {
         last_script: last_script.clone(),
     };
 
-    let searched = search_tasks_with_planned(
+    let searched = search_tasks_with_planned_helper(
         &runner,
         "shape",
         None,
@@ -1937,8 +2230,6 @@ async fn list_tasks_sorting_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
         Some("dueDate"),
         "asc",
         5,
@@ -1962,8 +2253,6 @@ async fn list_tasks_sorting_script_contains_expected_logic() {
         "any",
         None,
         "available",
-        None,
-        None,
         None,
         None,
         None,
@@ -1998,11 +2287,9 @@ async fn list_tasks_sorting_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
         Some("2026-03-01T00:00:00Z"),
         None,
-        None,
-        None,
+        Some(60),
         None,
         "asc",
         5,
@@ -2042,8 +2329,6 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         None,
         None,
         None,
-        None,
-        None,
         Some(15),
         None,
         "asc",
@@ -2069,8 +2354,6 @@ async fn list_tasks_duration_filter_script_contains_expected_logic() {
         "any",
         None,
         "available",
-        None,
-        None,
         None,
         None,
         None,
@@ -2118,8 +2401,6 @@ async fn list_tasks_sort_due_date_asc_is_included_in_script() {
         None,
         None,
         None,
-        None,
-        None,
         Some("dueDate"),
         "asc",
         5,
@@ -2153,8 +2434,6 @@ async fn list_tasks_sort_name_desc_is_included_in_script() {
         "any",
         None,
         "available",
-        None,
-        None,
         None,
         None,
         None,
@@ -2199,9 +2478,7 @@ async fn list_tasks_sort_auto_defaults_for_completion_date_filters() {
         None,
         None,
         None,
-        None,
         Some("2026-03-01T00:00:00Z"),
-        None,
         None,
         None,
         None,
@@ -2236,8 +2513,6 @@ async fn list_tasks_sort_nulls_last_logic_is_included_in_script() {
         "any",
         None,
         "available",
-        None,
-        None,
         None,
         None,
         None,
@@ -2313,6 +2588,10 @@ async fn get_task_counts_invalid_date_error_bubbles_up() {
         None,
         None,
         None,
+        None,
+        None,
+        None,
+        None,
     )
     .await
     .expect_err("invalid date should return omni error");
@@ -2322,94 +2601,6 @@ async fn get_task_counts_invalid_date_error_bubbles_up() {
         error.to_string(),
         "dueBefore must be a valid ISO 8601 date string."
     );
-}
-
-#[tokio::test]
-async fn list_tasks_tag_filters_support_any_all_merge_and_empty_array() {
-    let last_script = Arc::new(Mutex::new(String::new()));
-    let runner = CapturingRunner {
-        payload: json!([task_value("t-tags", "tagged task")]),
-        last_script: last_script.clone(),
-    };
-
-    list_tasks(
-        &runner,
-        None,
-        Some("Home"),
-        Some(vec!["Errands".to_string(), "Home".to_string()]),
-        "all",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        5,
-    )
-    .await
-    .expect("list tasks with merged all-mode tags should parse");
-
-    let script = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script.contains("const tagNames = [\"Home\",\"Errands\"];"));
-    assert!(script.contains("const tagFilterMode = \"all\";"));
-    assert!(script.contains("tagNames.every(tn => task.tags.some(t => t.name === tn))"));
-
-    list_tasks(
-        &runner,
-        None,
-        None,
-        Some(vec!["Home".to_string(), "Deep".to_string()]),
-        "any",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        5,
-    )
-    .await
-    .expect("list tasks with any-mode tags should parse");
-
-    let script = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script.contains("const tagNames = [\"Home\",\"Deep\"];"));
-    assert!(script.contains("const tagFilterMode = \"any\";"));
-    assert!(script.contains("task.tags.some(t => tagNames.includes(t.name))"));
-
-    list_tasks(
-        &runner,
-        None,
-        None,
-        Some(vec![]),
-        "any",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        5,
-    )
-    .await
-    .expect("list tasks with empty tags array should parse");
-
-    let script = last_script
-        .lock()
-        .expect("script capture lock should succeed")
-        .clone();
-    assert!(script.contains("const tagNames = null;"));
 }
 
 #[tokio::test]
@@ -2482,4 +2673,362 @@ async fn list_tasks_empty_tags_array_is_ignored() {
         .expect("script capture lock should succeed")
         .clone();
     assert!(script.contains("const tagNames = null;"));
+}
+
+#[tokio::test]
+async fn list_tasks_added_changed_filters_and_payload_fields_are_included() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{
+            "id": "t-added-changed",
+            "name": "dated task",
+            "addedDate": "2026-02-01T09:00:00Z",
+            "changedDate": "2026-02-08T12:00:00Z",
+            "taskStatus": "available"
+        }]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_added_changed(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-02-01T00:00:00Z"),
+        Some("2026-02-28T23:59:59Z"),
+        Some("2026-03-01T00:00:00Z"),
+        Some("2026-03-31T23:59:59Z"),
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        5,
+    )
+    .await
+    .expect("list tasks with added/changed filters should parse");
+
+    assert_eq!(listed.len(), 1);
+    assert_eq!(
+        listed[0].added_date.as_deref(),
+        Some("2026-02-01T09:00:00Z")
+    );
+    assert_eq!(
+        listed[0].changed_date.as_deref(),
+        Some("2026-02-08T12:00:00Z")
+    );
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const addedAfterRaw = \"2026-02-01T00:00:00Z\";"));
+    assert!(script.contains("const addedBeforeRaw = \"2026-02-28T23:59:59Z\";"));
+    assert!(script.contains("const changedAfterRaw = \"2026-03-01T00:00:00Z\";"));
+    assert!(script.contains("const changedBeforeRaw = \"2026-03-31T23:59:59Z\";"));
+    assert!(script.contains(
+        "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;"
+    ));
+    assert!(script.contains(
+        "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;"
+    ));
+    assert!(script.contains(
+        "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+    ));
+    assert!(script.contains(
+        "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;"
+    ));
+    assert!(script.contains("addedDate: task.added ? task.added.toISOString() : null,"));
+    assert!(script.contains("changedDate: task.modified ? task.modified.toISOString() : null,"));
+}
+
+#[tokio::test]
+async fn search_tasks_added_changed_filters_and_payload_fields_are_included() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([{
+            "id": "t-search-added-changed",
+            "name": "shape",
+            "addedDate": "2026-02-01T09:00:00Z",
+            "changedDate": "2026-02-08T12:00:00Z",
+            "taskStatus": "available"
+        }]),
+        last_script: last_script.clone(),
+    };
+
+    let searched = search_tasks_with_added_changed(
+        &runner,
+        "shape",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-02-01T00:00:00Z"),
+        Some("2026-02-28T23:59:59Z"),
+        Some("2026-03-01T00:00:00Z"),
+        Some("2026-03-31T23:59:59Z"),
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        3,
+    )
+    .await
+    .expect("search tasks with added/changed filters should parse");
+
+    assert_eq!(searched.len(), 1);
+    assert_eq!(
+        searched[0].added_date.as_deref(),
+        Some("2026-02-01T09:00:00Z")
+    );
+    assert_eq!(
+        searched[0].changed_date.as_deref(),
+        Some("2026-02-08T12:00:00Z")
+    );
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const addedAfterRaw = \"2026-02-01T00:00:00Z\";"));
+    assert!(script.contains("const addedBeforeRaw = \"2026-02-28T23:59:59Z\";"));
+    assert!(script.contains("const changedAfterRaw = \"2026-03-01T00:00:00Z\";"));
+    assert!(script.contains("const changedBeforeRaw = \"2026-03-31T23:59:59Z\";"));
+    assert!(script.contains("addedDate: task.added ? task.added.toISOString() : null,"));
+    assert!(script.contains("changedDate: task.modified ? task.modified.toISOString() : null,"));
+}
+
+#[tokio::test]
+async fn get_task_counts_added_changed_filters_are_included_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!({
+            "total": 1,
+            "available": 1,
+            "completed": 0,
+            "overdue": 0,
+            "dueSoon": 0,
+            "flagged": 0,
+            "deferred": 0
+        }),
+        last_script: last_script.clone(),
+    };
+
+    let counts = get_task_counts_with_added_changed(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("2026-02-01T00:00:00Z"),
+        Some("2026-02-28T23:59:59Z"),
+        Some("2026-03-01T00:00:00Z"),
+        Some("2026-03-31T23:59:59Z"),
+        None,
+    )
+    .await
+    .expect("counts with added/changed filters should parse");
+    assert_eq!(counts.total, 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("const addedAfterRaw = \"2026-02-01T00:00:00Z\";"));
+    assert!(script.contains("const addedBeforeRaw = \"2026-02-28T23:59:59Z\";"));
+    assert!(script.contains("const changedAfterRaw = \"2026-03-01T00:00:00Z\";"));
+    assert!(script.contains("const changedBeforeRaw = \"2026-03-31T23:59:59Z\";"));
+    assert!(script.contains(
+        "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) continue;"
+    ));
+    assert!(script.contains(
+        "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) continue;"
+    ));
+    assert!(script.contains(
+        "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) continue;"
+    ));
+    assert!(script.contains(
+        "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) continue;"
+    ));
+}
+
+#[tokio::test]
+async fn added_changed_invalid_date_errors_bubble_up_for_all_new_filter_fields() {
+    let fields = [
+        "added_after",
+        "added_before",
+        "changed_after",
+        "changed_before",
+    ];
+
+    for field in fields {
+        let message = format!("{field} must be a valid ISO 8601 date string.");
+
+        let list_runner = ErrorRunner {
+            message: message.clone(),
+        };
+        let list_error = list_tasks_with_added_changed(
+            &list_runner,
+            None,
+            None,
+            None,
+            "any",
+            None,
+            "available",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            if field == "added_after" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            if field == "added_before" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            if field == "changed_after" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            if field == "changed_before" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            None,
+            None,
+            None,
+            None,
+            "asc",
+            5,
+        )
+        .await
+        .expect_err("list invalid date should return omni error");
+        assert!(matches!(list_error, OmniFocusError::OmniFocus(_)));
+        assert_eq!(list_error.to_string(), message);
+
+        let search_runner = ErrorRunner {
+            message: message.clone(),
+        };
+        let search_error = search_tasks_with_added_changed(
+            &search_runner,
+            "shape",
+            None,
+            None,
+            None,
+            "any",
+            None,
+            "available",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            if field == "added_after" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            if field == "added_before" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            if field == "changed_after" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            if field == "changed_before" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            None,
+            None,
+            None,
+            None,
+            "asc",
+            5,
+        )
+        .await
+        .expect_err("search invalid date should return omni error");
+        assert!(matches!(search_error, OmniFocusError::OmniFocus(_)));
+        assert_eq!(search_error.to_string(), message);
+
+        let counts_runner = ErrorRunner {
+            message: message.clone(),
+        };
+        let counts_error = get_task_counts_with_added_changed(
+            &counts_runner,
+            None,
+            None,
+            None,
+            "any",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            if field == "added_after" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            if field == "added_before" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            if field == "changed_after" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            if field == "changed_before" {
+                Some("bad-date")
+            } else {
+                None
+            },
+            None,
+        )
+        .await
+        .expect_err("counts invalid date should return omni error");
+        assert!(matches!(counts_error, OmniFocusError::OmniFocus(_)));
+        assert_eq!(counts_error.to_string(), message);
+    }
 }

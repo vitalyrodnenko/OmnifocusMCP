@@ -68,6 +68,8 @@ Full lifecycle management for OmniFocus tasks:
 | `dueBefore` / `dueAfter` | Due date range (ISO 8601) |
 | `deferBefore` / `deferAfter` | Defer date range (ISO 8601) |
 | `completedBefore` / `completedAfter` | Completion date range (ISO 8601) |
+| `addedBefore` / `addedAfter` | Creation date range (ISO 8601) |
+| `changedBefore` / `changedAfter` | Last-modified date range (ISO 8601, maps to OmniFocus `modified`) |
 | `plannedBefore` / `plannedAfter` | Planned date range (ISO 8601) |
 | `maxEstimatedMinutes` | Tasks with estimated duration up to N minutes |
 
@@ -77,6 +79,7 @@ All list/search tools support `sortBy` and `sortOrder`:
 
 - Sort by: `name`, `due`, `defer`, `added`, `modified`, `completed`, `estimated`, `planned`
 - Sort order: `asc` (default) or `desc`
+- Task payloads include `addedDate` and `changedDate` (ISO 8601 or `null`)
 
 ### Projects (11 tools)
 

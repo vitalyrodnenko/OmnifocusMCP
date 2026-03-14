@@ -84,6 +84,8 @@ async def test_get_inbox_happy_path(
             "name": "Inbox Task",
             "note": "n",
             "flagged": False,
+            "addedDate": "2026-02-01T09:00:00Z",
+            "changedDate": "2026-02-03T10:30:00Z",
             "dueDate": None,
             "deferDate": None,
             "completionDate": None,
@@ -114,6 +116,13 @@ async def test_get_inbox_happy_path(
     assert ".slice(0, 5)" in state["calls"][0]["script"]
     assert (
         "completionDate: task.completionDate ? task.completionDate.toISOString() : null,"
+        in state["calls"][0]["script"]
+    )
+    assert "addedDate: task.added ? task.added.toISOString() : null," in state["calls"][0][
+        "script"
+    ]
+    assert (
+        "changedDate: task.modified ? task.modified.toISOString() : null,"
         in state["calls"][0]["script"]
     )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
@@ -278,6 +287,8 @@ async def test_list_tasks_happy_path(
             "name": "Task",
             "note": "note",
             "flagged": True,
+            "addedDate": "2026-02-01T09:00:00Z",
+            "changedDate": "2026-02-05T10:30:00Z",
             "dueDate": "2026-03-01T10:00:00Z",
             "deferDate": None,
             "completed": False,
@@ -307,6 +318,13 @@ async def test_list_tasks_happy_path(
     )
     assert (
         "plannedDate: plannedDate ? plannedDate.toISOString() : null,"
+        in state["calls"][0]["script"]
+    )
+    assert "addedDate: task.added ? task.added.toISOString() : null," in state["calls"][0][
+        "script"
+    ]
+    assert (
+        "changedDate: task.modified ? task.modified.toISOString() : null,"
         in state["calls"][0]["script"]
     )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
@@ -360,6 +378,46 @@ async def test_list_tasks_date_filters_are_included_in_script(
         in script
     )
     assert ".slice(0, 9)" in script
+
+
+@pytest.mark.asyncio
+async def test_list_tasks_added_changed_date_filters_are_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(
+        added_after="2026-02-01T00:00:00Z",
+        added_before="2026-02-28T23:59:59Z",
+        changed_after="2026-03-01T00:00:00Z",
+        changed_before="2026-03-31T23:59:59Z",
+        limit=5,
+    )
+
+    script = state["calls"][0]["script"]
+    assert 'const addedAfterRaw = "2026-02-01T00:00:00Z";' in script
+    assert 'const addedBeforeRaw = "2026-02-28T23:59:59Z";' in script
+    assert 'const changedAfterRaw = "2026-03-01T00:00:00Z";' in script
+    assert 'const changedBeforeRaw = "2026-03-31T23:59:59Z";' in script
+    assert (
+        "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;"
+        in script
+    )
+    assert (
+        "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;"
+        in script
+    )
+    assert (
+        "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+        in script
+    )
+    assert (
+        "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;"
+        in script
+    )
+    assert ".slice(0, 5)" in script
 
 
 @pytest.mark.asyncio
@@ -607,6 +665,44 @@ async def test_get_task_counts_includes_filters_and_aggregate_counters_in_script
 
 
 @pytest.mark.asyncio
+async def test_get_task_counts_added_changed_date_filters_are_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs({"total": 0})
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.get_task_counts(
+        added_after="2026-02-01T00:00:00Z",
+        added_before="2026-02-28T23:59:59Z",
+        changed_after="2026-03-01T00:00:00Z",
+        changed_before="2026-03-31T23:59:59Z",
+    )
+
+    script = state["calls"][0]["script"]
+    assert 'const addedAfterRaw = "2026-02-01T00:00:00Z";' in script
+    assert 'const addedBeforeRaw = "2026-02-28T23:59:59Z";' in script
+    assert 'const changedAfterRaw = "2026-03-01T00:00:00Z";' in script
+    assert 'const changedBeforeRaw = "2026-03-31T23:59:59Z";' in script
+    assert (
+        "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) continue;"
+        in script
+    )
+    assert (
+        "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) continue;"
+        in script
+    )
+    assert (
+        "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) continue;"
+        in script
+    )
+    assert (
+        "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) continue;"
+        in script
+    )
+
+
+@pytest.mark.asyncio
 async def test_get_task_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -615,6 +711,8 @@ async def test_get_task_happy_path(
         "name": "Task 3",
         "note": "",
         "flagged": False,
+        "addedDate": "2026-02-01T09:00:00Z",
+        "changedDate": "2026-02-06T11:00:00Z",
         "dueDate": None,
         "deferDate": None,
         "effectiveDueDate": None,
@@ -646,6 +744,13 @@ async def test_get_task_happy_path(
     assert "effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null," in state["calls"][0]["script"]
     assert "effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null," in state["calls"][0]["script"]
     assert "effectiveFlagged: task.effectiveFlagged," in state["calls"][0]["script"]
+    assert "addedDate: task.added ? task.added.toISOString() : null," in state["calls"][0][
+        "script"
+    ]
+    assert (
+        "changedDate: task.modified ? task.modified.toISOString() : null,"
+        in state["calls"][0]["script"]
+    )
     assert "modified: task.modified ? task.modified.toISOString() : null," in state["calls"][0]["script"]
     assert "plannedDate: plannedDate ? plannedDate.toISOString() : null," in state["calls"][0]["script"]
     assert "effectivePlannedDate: effectivePlannedDate ? effectivePlannedDate.toISOString() : null," in state["calls"][0]["script"]
@@ -899,6 +1004,8 @@ async def test_search_tasks_happy_path(
             "name": "Buy milk",
             "note": "fridge",
             "flagged": False,
+            "addedDate": "2026-02-01T09:00:00Z",
+            "changedDate": "2026-02-08T12:00:00Z",
             "dueDate": None,
             "deferDate": None,
             "completed": False,
@@ -928,6 +1035,13 @@ async def test_search_tasks_happy_path(
         "plannedDate: plannedDate ? plannedDate.toISOString() : null,"
         in state["calls"][0]["script"]
     )
+    assert "addedDate: task.added ? task.added.toISOString() : null," in state["calls"][0][
+        "script"
+    ]
+    assert (
+        "changedDate: task.modified ? task.modified.toISOString() : null,"
+        in state["calls"][0]["script"]
+    )
     assert "hasChildren: task.hasChildren" in state["calls"][0]["script"]
     assert "taskStatus: (() => {" in state["calls"][0]["script"]
     assert 'if (s.includes("DueSoon")) return "due_soon";' in state["calls"][0]["script"]
@@ -952,6 +1066,46 @@ async def test_search_tasks_with_project_filter_uses_combined_filters(
         "if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;"
         in script
     )
+
+
+@pytest.mark.asyncio
+async def test_search_tasks_added_changed_date_filters_are_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([{"id": "t-changed", "name": "task"}])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.search_tasks(
+        query="shape",
+        added_after="2026-02-01T00:00:00Z",
+        added_before="2026-02-28T23:59:59Z",
+        changed_after="2026-03-01T00:00:00Z",
+        changed_before="2026-03-31T23:59:59Z",
+        limit=4,
+    )
+    script = state["calls"][0]["script"]
+    assert 'const addedAfterRaw = "2026-02-01T00:00:00Z";' in script
+    assert 'const addedBeforeRaw = "2026-02-28T23:59:59Z";' in script
+    assert 'const changedAfterRaw = "2026-03-01T00:00:00Z";' in script
+    assert 'const changedBeforeRaw = "2026-03-31T23:59:59Z";' in script
+    assert (
+        "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;"
+        in script
+    )
+    assert (
+        "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;"
+        in script
+    )
+    assert (
+        "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+        in script
+    )
+    assert (
+        "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;"
+        in script
+    )
+    assert ".slice(0, 4)" in script
 
 
 @pytest.mark.asyncio
@@ -1450,6 +1604,63 @@ async def test_get_task_counts_invalid_date_error_bubbles_up(
         RuntimeError, match="dueBefore must be a valid ISO 8601 date string."
     ):
         await server_module.get_task_counts(dueBefore="bad-date")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "field_name",
+    ["added_after", "added_before", "changed_after", "changed_before"],
+)
+async def test_list_tasks_new_date_filters_invalid_date_error_bubbles_up(
+    server_module: Any, monkeypatch: pytest.MonkeyPatch, field_name: str
+) -> None:
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        raise RuntimeError(f"{field_name} must be a valid ISO 8601 date string.")
+
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
+
+    with pytest.raises(
+        RuntimeError, match=rf"{field_name} must be a valid ISO 8601 date string."
+    ):
+        await server_module.list_tasks(**{field_name: "bad-date"})
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "field_name",
+    ["added_after", "added_before", "changed_after", "changed_before"],
+)
+async def test_search_tasks_new_date_filters_invalid_date_error_bubbles_up(
+    server_module: Any, monkeypatch: pytest.MonkeyPatch, field_name: str
+) -> None:
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        raise RuntimeError(f"{field_name} must be a valid ISO 8601 date string.")
+
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
+
+    with pytest.raises(
+        RuntimeError, match=rf"{field_name} must be a valid ISO 8601 date string."
+    ):
+        await server_module.search_tasks(query="shape", **{field_name: "bad-date"})
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "field_name",
+    ["added_after", "added_before", "changed_after", "changed_before"],
+)
+async def test_get_task_counts_new_date_filters_invalid_date_error_bubbles_up(
+    server_module: Any, monkeypatch: pytest.MonkeyPatch, field_name: str
+) -> None:
+    async def fake_run_omnijs(script: str, timeout_seconds: float = 30.0) -> Any:
+        raise RuntimeError(f"{field_name} must be a valid ISO 8601 date string.")
+
+    _patch_run_omnijs(monkeypatch, server_module, fake_run_omnijs)
+
+    with pytest.raises(
+        RuntimeError, match=rf"{field_name} must be a valid ISO 8601 date string."
+    ):
+        await server_module.get_task_counts(**{field_name: "bad-date"})
 
 
 @pytest.mark.asyncio

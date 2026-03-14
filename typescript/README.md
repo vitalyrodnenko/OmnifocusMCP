@@ -80,9 +80,13 @@ Use:
 
 - `ping`
 - `get_inbox`
-- `list_tasks`
+- `list_tasks` (supports added/changed date ranges: `added_after`, `added_before`, `changed_after`, `changed_before`)
 - `create_task`
 - `project_planning`
+
+Task payloads returned by read tools include:
+- `addedDate` (task creation timestamp, ISO 8601 or `null`)
+- `changedDate` (task last-modified timestamp, ISO 8601 or `null`; maps to OmniFocus `modified`)
 
 ## development checks
 

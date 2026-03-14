@@ -323,6 +323,51 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "task-date", name: "dated filter" }]);
   });
 
+  test("list_tasks includes added and changed date filters in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-added-changed", name: "dated filter" }]);
+    await getTool("list_tasks")({
+      added_after: "2026-02-01T00:00:00Z",
+      added_before: "2026-02-28T23:59:59Z",
+      changed_after: "2026-03-01T00:00:00Z",
+      changed_before: "2026-03-31T23:59:59Z",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const addedAfterRaw = "2026-02-01T00:00:00Z";');
+    expect(script).toContain('const addedBeforeRaw = "2026-02-28T23:59:59Z";');
+    expect(script).toContain('const changedAfterRaw = "2026-03-01T00:00:00Z";');
+    expect(script).toContain('const changedBeforeRaw = "2026-03-31T23:59:59Z";');
+    expect(script).toContain(
+      "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;"
+    );
+    expect(script).toContain(
+      "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;"
+    );
+    expect(script).toContain(
+      "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+    );
+    expect(script).toContain(
+      "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;"
+    );
+  });
+
+  test("list_tasks surfaces invalid added/changed date field names in errors", async () => {
+    const fields = ["added_after", "added_before", "changed_after", "changed_before"];
+    for (const field of fields) {
+      runOmniJsMock.mockRejectedValueOnce(
+        new Error(`${field} must be a valid ISO 8601 date string.`)
+      );
+      const result = await getTool("list_tasks")({
+        [field]: "bad-date",
+        limit: 5,
+      });
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        error: `${field} must be a valid ISO 8601 date string.`,
+      });
+    }
+  });
+
   test("list_tasks sort by dueDate asc is included in script", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-due", name: "sorted task" }]);
     await getTool("list_tasks")({
@@ -798,6 +843,46 @@ describe("representative read and write tool handlers", () => {
     ]).toContain(parsed.taskStatus);
   });
 
+  test("get_task and get_inbox payloads include addedDate and changedDate fields", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-10",
+      name: "single task",
+      addedDate: "2026-02-01T09:00:00Z",
+      changedDate: "2026-02-06T11:00:00Z",
+    });
+    let result = await getTool("get_task")({ task_id: "task-10" });
+    let script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("addedDate: task.added ? task.added.toISOString() : null,");
+    expect(script).toContain("changedDate: task.modified ? task.modified.toISOString() : null,");
+    expect(parseToolResult(result)).toEqual({
+      id: "task-10",
+      name: "single task",
+      addedDate: "2026-02-01T09:00:00Z",
+      changedDate: "2026-02-06T11:00:00Z",
+    });
+
+    runOmniJsMock.mockResolvedValueOnce([
+      {
+        id: "task-11",
+        name: "inbox item",
+        addedDate: "2026-02-01T09:00:00Z",
+        changedDate: "2026-02-08T12:00:00Z",
+      },
+    ]);
+    result = await getTool("get_inbox")({ limit: 1 });
+    script = String(runOmniJsMock.mock.calls[1]?.[0]);
+    expect(script).toContain("addedDate: task.added ? task.added.toISOString() : null,");
+    expect(script).toContain("changedDate: task.modified ? task.modified.toISOString() : null,");
+    expect(parseToolResult(result)).toEqual([
+      {
+        id: "task-11",
+        name: "inbox item",
+        addedDate: "2026-02-01T09:00:00Z",
+        changedDate: "2026-02-08T12:00:00Z",
+      },
+    ]);
+  });
+
   test("search_tasks mapper includes completionDate and hasChildren", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "search-shape", name: "shape" }]);
     await getTool("search_tasks")({ query: "shape", limit: 2 });
@@ -843,6 +928,122 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const plannedAfterRaw = "2026-02-20T00:00:00Z";');
     expect(script).toContain(
       "const includeCompletedForDateFilter = completedBefore !== null || completedAfter !== null;"
+    );
+  });
+
+  test("search_tasks includes added and changed date filters in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "search-added-changed", name: "shape" }]);
+    await getTool("search_tasks")({
+      query: "shape",
+      added_after: "2026-02-01T00:00:00Z",
+      added_before: "2026-02-28T23:59:59Z",
+      changed_after: "2026-03-01T00:00:00Z",
+      changed_before: "2026-03-31T23:59:59Z",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const addedAfterRaw = "2026-02-01T00:00:00Z";');
+    expect(script).toContain('const addedBeforeRaw = "2026-02-28T23:59:59Z";');
+    expect(script).toContain('const changedAfterRaw = "2026-03-01T00:00:00Z";');
+    expect(script).toContain('const changedBeforeRaw = "2026-03-31T23:59:59Z";');
+    expect(script).toContain(
+      "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;"
+    );
+    expect(script).toContain(
+      "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;"
+    );
+    expect(script).toContain(
+      "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+    );
+    expect(script).toContain(
+      "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;"
+    );
+  });
+
+  test("search_tasks and get_task_counts surface invalid added/changed date field names", async () => {
+    const fields = ["added_after", "added_before", "changed_after", "changed_before"];
+    for (const field of fields) {
+      runOmniJsMock.mockRejectedValueOnce(
+        new Error(`${field} must be a valid ISO 8601 date string.`)
+      );
+      let result = await getTool("search_tasks")({
+        query: "shape",
+        [field]: "bad-date",
+        limit: 5,
+      });
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        error: `${field} must be a valid ISO 8601 date string.`,
+      });
+
+      runOmniJsMock.mockRejectedValueOnce(
+        new Error(`${field} must be a valid ISO 8601 date string.`)
+      );
+      result = await getTool("get_task_counts")({
+        [field]: "bad-date",
+      });
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        error: `${field} must be a valid ISO 8601 date string.`,
+      });
+    }
+  });
+
+  test("search_tasks mapper includes addedDate and changedDate fields", async () => {
+    runOmniJsMock.mockResolvedValueOnce([
+      {
+        id: "search-shape-2",
+        name: "shape",
+        addedDate: "2026-02-01T09:00:00Z",
+        changedDate: "2026-02-08T12:00:00Z",
+      },
+    ]);
+    const result = await getTool("search_tasks")({ query: "shape", limit: 2 });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("addedDate: task.added ? task.added.toISOString() : null,");
+    expect(script).toContain("changedDate: task.modified ? task.modified.toISOString() : null,");
+    expect(parseToolResult(result)).toEqual([
+      {
+        id: "search-shape-2",
+        name: "shape",
+        addedDate: "2026-02-01T09:00:00Z",
+        changedDate: "2026-02-08T12:00:00Z",
+      },
+    ]);
+  });
+
+  test("get_task_counts includes added and changed date filters in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      total: 1,
+      available: 1,
+      completed: 0,
+      overdue: 0,
+      dueSoon: 0,
+      flagged: 0,
+      deferred: 0,
+    });
+    await getTool("get_task_counts")({
+      added_after: "2026-02-01T00:00:00Z",
+      added_before: "2026-02-28T23:59:59Z",
+      changed_after: "2026-03-01T00:00:00Z",
+      changed_before: "2026-03-31T23:59:59Z",
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const addedAfterRaw = "2026-02-01T00:00:00Z";');
+    expect(script).toContain('const addedBeforeRaw = "2026-02-28T23:59:59Z";');
+    expect(script).toContain('const changedAfterRaw = "2026-03-01T00:00:00Z";');
+    expect(script).toContain('const changedBeforeRaw = "2026-03-31T23:59:59Z";');
+    expect(script).toContain(
+      "if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) continue;"
+    );
+    expect(script).toContain(
+      "if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) continue;"
+    );
+    expect(script).toContain(
+      "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) continue;"
+    );
+    expect(script).toContain(
+      "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) continue;"
     );
   });
 

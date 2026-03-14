@@ -98,9 +98,13 @@ Once connected from your MCP client, try:
 
 - `ping` to verify server health
 - `get_inbox` to retrieve current inbox tasks
-- `list_tasks` with filters such as `status="due_soon"`
+- `list_tasks` with filters such as `status="due_soon"` or date ranges (`added_after`, `added_before`, `changed_after`, `changed_before`)
 - `create_task` to add an inbox or project task
 - `project_planning` prompt to generate a structured plan from project state
+
+Task payloads returned by read tools include:
+- `addedDate` (task creation timestamp, ISO 8601 or `null`)
+- `changedDate` (task last-modified timestamp, ISO 8601 or `null`; maps to OmniFocus `modified`)
 
 ## Development Checks
 

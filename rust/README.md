@@ -7,10 +7,15 @@ compiled binary (`omnifocus-mcp`) distributable via Homebrew.
 
 - 40 tools, 3 resources, 4 prompts — full API parity with Python and TypeScript
 - Advanced read-side filtering and sorting on tasks/projects (date ranges, multi-tag modes, stalled detection)
+- Added/changed task date filtering (`added_*`, `changed_*`) for list/search/count read tools
 - Aggregate count tools (`get_task_counts`, `get_project_counts`) for fast "how many" queries
 - Single binary, zero runtime dependencies
 - ~5 MB release build
 - Homebrew-installable (`brew install omnifocus-mcp`)
+
+Task payloads returned by read tools include:
+- `addedDate` (task creation timestamp, ISO 8601 or `null`)
+- `changedDate` (task last-modified timestamp, ISO 8601 or `null`; maps to OmniFocus `modified`)
 
 ## Prerequisites
 

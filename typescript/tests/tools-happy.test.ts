@@ -118,6 +118,170 @@ describe("tool happy paths", () => {
     expect(script).toContain("const flaggedFilter = true;");
   });
 
+  test("list_tasks supports added and changed date filters", async () => {
+    runOmniJsMock.mockResolvedValueOnce([
+      {
+        id: "t-added",
+        name: "Task with dates",
+        addedDate: "2026-03-10T10:00:00Z",
+        changedDate: "2026-03-11T10:00:00Z",
+      },
+    ]);
+    const handler = registeredTools.get("list_tasks");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      status: "all",
+      added_after: "2026-03-01T00:00:00Z",
+      added_before: "2026-03-31T23:59:59Z",
+      changed_after: "2026-03-02T00:00:00Z",
+      changed_before: "2026-03-30T23:59:59Z",
+      limit: 25,
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual([
+      {
+        id: "t-added",
+        name: "Task with dates",
+        addedDate: "2026-03-10T10:00:00Z",
+        changedDate: "2026-03-11T10:00:00Z",
+      },
+    ]);
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const addedAfterRaw = "2026-03-01T00:00:00Z";');
+    expect(script).toContain('const addedBeforeRaw = "2026-03-31T23:59:59Z";');
+    expect(script).toContain('const changedAfterRaw = "2026-03-02T00:00:00Z";');
+    expect(script).toContain('const changedBeforeRaw = "2026-03-30T23:59:59Z";');
+    expect(script).toContain('const addedAfter = parseOptionalDate(addedAfterRaw, "added_after");');
+    expect(script).toContain('const addedBefore = parseOptionalDate(addedBeforeRaw, "added_before");');
+    expect(script).toContain('const changedAfter = parseOptionalDate(changedAfterRaw, "changed_after");');
+    expect(script).toContain('const changedBefore = parseOptionalDate(changedBeforeRaw, "changed_before");');
+    expect(script).toContain("if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;");
+    expect(script).toContain("if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;");
+    expect(script).toContain(
+      "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+    );
+    expect(script).toContain(
+      "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;"
+    );
+    expect(script).toContain("addedDate: task.added ? task.added.toISOString() : null,");
+    expect(script).toContain("changedDate: task.modified ? task.modified.toISOString() : null,");
+  });
+
+  test("list_tasks propagates invalid added and changed date field errors", async () => {
+    const handler = registeredTools.get("list_tasks");
+    expect(handler).toBeDefined();
+    const cases: Array<{ field: "added_after" | "added_before" | "changed_after" | "changed_before" }> = [
+      { field: "added_after" },
+      { field: "added_before" },
+      { field: "changed_after" },
+      { field: "changed_before" },
+    ];
+    for (const item of cases) {
+      runOmniJsMock.mockRejectedValueOnce(
+        new Error(`${item.field} must be a valid ISO 8601 date string.`)
+      );
+      const result = await handler!({
+        status: "all",
+        [item.field]: "not-a-date",
+      });
+      expect(result.isError).toBe(true);
+      expect(JSON.parse(result.content[0].text)).toEqual({
+        error: `${item.field} must be a valid ISO 8601 date string.`,
+      });
+    }
+  });
+
+  test("search_tasks supports added and changed filters and payload dates", async () => {
+    runOmniJsMock.mockResolvedValueOnce([
+      {
+        id: "s1",
+        name: "search hit",
+        addedDate: "2026-03-12T10:00:00Z",
+        changedDate: "2026-03-13T10:00:00Z",
+      },
+    ]);
+    const handler = registeredTools.get("search_tasks");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      query: "search",
+      status: "all",
+      added_after: "2026-03-01T00:00:00Z",
+      added_before: "2026-03-31T23:59:59Z",
+      changed_after: "2026-03-02T00:00:00Z",
+      changed_before: "2026-03-30T23:59:59Z",
+      limit: 5,
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual([
+      {
+        id: "s1",
+        name: "search hit",
+        addedDate: "2026-03-12T10:00:00Z",
+        changedDate: "2026-03-13T10:00:00Z",
+      },
+    ]);
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('const queryFilter = "search".toLowerCase();');
+    expect(script).toContain('const addedAfterRaw = "2026-03-01T00:00:00Z";');
+    expect(script).toContain('const addedBeforeRaw = "2026-03-31T23:59:59Z";');
+    expect(script).toContain('const changedAfterRaw = "2026-03-02T00:00:00Z";');
+    expect(script).toContain('const changedBeforeRaw = "2026-03-30T23:59:59Z";');
+    expect(script).toContain("if (addedBefore !== null && !(task.added !== null && task.added <= addedBefore)) return false;");
+    expect(script).toContain("if (addedAfter !== null && !(task.added !== null && task.added >= addedAfter)) return false;");
+    expect(script).toContain(
+      "if (changedBefore !== null && !(task.modified !== null && task.modified <= changedBefore)) return false;"
+    );
+    expect(script).toContain(
+      "if (changedAfter !== null && !(task.modified !== null && task.modified >= changedAfter)) return false;"
+    );
+    expect(script).toContain("addedDate: task.added ? task.added.toISOString() : null,");
+    expect(script).toContain("changedDate: task.modified ? task.modified.toISOString() : null,");
+  });
+
+  test("get_inbox and get_task include addedDate and changedDate payload fields", async () => {
+    runOmniJsMock.mockResolvedValueOnce([
+      {
+        id: "inbox-1",
+        name: "Inbox dated",
+        addedDate: "2026-03-08T08:00:00Z",
+        changedDate: "2026-03-09T09:00:00Z",
+      },
+    ]);
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "task-1",
+      name: "Detailed task",
+      addedDate: "2026-03-10T10:00:00Z",
+      changedDate: "2026-03-11T11:00:00Z",
+    });
+
+    const inboxHandler = registeredTools.get("get_inbox");
+    const taskHandler = registeredTools.get("get_task");
+    expect(inboxHandler).toBeDefined();
+    expect(taskHandler).toBeDefined();
+
+    const inboxResult = await inboxHandler!({ limit: 5 });
+    expect(JSON.parse(inboxResult.content[0].text)).toEqual([
+      {
+        id: "inbox-1",
+        name: "Inbox dated",
+        addedDate: "2026-03-08T08:00:00Z",
+        changedDate: "2026-03-09T09:00:00Z",
+      },
+    ]);
+    let script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain("addedDate: task.added ? task.added.toISOString() : null,");
+    expect(script).toContain("changedDate: task.modified ? task.modified.toISOString() : null,");
+
+    const taskResult = await taskHandler!({ task_id: "task-1" });
+    expect(JSON.parse(taskResult.content[0].text)).toEqual({
+      id: "task-1",
+      name: "Detailed task",
+      addedDate: "2026-03-10T10:00:00Z",
+      changedDate: "2026-03-11T11:00:00Z",
+    });
+    script = String(runOmniJsMock.mock.calls[1][0]);
+    expect(script).toContain("addedDate: task.added ? task.added.toISOString() : null,");
+    expect(script).toContain("changedDate: task.modified ? task.modified.toISOString() : null,");
+  });
+
   test("get_project returns structured project payload", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "p1", name: "Project 1", rootTasks: [] });
     const handler = registeredTools.get("get_project");

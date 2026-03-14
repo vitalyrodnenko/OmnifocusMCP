@@ -41,10 +41,11 @@ use crate::{
         tags::{create_tag, delete_tag, delete_tags_batch, list_tags, search_tags, update_tag},
         tasks::{
             add_notification, complete_task, create_subtask, create_task, create_tasks_batch,
-            delete_task, delete_tasks_batch, duplicate_task, get_inbox, get_task, get_task_counts,
-            list_notifications, list_subtasks, list_tasks_with_planned, move_task,
-            move_tasks_batch, remove_notification, search_tasks_with_planned, set_task_repetition,
-            uncomplete_task, update_task, CreateTaskInput,
+            delete_task, delete_tasks_batch, duplicate_task, get_inbox, get_task,
+            get_task_counts_with_added_changed, list_notifications, list_subtasks,
+            list_tasks_with_added_changed, move_task, move_tasks_batch, remove_notification,
+            search_tasks_with_added_changed, set_task_repetition, uncomplete_task, update_task,
+            CreateTaskInput,
         },
         utility::append_to_note as append_to_note_tool,
     },
@@ -76,6 +77,10 @@ struct ListTasksParams {
     completed_before: Option<String>,
     #[serde(rename = "completedAfter")]
     completed_after: Option<String>,
+    added_after: Option<String>,
+    added_before: Option<String>,
+    changed_after: Option<String>,
+    changed_before: Option<String>,
     #[serde(rename = "plannedBefore")]
     planned_before: Option<String>,
     #[serde(rename = "plannedAfter")]
@@ -109,6 +114,10 @@ struct GetTaskCountsParams {
     completed_before: Option<String>,
     #[serde(rename = "completedAfter")]
     completed_after: Option<String>,
+    added_after: Option<String>,
+    added_before: Option<String>,
+    changed_after: Option<String>,
+    changed_before: Option<String>,
     #[serde(rename = "plannedBefore")]
     planned_before: Option<String>,
     #[serde(rename = "plannedAfter")]
@@ -172,6 +181,10 @@ struct SearchTasksParams {
     completed_before: Option<String>,
     #[serde(rename = "completedAfter")]
     completed_after: Option<String>,
+    added_after: Option<String>,
+    added_before: Option<String>,
+    changed_after: Option<String>,
+    changed_before: Option<String>,
     #[serde(rename = "maxEstimatedMinutes")]
     max_estimated_minutes: Option<i32>,
     #[serde(rename = "plannedBefore")]
@@ -469,7 +482,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "list tasks with optional filters.")]
+    #[tool(
+        description = "list tasks with optional filters. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp."
+    )]
     async fn list_tasks(
         &self,
         Parameters(params): Parameters<ListTasksParams>,
@@ -487,6 +502,10 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             defer_after,
             completed_before,
             completed_after,
+            added_after,
+            added_before,
+            changed_after,
+            changed_before,
             max_estimated_minutes,
             planned_before,
             planned_after,
@@ -494,7 +513,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             sort_order,
             limit,
         } = params;
-        let result = list_tasks_with_planned(
+        let result = list_tasks_with_added_changed(
             self.runner.as_ref(),
             project.as_deref(),
             tag.as_deref(),
@@ -508,6 +527,10 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             defer_after.as_deref(),
             completed_before.as_deref(),
             completed_after.as_deref(),
+            added_after.as_deref(),
+            added_before.as_deref(),
+            changed_after.as_deref(),
+            changed_before.as_deref(),
             planned_before.as_deref(),
             planned_after.as_deref(),
             max_estimated_minutes,
@@ -521,13 +544,13 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "get aggregate task counts for any filter combination without listing individual tasks. much faster than list_tasks for answering 'how many' questions."
+        description = "get aggregate task counts for any filter combination without listing individual tasks. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp. much faster than list_tasks for answering 'how many' questions."
     )]
     async fn get_task_counts(
         &self,
         Parameters(params): Parameters<GetTaskCountsParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = get_task_counts(
+        let result = get_task_counts_with_added_changed(
             self.runner.as_ref(),
             params.project.as_deref(),
             params.tag.as_deref(),
@@ -540,6 +563,10 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.defer_after.as_deref(),
             params.completed_before.as_deref(),
             params.completed_after.as_deref(),
+            params.added_after.as_deref(),
+            params.added_before.as_deref(),
+            params.changed_after.as_deref(),
+            params.changed_before.as_deref(),
             params.max_estimated_minutes,
         )
         .await
@@ -632,12 +659,14 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "search tasks by name and note text.")]
+    #[tool(
+        description = "search tasks by name and note text. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp."
+    )]
     async fn search_tasks(
         &self,
         Parameters(params): Parameters<SearchTasksParams>,
     ) -> std::result::Result<CallToolResult, McpError> {
-        let result = search_tasks_with_planned(
+        let result = search_tasks_with_added_changed(
             self.runner.as_ref(),
             &params.query,
             params.project.as_deref(),
@@ -652,6 +681,10 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.defer_after.as_deref(),
             params.completed_before.as_deref(),
             params.completed_after.as_deref(),
+            params.added_after.as_deref(),
+            params.added_before.as_deref(),
+            params.changed_after.as_deref(),
+            params.changed_before.as_deref(),
             params.planned_before.as_deref(),
             params.planned_after.as_deref(),
             params.max_estimated_minutes,
