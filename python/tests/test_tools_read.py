@@ -1870,6 +1870,23 @@ async def test_list_tasks_invalid_status_validation_error(server_module: Any) ->
 
 
 @pytest.mark.asyncio
+async def test_plan_c_unknown_alias_values_keep_actionable_errors(
+    server_module: Any,
+) -> None:
+    with pytest.raises(ValueError, match="sortOrder must be one of: asc, desc."):
+        await server_module.list_tasks(sortOrder="backwards")
+    with pytest.raises(
+        ValueError, match="tagFilterMode must be one of: any, all."
+    ):
+        await server_module.get_task_counts(tagFilterMode="xor")
+    with pytest.raises(
+        ValueError,
+        match="status must be one of: available, due_soon, overdue, completed, all.",
+    ):
+        await server_module.search_tasks(query="ship", status="later")
+
+
+@pytest.mark.asyncio
 async def test_list_tasks_empty_project_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="project must not be empty when provided"):
         await server_module.list_tasks(project="   ")

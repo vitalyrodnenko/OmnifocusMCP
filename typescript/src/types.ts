@@ -7,7 +7,7 @@ export type ToolResult = {
   isError?: true;
 };
 
-export type TaskStatus = "available" | "due_soon" | "overdue" | "completed" | "all";
+export type TaskStatus = "available" | "due_soon" | "overdue" | "on_hold" | "completed" | "all";
 
 export function textResult(value: unknown): ToolResult {
   return { content: [{ type: "text", text: JSON.stringify(value) }] };

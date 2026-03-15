@@ -22,15 +22,20 @@ function normalizeTaskStatusInput(value: string): TaskStatus {
   if (
     normalizedValue === "available" ||
     normalizedValue === "overdue" ||
+    normalizedValue === "on_hold" ||
+    normalizedValue === "onhold" ||
     normalizedValue === "completed" ||
     normalizedValue === "all"
   ) {
-    return normalizedValue;
+    if (normalizedValue === "onhold") {
+      return "on_hold";
+    }
+    return normalizedValue as TaskStatus;
   }
   if (normalizedValue === "due_soon" || normalizedValue === "duesoon") {
     return "due_soon";
   }
-  throw new Error("status must be one of: available, due_soon, overdue, completed, all.");
+  throw new Error("status must be one of: available, due_soon, overdue, on_hold, completed, all.");
 }
 
 function normalizeSortOrderInput(value: string): "asc" | "desc" {
@@ -1727,6 +1732,12 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       } else if (statusFilter === "due_soon") {
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      } else if (statusFilter === "on_hold") {
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches =
+          projectStatus.includes("onhold") ||
+          projectStatus.includes("on hold") ||
+          projectStatus.includes("on_hold");
       }
     }
     if (!statusMatches) return false;
@@ -2165,6 +2176,12 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       } else if (statusFilter === "due_soon") {
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      } else if (statusFilter === "on_hold") {
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches =
+          projectStatus.includes("onhold") ||
+          projectStatus.includes("on hold") ||
+          projectStatus.includes("on_hold");
       }
     }
     if (!statusMatches) return false;
