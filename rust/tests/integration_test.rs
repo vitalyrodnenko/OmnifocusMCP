@@ -22,7 +22,8 @@ use omnifocus_mcp::{
         tags::{create_tag, delete_tag, delete_tags_batch, list_tags},
         tasks::{
             add_notification, complete_task, create_task, delete_task, get_inbox, get_task,
-            list_notifications, list_tasks, remove_notification, search_tasks, update_task,
+            get_task_counts, list_notifications, list_tasks, remove_notification, search_tasks,
+            update_task,
         },
     },
 };
@@ -901,6 +902,126 @@ async fn test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
     if let Some(id) = folder_id {
         let _ = delete_folder(&runner, &id).await;
     }
+    if let Some(id) = tag_id {
+        let _ = delete_tag(&runner, &id).await;
+    }
+
+    result
+}
+
+#[tokio::test]
+async fn test_plan_c_alias_inputs_work_for_task_tools() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
+    let _guard = test_lock().lock().await;
+    let runner = IntegrationRunner;
+    let mut cleanup = CleanupRegistry::default();
+    let mut tag_id: Option<String> = None;
+
+    let result: Result<(), Box<dyn std::error::Error>> = async {
+        let tag_name = unique_name("Plan C alias tag");
+        let created_tag = create_tag(&runner, &tag_name, None).await?;
+        let created_tag_id = require_str_field(&created_tag, "id");
+        tag_id = Some(created_tag_id.clone());
+
+        let task_name = unique_name("Plan C alias task");
+        let due_date_iso = run_omnijs("return new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();")
+            .await?
+            .as_str()
+            .ok_or_else(|| "plan c due date probe did not return a string".to_string())?
+            .to_string();
+        let created_task = create_task(
+            &runner,
+            &task_name,
+            None,
+            None,
+            Some(&due_date_iso),
+            None,
+            None,
+            Some(vec![tag_name.clone()]),
+            None,
+        )
+        .await?;
+        let created_task_id = require_str_field(&created_task, "id");
+        cleanup.register_task(created_task_id.clone());
+
+        let listed = list_tasks(
+            &runner,
+            None,
+            None,
+            Some(vec![tag_name.clone()]),
+            "AND",
+            None,
+            "due soon",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            "descending",
+            100,
+        )
+        .await?;
+        let listed_match = listed
+            .iter()
+            .find(|item| item.id == created_task_id)
+            .ok_or_else(|| "plan c list_tasks alias call did not return created task".to_string())?;
+        assert_eq!(listed_match.task_status, "due_soon");
+
+        let searched = search_tasks(
+            &runner,
+            &task_name,
+            None,
+            None,
+            Some(vec![tag_name.clone()]),
+            "and",
+            None,
+            "due-soon",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            "descending",
+            100,
+        )
+        .await?;
+        let searched_match = searched
+            .iter()
+            .find(|item| item.id == created_task_id)
+            .ok_or_else(|| "plan c search_tasks alias call did not return created task".to_string())?;
+        assert_eq!(searched_match.task_status, "due_soon");
+
+        let counts = get_task_counts(
+            &runner,
+            None,
+            None,
+            Some(vec![tag_name]),
+            "AND",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await?;
+        assert!(counts.total >= 1);
+
+        Ok(())
+    }
+    .await;
+
     if let Some(id) = tag_id {
         let _ = delete_tag(&runner, &id).await;
     }

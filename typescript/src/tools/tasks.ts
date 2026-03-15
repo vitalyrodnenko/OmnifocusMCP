@@ -14,7 +14,7 @@ function normalizeTagFilterModeInput(value: string): "any" | "all" {
   if (normalizedValue === "or") {
     return "any";
   }
-  throw new Error("tagFilterMode must be one of: any, all.");
+  throw new Error(`tagFilterMode must be one of: any, all. received: ${JSON.stringify(value)}.`);
 }
 
 function normalizeTaskStatusInput(value: string): TaskStatus {
@@ -35,7 +35,9 @@ function normalizeTaskStatusInput(value: string): TaskStatus {
   if (normalizedValue === "due_soon" || normalizedValue === "duesoon") {
     return "due_soon";
   }
-  throw new Error("status must be one of: available, due_soon, overdue, on_hold, completed, all.");
+  throw new Error(
+    `status must be one of: available, due_soon, overdue, on_hold, completed, all. received: ${JSON.stringify(value)}.`
+  );
 }
 
 function normalizeSortOrderInput(value: string): "asc" | "desc" {
@@ -49,7 +51,7 @@ function normalizeSortOrderInput(value: string): "asc" | "desc" {
   if (normalizedValue === "descending") {
     return "desc";
   }
-  throw new Error("sortOrder must be one of: asc, desc.");
+  throw new Error(`sortOrder must be one of: asc, desc. received: ${JSON.stringify(value)}.`);
 }
 
 export function register(server: Server): void {

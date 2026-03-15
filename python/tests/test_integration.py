@@ -605,6 +605,126 @@ async def test_plan_a_parent_child_batch_delete_effective_success() -> None:
 
 @pytest.mark.integration
 @pytest.mark.asyncio
+async def test_plan_c_alias_calls_match_canonical_behavior(
+    cleanup_registry: dict[str, list[str]],
+) -> None:
+    tag_ids: list[str] = []
+    try:
+        project_name = _test_name("Plan C alias project")
+        created_project = _parse_json(await create_project(name=project_name))
+        assert isinstance(created_project, dict)
+        project_id = created_project.get("id")
+        assert isinstance(project_id, str)
+        cleanup_registry["project_ids"].append(project_id)
+
+        created_tag_a = _parse_json(await create_tag(name=_test_name("Plan C alias tag A")))
+        created_tag_b = _parse_json(await create_tag(name=_test_name("Plan C alias tag B")))
+        assert isinstance(created_tag_a, dict)
+        assert isinstance(created_tag_b, dict)
+        tag_a_id = created_tag_a.get("id")
+        tag_b_id = created_tag_b.get("id")
+        tag_a_name = created_tag_a.get("name")
+        tag_b_name = created_tag_b.get("name")
+        assert isinstance(tag_a_id, str)
+        assert isinstance(tag_b_id, str)
+        assert isinstance(tag_a_name, str)
+        assert isinstance(tag_b_name, str)
+        tag_ids.extend([tag_a_id, tag_b_id])
+
+        due_date = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
+        created_task = _parse_json(
+            await create_task(
+                name=_test_name("Plan C alias task"),
+                note="plan c alias integration probe",
+                project=project_name,
+                dueDate=due_date,
+                tags=[tag_a_name, tag_b_name],
+            )
+        )
+        assert isinstance(created_task, dict)
+        task_id = created_task.get("id")
+        assert isinstance(task_id, str)
+        cleanup_registry["task_ids"].append(task_id)
+
+        canonical_list = _parse_json(
+            await list_tasks(
+                project=project_name,
+                tags=[tag_a_name, tag_b_name],
+                tagFilterMode="all",
+                status="due_soon",
+                sortOrder="desc",
+                limit=50,
+            )
+        )
+        alias_list = _parse_json(
+            await list_tasks(
+                project=project_name,
+                tags=[tag_a_name, tag_b_name],
+                tagFilterMode="AND",
+                status="due soon",
+                sortOrder="descending",
+                limit=50,
+            )
+        )
+        assert isinstance(canonical_list, list)
+        assert isinstance(alias_list, list)
+        assert any(isinstance(item, dict) and item.get("id") == task_id for item in canonical_list)
+        assert any(isinstance(item, dict) and item.get("id") == task_id for item in alias_list)
+
+        canonical_search = _parse_json(
+            await search_tasks(
+                query="plan c alias integration probe",
+                project=project_name,
+                tagFilterMode="any",
+                status="due_soon",
+                sortOrder="asc",
+                limit=50,
+            )
+        )
+        alias_search = _parse_json(
+            await search_tasks(
+                query="plan c alias integration probe",
+                project=project_name,
+                tagFilterMode="OR",
+                status="due-soon",
+                sortOrder="ascending",
+                limit=50,
+            )
+        )
+        assert isinstance(canonical_search, list)
+        assert isinstance(alias_search, list)
+        assert any(
+            isinstance(item, dict) and item.get("id") == task_id for item in canonical_search
+        )
+        assert any(isinstance(item, dict) and item.get("id") == task_id for item in alias_search)
+
+        canonical_counts = _parse_json(
+            await get_task_counts(
+                project=project_name,
+                tags=[tag_a_name, tag_b_name],
+                tagFilterMode="all",
+            )
+        )
+        alias_counts = _parse_json(
+            await get_task_counts(
+                project=project_name,
+                tags=[tag_a_name, tag_b_name],
+                tagFilterMode="AND",
+            )
+        )
+        assert isinstance(canonical_counts, dict)
+        assert isinstance(alias_counts, dict)
+        assert canonical_counts.get("total") == alias_counts.get("total")
+    finally:
+        for tag_id in reversed(tag_ids):
+            try:
+                await delete_tag(tag_name_or_id=tag_id)
+            except Exception:
+                continue
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
 async def test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
     cleanup_registry: dict[str, list[str]],
 ) -> None:

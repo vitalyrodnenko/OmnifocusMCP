@@ -968,23 +968,8 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     let runner = MockRunner { payload: json!([]) };
 
     let list_error = list_tasks_with_duration(
-        &runner,
-        None,
-        None,
-        None,
-        "any",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "backwards",
-        10,
+        &runner, None, None, None, "any", None, "available", None, None, None, None, None, None,
+        None, None, "backwards", 10,
     )
     .await
     .expect_err("invalid sort order should fail");
@@ -2898,23 +2883,8 @@ async fn plan_c_unknown_values_keep_canonical_actionable_errors() {
     };
 
     let invalid_sort = list_tasks_with_duration(
-        &runner,
-        None,
-        None,
-        None,
-        "any",
-        None,
-        "available",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "backwards",
-        5,
+        &runner, None, None, None, "any", None, "available", None, None, None, None, None, None,
+        None, None, "backwards", 5,
     )
     .await
     .expect_err("invalid sort order should fail");
@@ -2947,6 +2917,7 @@ async fn plan_c_unknown_values_keep_canonical_actionable_errors() {
     assert!(invalid_status
         .to_string()
         .contains("status must be one of: available, due_soon, overdue, on_hold, completed, all."));
+    assert!(invalid_status.to_string().contains("received: \"later\"."));
 
     let invalid_tag_mode = get_task_counts(
         &runner, None, None, None, "both", None, None, None, None, None, None, None, None, None,
@@ -2957,6 +2928,7 @@ async fn plan_c_unknown_values_keep_canonical_actionable_errors() {
     assert!(invalid_tag_mode
         .to_string()
         .contains("tagFilterMode must be one of: any, all."));
+    assert!(invalid_tag_mode.to_string().contains("received: \"both\"."));
 }
 
 #[tokio::test]
