@@ -1,4 +1,5 @@
-from omnifocus_mcp.app import mcp
+# Import from server, not app — this import triggers tool registration as a side effect
+from omnifocus_mcp.server import mcp
 
 
 def main() -> None:
