@@ -422,7 +422,7 @@ pub async fn get_task_counts_legacy1<R: JxaRunner>(
     } else {
         serde_json::to_string(&merged_tag_names)?
     };
-    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
@@ -573,11 +573,7 @@ pub async fn get_task_counts_legacy3<R: JxaRunner>(
             }
         }
     }
-    if !matches!(tag_filter_mode, "any" | "all") {
-        return Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        ));
-    }
+    let normalized_tag_filter_mode = normalize_tag_filter_mode_input(tag_filter_mode)?;
     if let Some(max_minutes) = max_estimated_minutes {
         if max_minutes < 0 {
             return Err(OmniFocusError::Validation(
@@ -609,7 +605,7 @@ pub async fn get_task_counts_legacy3<R: JxaRunner>(
     } else {
         serde_json::to_string(&merged_tag_names)?
     };
-    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
@@ -771,11 +767,7 @@ pub async fn list_tasks_with_added_changed<R: JxaRunner>(
             }
         }
     }
-    if !matches!(tag_filter_mode, "any" | "all") {
-        return Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        ));
-    }
+    let normalized_tag_filter_mode = normalize_tag_filter_mode_input(tag_filter_mode)?;
     if let Some(max_minutes) = max_estimated_minutes {
         if max_minutes < 0 {
             return Err(OmniFocusError::Validation(
@@ -1252,11 +1244,7 @@ pub async fn get_task_counts_duplicate<R: JxaRunner>(
             }
         }
     }
-    if !matches!(tag_filter_mode, "any" | "all") {
-        return Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        ));
-    }
+    let normalized_tag_filter_mode = normalize_tag_filter_mode_input(tag_filter_mode)?;
     if let Some(max_minutes) = max_estimated_minutes {
         if max_minutes < 0 {
             return Err(OmniFocusError::Validation(
