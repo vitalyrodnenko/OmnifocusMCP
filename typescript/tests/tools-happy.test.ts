@@ -1561,6 +1561,10 @@ describe("tool happy paths", () => {
         { id_or_name: "Home", id: "tag-2", name: "Home", deleted: true, error: null },
       ],
     });
+    const script = runOmniJsMock.mock.calls.at(-1)?.[0] as string;
+    expect(script).toContain("sort((left, right) => right.depth - left.depth || left.index - right.index)");
+    expect(script).toContain("const getLiveTagById = tagId => {");
+    expect(script).toContain("deleteObject(liveTag);");
   });
 
   test("delete_tags_batch supports partial success", async () => {
@@ -1635,6 +1639,10 @@ describe("tool happy paths", () => {
         { id_or_name: "Work", id: "folder-2", name: "Work", deleted: true, error: null },
       ],
     });
+    const script = runOmniJsMock.mock.calls.at(-1)?.[0] as string;
+    expect(script).toContain("sort((left, right) => right.depth - left.depth || left.index - right.index)");
+    expect(script).toContain("const getLiveFolderById = folderId => {");
+    expect(script).toContain("deleteObject(liveFolder);");
   });
 
   test("delete_folders_batch supports partial success", async () => {

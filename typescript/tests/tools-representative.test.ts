@@ -1252,6 +1252,72 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('if (sortBy === "name") {');
   });
 
+  test("delete_tags_batch includes hierarchy ordering and cascade-success logic", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "parent-tag", id: "tag-parent", name: "Parent Tag", deleted: true, error: null },
+        { id_or_name: "child-tag", id: "tag-child", name: "Child Tag", deleted: true, error: null },
+      ],
+    });
+    const result = await getTool("delete_tags_batch")({
+      tag_ids_or_names: ["parent-tag", "child-tag"],
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("parentId: item.parent ? item.parent.id.primaryKey : null");
+    expect(script).toContain("right.depth - left.depth || left.index - right.index");
+    expect(script).toContain("if (!existsTagById(resolvedId)) {");
+    expect(script).toContain("partial_success: deletedCount > 0 && failedCount > 0");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "parent-tag", id: "tag-parent", name: "Parent Tag", deleted: true, error: null },
+        { id_or_name: "child-tag", id: "tag-child", name: "Child Tag", deleted: true, error: null },
+      ],
+    });
+  });
+
+  test("delete_folders_batch includes hierarchy ordering and cascade-success logic", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        {
+          id_or_name: "parent-folder",
+          id: "folder-parent",
+          name: "Parent Folder",
+          deleted: true,
+          error: null,
+        },
+        { id_or_name: "child-folder", id: "folder-child", name: "Child Folder", deleted: true, error: null },
+      ],
+    });
+    const result = await getTool("delete_folders_batch")({
+      folder_ids_or_names: ["parent-folder", "child-folder"],
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("parentId: item.parent ? item.parent.id.primaryKey : null");
+    expect(script).toContain("right.depth - left.depth || left.index - right.index");
+    expect(script).toContain("if (!existsFolderById(resolvedId)) {");
+    expect(script).toContain("partial_success: deletedCount > 0 && failedCount > 0");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        {
+          id_or_name: "parent-folder",
+          id: "folder-parent",
+          name: "Parent Folder",
+          deleted: true,
+          error: null,
+        },
+        { id_or_name: "child-folder", id: "folder-child", name: "Child Folder", deleted: true, error: null },
+      ],
+    });
+  });
+
   test("create_task generates project-aware creation script", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "task-3", name: "created" });
     const result = await getTool("create_task")({

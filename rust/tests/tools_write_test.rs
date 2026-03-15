@@ -1258,6 +1258,36 @@ async fn delete_tags_batch_validation_errors() {
 }
 
 #[tokio::test]
+async fn delete_tags_batch_script_uses_hierarchy_order_and_live_lookup() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 2, "failed": 0},
+            "partial_success": false,
+            "results": []
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let _ = delete_tags_batch(&runner, vec!["tag-1".to_string(), "tag-2".to_string()])
+        .await
+        .expect("delete_tags_batch should succeed");
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock")
+        .first()
+        .cloned()
+        .expect("captured script");
+    assert!(captured.contains(
+        "sort((left, right) => right.depth - left.depth || left.index - right.index)"
+    ));
+    assert!(captured.contains("const getLiveTagById = (tagId) => {"));
+    assert!(captured.contains("deleteObject(liveTag);"));
+}
+
+#[tokio::test]
 async fn delete_folders_batch_happy_path() {
     let runner = MockRunner {
         payload: json!({
@@ -1330,6 +1360,36 @@ async fn delete_folders_batch_validation_errors() {
         .await,
         Err(OmniFocusError::Validation(_))
     ));
+}
+
+#[tokio::test]
+async fn delete_folders_batch_script_uses_hierarchy_order_and_live_lookup() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 2, "failed": 0},
+            "partial_success": false,
+            "results": []
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let _ = delete_folders_batch(&runner, vec!["folder-1".to_string(), "folder-2".to_string()])
+        .await
+        .expect("delete_folders_batch should succeed");
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock")
+        .first()
+        .cloned()
+        .expect("captured script");
+    assert!(captured.contains(
+        "sort((left, right) => right.depth - left.depth || left.index - right.index)"
+    ));
+    assert!(captured.contains("const getLiveFolderById = (folderId) => {"));
+    assert!(captured.contains("deleteObject(liveFolder);"));
 }
 
 #[tokio::test]
