@@ -1,6 +1,7 @@
 use std::{
     future::Future,
     pin::Pin,
+    process::Command,
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -697,8 +698,36 @@ fn require_string_key<'a>(value: &'a Value, key: &str, label: &str) -> Result<&'
         .ok_or_else(|| OmniFocusError::Validation(format!("{label} missing non-empty {key}.")))
 }
 
+fn integration_enabled() -> bool {
+    let integration_enabled = std::env::var("OMNIFOCUS_INTEGRATION")
+        .map(|value| value == "1")
+        .unwrap_or(false);
+    let smoke_enabled = std::env::var("OMNIFOCUS_SMOKE")
+        .map(|value| value == "1")
+        .unwrap_or(false);
+    integration_enabled && smoke_enabled
+}
+
+fn omnifocus_running() -> bool {
+    Command::new("osascript")
+        .arg("-e")
+        .arg(r#"tell application "OmniFocus" to running"#)
+        .output()
+        .ok()
+        .filter(|result| result.status.success())
+        .and_then(|result| String::from_utf8(result.stdout).ok())
+        .map(|stdout| stdout.trim().eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
+
 #[tokio::main]
 async fn main() {
+    if !integration_enabled() || !omnifocus_running() {
+        println!(
+            "smoke test skipped (set OMNIFOCUS_INTEGRATION=1 and OMNIFOCUS_SMOKE=1 with OmniFocus running)"
+        );
+        std::process::exit(0);
+    }
     let runner = SmokeJxaRunner;
     let mut smoke_test = SmokeTest::new();
     let exit_code = smoke_test.run(&runner).await;
