@@ -655,17 +655,19 @@ return {
       note: z.string().optional(),
       dueDate: z.string().optional(),
       deferDate: z.string().optional(),
+      plannedDate: z.string().optional(),
       flagged: z.boolean().optional(),
       tags: z.array(z.string()).optional(),
       estimatedMinutes: z.number().int().optional(),
     },
-    async ({ name, project, note, dueDate, deferDate, flagged, tags, estimatedMinutes }) => {
+    async ({ name, project, note, dueDate, deferDate, plannedDate, flagged, tags, estimatedMinutes }) => {
       try {
         const taskName = escapeForJxa(name.trim());
         const projectName = project === undefined ? "null" : escapeForJxa(project.trim());
         const noteValue = note === undefined ? "null" : escapeForJxa(note);
         const dueDateValue = dueDate === undefined ? "null" : escapeForJxa(dueDate);
         const deferDateValue = deferDate === undefined ? "null" : escapeForJxa(deferDate);
+        const plannedDateValue = plannedDate === undefined ? "null" : escapeForJxa(plannedDate);
         const flaggedValue = flagged === undefined ? "null" : flagged ? "true" : "false";
         const tagsValue = tags === undefined ? "null" : JSON.stringify(tags);
         const estimatedMinutesValue =
@@ -676,28 +678,40 @@ const projectName = ${projectName};
 const noteValue = ${noteValue};
 const dueDateValue = ${dueDateValue};
 const deferDateValue = ${deferDateValue};
+const plannedDateValue = ${plannedDateValue};
 const flaggedValue = ${flaggedValue};
 const tagNames = ${tagsValue};
 const estimatedMinutesValue = ${estimatedMinutesValue};
+
 const parent = (() => {
   if (projectName === null || projectName === "") return inbox.ending;
   const targetProject = document.flattenedProjects.byName(projectName);
-  if (!targetProject) throw new Error(\`Project not found: \${projectName}\`);
+  if (!targetProject) {
+    throw new Error(\`Project not found: \${projectName}\`);
+  }
   return targetProject.ending;
 })();
+
 const task = new Task(taskName, parent);
+
 if (noteValue !== null) task.note = noteValue;
 if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
 if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (plannedDateValue !== null) task.plannedDate = new Date(plannedDateValue);
 if (flaggedValue !== null) task.flagged = flaggedValue;
 if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
+
 if (tagNames !== null) {
   tagNames.forEach(tagName => {
     const tag = document.flattenedTags.byName(tagName);
     if (tag) task.addTag(tag);
   });
 }
-return { id: task.id.primaryKey, name: task.name };
+
+return {
+  id: task.id.primaryKey,
+  name: task.name
+};
 `.trim();
         return textResult(await runOmniJs(script));
       } catch (error: unknown) {
@@ -715,11 +729,12 @@ return { id: task.id.primaryKey, name: task.name };
       note: z.string().optional(),
       dueDate: z.string().optional(),
       deferDate: z.string().optional(),
+      plannedDate: z.string().optional(),
       flagged: z.boolean().optional(),
       tags: z.array(z.string()).optional(),
       estimatedMinutes: z.number().int().optional(),
     },
-    async ({ name, parent_task_id, note, dueDate, deferDate, flagged, tags, estimatedMinutes }) => {
+    async ({ name, parent_task_id, note, dueDate, deferDate, plannedDate, flagged, tags, estimatedMinutes }) => {
       try {
         const normalizedName = name.trim();
         if (normalizedName === "") {
@@ -734,6 +749,7 @@ return { id: task.id.primaryKey, name: task.name };
         const noteValue = note === undefined ? "null" : escapeForJxa(note);
         const dueDateValue = dueDate === undefined ? "null" : escapeForJxa(dueDate);
         const deferDateValue = deferDate === undefined ? "null" : escapeForJxa(deferDate);
+        const plannedDateValue = plannedDate === undefined ? "null" : escapeForJxa(plannedDate);
         const flaggedValue = flagged === undefined ? "null" : flagged ? "true" : "false";
         const tagsValue = tags === undefined ? "null" : JSON.stringify(tags);
         const estimatedMinutesValue =
@@ -744,6 +760,7 @@ const parentTaskId = ${parentTaskId};
 const noteValue = ${noteValue};
 const dueDateValue = ${dueDateValue};
 const deferDateValue = ${deferDateValue};
+const plannedDateValue = ${plannedDateValue};
 const flaggedValue = ${flaggedValue};
 const tagNames = ${tagsValue};
 const estimatedMinutesValue = ${estimatedMinutesValue};
@@ -758,6 +775,7 @@ const task = new Task(taskName, parentTask.ending);
 if (noteValue !== null) task.note = noteValue;
 if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
 if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (plannedDateValue !== null) task.plannedDate = new Date(plannedDateValue);
 if (flaggedValue !== null) task.flagged = flaggedValue;
 if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
 
@@ -784,19 +802,77 @@ return {
 
   server.tool(
     "create_tasks_batch",
-    "create multiple tasks in one call and return created task summaries.",
-    { tasks: z.array(z.object({ name: z.string().min(1), project: z.string().optional() })).min(1) },
+    "create multiple tasks in a single omnijs call for efficiency. each item accepts the same fields as create_task; returns created task ids and names.",
+    {
+      tasks: z
+        .array(
+          z.object({
+            name: z.string().min(1),
+            project: z.string().optional(),
+            note: z.string().optional(),
+            dueDate: z.string().optional(),
+            deferDate: z.string().optional(),
+            plannedDate: z.string().optional(),
+            flagged: z.boolean().optional(),
+            tags: z.array(z.string()).optional(),
+            estimatedMinutes: z.number().int().optional(),
+          })
+        )
+        .min(1),
+    },
     async ({ tasks }) => {
       try {
-        const tasksValue = escapeForJxa(JSON.stringify(tasks));
+        const normalized = tasks.map((task) => ({
+          name: task.name.trim(),
+          project: task.project?.trim() ?? null,
+          note: task.note ?? null,
+          dueDate: task.dueDate ?? null,
+          deferDate: task.deferDate ?? null,
+          plannedDate: task.plannedDate ?? null,
+          flagged: task.flagged ?? null,
+          tags: task.tags ?? null,
+          estimatedMinutes: task.estimatedMinutes ?? null,
+        }));
+        const tasksValue = JSON.stringify(normalized);
         const script = `
-const tasks = JSON.parse(${tasksValue});
-return tasks.map(item => {
-  const parent = item.project ? document.flattenedProjects.byName(item.project) : null;
-  if (item.project && !parent) throw new Error(\`Project not found: \${item.project}\`);
-  const task = new Task(item.name, parent ? parent.ending : inbox.ending);
-  return { id: task.id.primaryKey, name: task.name };
+const taskInputs = ${tasksValue};
+
+const resolveParent = (projectName) => {
+  if (projectName === null || projectName === "") return inbox.ending;
+  const targetProject = document.flattenedProjects.byName(projectName);
+  if (!targetProject) {
+    throw new Error(\`Project not found: \${projectName}\`);
+  }
+  return targetProject.ending;
+};
+
+const created = taskInputs.map(input => {
+  const parent = resolveParent(input.project);
+  const task = new Task(input.name, parent);
+
+  if (input.note !== null && input.note !== undefined) task.note = input.note;
+  if (input.dueDate !== null && input.dueDate !== undefined) task.dueDate = new Date(input.dueDate);
+  if (input.deferDate !== null && input.deferDate !== undefined) task.deferDate = new Date(input.deferDate);
+  if (input.plannedDate !== null && input.plannedDate !== undefined) task.plannedDate = new Date(input.plannedDate);
+  if (input.flagged !== null && input.flagged !== undefined) task.flagged = input.flagged;
+  if (input.estimatedMinutes !== null && input.estimatedMinutes !== undefined) {
+    task.estimatedMinutes = input.estimatedMinutes;
+  }
+
+  if (input.tags !== null && input.tags !== undefined) {
+    input.tags.forEach(tagName => {
+      const tag = document.flattenedTags.byName(tagName);
+      if (tag) task.addTag(tag);
+    });
+  }
+
+  return {
+    id: task.id.primaryKey,
+    name: task.name
+  };
 });
+
+return created;
 `.trim();
         return textResult(await runOmniJs(script));
       } catch (error: unknown) {
@@ -920,6 +996,7 @@ return {
       note: z.string().optional(),
       dueDate: z.string().optional(),
       deferDate: z.string().optional(),
+      plannedDate: z.string().optional(),
       flagged: z.boolean().optional(),
       tags: z.array(z.string()).optional(),
       estimatedMinutes: z.number().int().optional(),
@@ -934,20 +1011,31 @@ return {
 const taskId = ${taskId};
 const updates = ${JSON.stringify(updates)};
 const task = document.flattenedTasks.find(item => item.id.primaryKey === taskId);
-if (!task) throw new Error(\`Task not found: \${taskId}\`);
-if (updates.name !== undefined) task.name = updates.name;
-if (updates.note !== undefined) task.note = updates.note;
-if (updates.dueDate !== undefined) task.dueDate = updates.dueDate ? new Date(updates.dueDate) : null;
-if (updates.deferDate !== undefined) task.deferDate = updates.deferDate ? new Date(updates.deferDate) : null;
-if (updates.flagged !== undefined) task.flagged = updates.flagged;
-if (updates.estimatedMinutes !== undefined) task.estimatedMinutes = updates.estimatedMinutes;
-if (updates.tags !== undefined) {
-  task.tags.slice().forEach(tag => task.removeTag(tag));
+if (!task) {
+  throw new Error(\`Task not found: \${taskId}\`);
+}
+
+const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
+
+if (has("name")) task.name = updates.name;
+if (has("note")) task.note = updates.note;
+if (has("dueDate")) task.dueDate = new Date(updates.dueDate);
+if (has("deferDate")) task.deferDate = new Date(updates.deferDate);
+if (has("plannedDate")) task.plannedDate = new Date(updates.plannedDate);
+if (has("flagged")) task.flagged = updates.flagged;
+if (has("estimatedMinutes")) task.estimatedMinutes = updates.estimatedMinutes;
+
+if (has("tags")) {
+  const existingTags = task.tags.slice();
+  existingTags.forEach(tag => {
+    task.removeTag(tag);
+  });
   updates.tags.forEach(tagName => {
     const tag = document.flattenedTags.byName(tagName);
     if (tag) task.addTag(tag);
   });
 }
+
 return {
   id: task.id.primaryKey,
   name: task.name,
@@ -958,7 +1046,10 @@ return {
   changedDate: task.modified ? task.modified.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   completed: task.completed,
-  projectName: task.containingProject ? task.containingProject.name : null
+  plannedDate: task.plannedDate ? task.plannedDate.toISOString() : null,
+  projectName: task.containingProject ? task.containingProject.name : null,
+  tags: task.tags.map(tag => tag.name),
+  estimatedMinutes: task.estimatedMinutes
 };
 `.trim();
         return textResult(await runOmniJs(script));

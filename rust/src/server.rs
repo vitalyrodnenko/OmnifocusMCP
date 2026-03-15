@@ -205,6 +205,7 @@ struct CreateTaskParams {
     note: Option<String>,
     due_date: Option<String>,
     defer_date: Option<String>,
+    planned_date: Option<String>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
     estimated_minutes: Option<i32>,
@@ -219,6 +220,8 @@ struct CreateSubtaskParams {
     due_date: Option<String>,
     #[serde(rename = "deferDate")]
     defer_date: Option<String>,
+    #[serde(rename = "plannedDate")]
+    planned_date: Option<String>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
     #[serde(rename = "estimatedMinutes")]
@@ -237,6 +240,7 @@ struct BatchCreateTaskInput {
     note: Option<String>,
     due_date: Option<String>,
     defer_date: Option<String>,
+    planned_date: Option<String>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
     estimated_minutes: Option<i32>,
@@ -249,6 +253,7 @@ struct UpdateTaskParams {
     note: Option<String>,
     due_date: Option<String>,
     defer_date: Option<String>,
+    planned_date: Option<String>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
     estimated_minutes: Option<i32>,
@@ -708,7 +713,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "create one task in inbox or a named project. accepts name plus optional note, dates, flagged, tags, and estimated minutes. returns created task id/name."
+        description = "create one task in inbox or a named project. accepts name plus optional note, dates (due, defer, planned), flagged, tags, and estimated minutes. returns created task id/name."
     )]
     async fn create_task(
         &self,
@@ -721,6 +726,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.note.as_deref(),
             params.due_date.as_deref(),
             params.defer_date.as_deref(),
+            params.planned_date.as_deref(),
             params.flagged,
             params.tags,
             params.estimated_minutes,
@@ -746,6 +752,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
                 note: task.note,
                 due_date: task.due_date,
                 defer_date: task.defer_date,
+                planned_date: task.planned_date,
                 flagged: task.flagged,
                 tags: task.tags,
                 estimated_minutes: task.estimated_minutes,
@@ -771,6 +778,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.note.as_deref(),
             params.due_date.as_deref(),
             params.defer_date.as_deref(),
+            params.planned_date.as_deref(),
             params.flagged,
             params.tags,
             params.estimated_minutes,
@@ -825,7 +833,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "update an existing task by id, modifying only provided fields. supports name, note, due/defer dates, flagged, tags replacement, and estimatedMinutes."
+        description = "update an existing task by id, modifying only provided fields. supports name, note, due/defer/planned dates, flagged, tags replacement, and estimatedMinutes."
     )]
     async fn update_task(
         &self,
@@ -838,6 +846,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.note.as_deref(),
             params.due_date.as_deref(),
             params.defer_date.as_deref(),
+            params.planned_date.as_deref(),
             params.flagged,
             params.tags,
             params.estimated_minutes,
