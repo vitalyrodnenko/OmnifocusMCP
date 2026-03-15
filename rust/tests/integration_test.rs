@@ -10,14 +10,17 @@ use std::{
 use omnifocus_mcp::{
     jxa::{run_omnijs, RealJxaRunner},
     tools::{
-        folders::list_folders,
+        folders::{create_folder, delete_folder, delete_folders_batch, list_folders},
         forecast::get_forecast,
         perspectives::list_perspectives,
-        projects::{complete_project, create_project, get_project, list_projects},
-        tags::list_tags,
+        projects::{
+            complete_project, create_project, delete_project, delete_projects_batch, get_project,
+            list_projects,
+        },
+        tags::{create_tag, delete_tag, delete_tags_batch, list_tags},
         tasks::{
-            complete_task, create_task, delete_task, get_inbox, get_task, list_tasks, search_tasks,
-            update_task,
+            add_notification, complete_task, create_task, delete_task, get_inbox, get_task,
+            list_notifications, list_tasks, remove_notification, search_tasks, update_task,
         },
     },
 };
@@ -196,7 +199,25 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
     }
 
     let listed = list_tasks(
-        &runner, None, None, None, "any", None, "all", None, None, None, None, None, None, 20,
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "all",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        20,
     )
     .await?;
     if let Some(first) = listed.first() {
@@ -489,4 +510,182 @@ async fn test_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
     );
     cleanup.unregister_project(&project_id);
     Ok(())
+}
+
+#[tokio::test]
+async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Error>> {
+    let _guard = test_lock().lock().await;
+    let runner = RealJxaRunner::new();
+    let mut cleanup = CleanupRegistry::default();
+    let mut extra_tag_ids: Vec<String> = Vec::new();
+    let mut extra_folder_ids: Vec<String> = Vec::new();
+    let mut extra_project_ids: Vec<String> = Vec::new();
+    let mut notification_task_id: Option<String> = None;
+    let mut notification_id: Option<String> = None;
+    let result: Result<(), Box<dyn std::error::Error>> = async {
+        let parity_project_name = unique_name("Parity matrix project");
+        let parity_project =
+            create_project(&runner, &parity_project_name, None, None, None, None, None).await?;
+        let parity_project_id = require_str_field(&parity_project, "id");
+        cleanup.register_project(parity_project_id);
+
+        let due_date_iso = "2030-01-01T09:00:00Z".to_string();
+        let created_task = create_task(
+            &runner,
+            &unique_name("Parity matrix task"),
+            Some(&parity_project_name),
+            Some("parity matrix sort notification"),
+            Some(&due_date_iso),
+            None,
+            None,
+            None,
+            None,
+        )
+        .await?;
+        let task_id = require_str_field(&created_task, "id");
+        cleanup.register_task(task_id.clone());
+        notification_task_id = Some(task_id.clone());
+
+        let listed = list_tasks(
+            &runner,
+            Some(&parity_project_name),
+            None,
+            None,
+            "any",
+            None,
+            "all",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some("added"),
+            "desc",
+            50,
+        )
+        .await?;
+        assert!(listed.iter().any(|item| item.id == task_id));
+
+        let searched = search_tasks(
+            &runner,
+            "parity matrix sort notification",
+            None,
+            None,
+            None,
+            "any",
+            None,
+            "all",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some("planned"),
+            "asc",
+            50,
+        )
+        .await?;
+        assert!(searched.iter().any(|item| item.id == task_id));
+
+        let created_notification = add_notification(&runner, &task_id, Some(&due_date_iso), None).await?;
+        let created_notification_id = require_str_field(&created_notification, "id");
+        notification_id = Some(created_notification_id.clone());
+
+        let notifications = list_notifications(&runner, &task_id).await?;
+        let notification_items =
+            require_array(&notifications, "list_notifications parity matrix result");
+        assert!(notification_items.iter().any(|item| {
+            item.get("id")
+                .and_then(Value::as_str)
+                .map(|id| id == created_notification_id)
+                .unwrap_or(false)
+        }));
+
+        let removed = remove_notification(&runner, &task_id, &created_notification_id).await?;
+        assert_eq!(removed.get("removed").and_then(Value::as_bool), Some(true));
+        notification_id = None;
+
+        let tag_one = create_tag(&runner, &unique_name("Parity batch tag one"), None).await?;
+        let tag_two = create_tag(&runner, &unique_name("Parity batch tag two"), None).await?;
+        let tag_one_id = require_str_field(&tag_one, "id");
+        let tag_two_id = require_str_field(&tag_two, "id");
+        extra_tag_ids.push(tag_one_id.clone());
+        extra_tag_ids.push(tag_two_id.clone());
+        let deleted_tags = delete_tags_batch(&runner, vec![tag_one_id.clone(), tag_two_id.clone()]).await?;
+        assert_eq!(
+            deleted_tags
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("deleted"))
+                .and_then(Value::as_i64),
+            Some(2)
+        );
+        extra_tag_ids.clear();
+
+        let folder_one = create_folder(&runner, &unique_name("Parity batch folder one"), None).await?;
+        let folder_two = create_folder(&runner, &unique_name("Parity batch folder two"), None).await?;
+        let folder_one_id = require_str_field(&folder_one, "id");
+        let folder_two_id = require_str_field(&folder_two, "id");
+        extra_folder_ids.push(folder_one_id.clone());
+        extra_folder_ids.push(folder_two_id.clone());
+        let deleted_folders =
+            delete_folders_batch(&runner, vec![folder_one_id.clone(), folder_two_id.clone()]).await?;
+        assert_eq!(
+            deleted_folders
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("deleted"))
+                .and_then(Value::as_i64),
+            Some(2)
+        );
+        extra_folder_ids.clear();
+
+        let project_one =
+            create_project(&runner, &unique_name("Parity batch project one"), None, None, None, None, None)
+                .await?;
+        let project_two =
+            create_project(&runner, &unique_name("Parity batch project two"), None, None, None, None, None)
+                .await?;
+        let project_one_id = require_str_field(&project_one, "id");
+        let project_two_id = require_str_field(&project_two, "id");
+        extra_project_ids.push(project_one_id.clone());
+        extra_project_ids.push(project_two_id.clone());
+        let deleted_projects =
+            delete_projects_batch(&runner, vec![project_one_id.clone(), project_two_id.clone()]).await?;
+        assert_eq!(
+            deleted_projects
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("deleted"))
+                .and_then(Value::as_i64),
+            Some(2)
+        );
+        extra_project_ids.clear();
+
+        Ok(())
+    }
+    .await;
+
+    if let (Some(task_id), Some(current_notification_id)) =
+        (notification_task_id.as_ref(), notification_id.as_ref())
+    {
+        let _ = remove_notification(&runner, task_id, current_notification_id).await;
+    }
+    for id in &extra_tag_ids {
+        let _ = delete_tag(&runner, id).await;
+    }
+    for id in &extra_folder_ids {
+        let _ = delete_folder(&runner, id).await;
+    }
+    for id in &extra_project_ids {
+        let _ = delete_project(&runner, id).await;
+    }
+
+    result
 }

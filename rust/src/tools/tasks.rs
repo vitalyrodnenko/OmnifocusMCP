@@ -758,9 +758,15 @@ pub async fn list_tasks_with_added_changed<R: JxaRunner>(
                 | "estimatedMinutes"
                 | "project"
                 | "flagged"
+                | "addedDate"
+                | "changedDate"
+                | "plannedDate"
+                | "added"
+                | "modified"
+                | "planned"
         ) {
             return Err(OmniFocusError::Validation(
-                "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged.".to_string(),
+                "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, added, modified, planned.".to_string(),
             ));
         }
     }
@@ -1030,6 +1036,15 @@ const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort
   }} else if (sortBy === "flagged") {{
     aValue = a.flagged;
     bValue = b.flagged;
+  }} else if (sortBy === "addedDate" || sortBy === "added") {{
+    aValue = a.added;
+    bValue = b.added;
+  }} else if (sortBy === "changedDate" || sortBy === "modified") {{
+    aValue = a.modified;
+    bValue = b.modified;
+  }} else if (sortBy === "plannedDate" || sortBy === "planned") {{
+    aValue = getPlannedDate(a);
+    bValue = getPlannedDate(b);
   }}
   return compareValues(aValue, bValue, isString);
 }});
@@ -1623,10 +1638,11 @@ const notification = task.notifications.find(item => item.id.primaryKey === noti
 if (!notification) {{
   throw new Error(`Notification not found: ${{notificationId}}`);
 }}
+const removedNotificationId = notification.id.primaryKey;
 task.removeNotification(notification);
 return {{
   taskId: task.id.primaryKey,
-  notificationId: notification.id.primaryKey,
+  notificationId: removedNotificationId,
   removed: true
 }};"#
     );
@@ -1712,9 +1728,15 @@ pub async fn search_tasks_with_added_changed<R: JxaRunner>(
                 | "estimatedMinutes"
                 | "project"
                 | "flagged"
+                | "addedDate"
+                | "changedDate"
+                | "plannedDate"
+                | "added"
+                | "modified"
+                | "planned"
         ) {
             return Err(OmniFocusError::Validation(
-                "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged.".to_string(),
+                "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, added, modified, planned.".to_string(),
             ));
         }
     }
@@ -1995,6 +2017,15 @@ const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort
   }} else if (sortBy === "flagged") {{
     aValue = a.flagged;
     bValue = b.flagged;
+  }} else if (sortBy === "addedDate" || sortBy === "added") {{
+    aValue = a.added;
+    bValue = b.added;
+  }} else if (sortBy === "changedDate" || sortBy === "modified") {{
+    aValue = a.modified;
+    bValue = b.modified;
+  }} else if (sortBy === "plannedDate" || sortBy === "planned") {{
+    aValue = getPlannedDate(a);
+    bValue = getPlannedDate(b);
   }}
   return compareValues(aValue, bValue, isString);
 }});

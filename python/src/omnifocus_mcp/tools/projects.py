@@ -196,7 +196,11 @@ return sortedProjects.slice(0, {limit});
 
 @typed_tool(mcp)
 async def get_project_counts(folder: str | None = None) -> str:
-    """get aggregate project counts by status without listing individual projects."""
+    """get aggregate project counts by status without listing individual projects.
+
+    supports optional folder scoping and returns total/active/onHold/completed/
+    dropped/stalled counts.
+    """
     if folder is not None and folder.strip() == "":
         raise ValueError("folder must not be empty when provided.")
 
@@ -250,7 +254,10 @@ return counts;
 
 @typed_tool(mcp)
 async def search_projects(query: str, limit: int = 100) -> str:
-    """search projects using omnifocus matching and return project summaries."""
+    """search projects by query text using omnifocus matching.
+
+    returns lightweight project summaries with id, name, status, and folderName.
+    """
     if query.strip() == "":
         raise ValueError("query must not be empty.")
     if limit < 1:
@@ -553,12 +560,24 @@ async def delete_projects_batch(project_ids_or_names: list[str]) -> str:
     project_ids_or_names_value = json.dumps(normalized_project_ids_or_names)
     script = f"""
 const projectIdsOrNames = {project_ids_or_names_value};
-const projects = document.flattenedProjects.slice();
+const projects = document.flattenedProjects
+  .map(item => {{
+    try {{
+      return {{
+        id: item.id.primaryKey,
+        name: item.name,
+        ref: item
+      }};
+    }} catch (e) {{
+      return null;
+    }}
+  }})
+  .filter(item => item !== null);
 const results = projectIdsOrNames.map(idOrName => {{
   const project = projects.find(item => {{
-    return item.id.primaryKey === idOrName || item.name === idOrName;
+    return item.id === idOrName || item.name === idOrName;
   }});
-  if (!project) {{
+  if (project === undefined) {{
     return {{
       id_or_name: idOrName,
       id: null,
@@ -568,10 +587,10 @@ const results = projectIdsOrNames.map(idOrName => {{
     }};
   }}
 
-  const resolvedId = project.id.primaryKey;
+  const resolvedId = project.id;
   const resolvedName = project.name;
   try {{
-    deleteObject(project);
+    deleteObject(project.ref);
     return {{
       id_or_name: idOrName,
       id: resolvedId,
@@ -610,7 +629,10 @@ return {{
 
 @typed_tool(mcp)
 async def move_project(project_id_or_name: str, folder: str | None = None) -> str:
-    """move a project by id or name to a folder or top level."""
+    """move a project by id or name to a folder or top level.
+
+    set folder to null to move to top level.
+    """
     if project_id_or_name.strip() == "":
         raise ValueError("project_id_or_name must not be empty.")
     if folder is not None and folder.strip() == "":

@@ -276,10 +276,22 @@ pub async fn delete_folders_batch<R: JxaRunner>(
     let folder_ids_or_names_value = serde_json::to_string(&normalized_folder_ids_or_names)?;
     let script = format!(
         r#"const folderIdsOrNames = {folder_ids_or_names_value};
-const folders = document.flattenedFolders.slice();
+const folders = document.flattenedFolders
+  .map(item => {{
+    try {{
+      return {{
+        id: item.id.primaryKey,
+        name: item.name,
+        ref: item
+      }};
+    }} catch (e) {{
+      return null;
+    }}
+  }})
+  .filter(item => item !== null);
 const results = folderIdsOrNames.map(idOrName => {{
-  const folder = folders.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
-  if (!folder) {{
+  const folder = folders.find(item => item.id === idOrName || item.name === idOrName);
+  if (folder === undefined) {{
     return {{
       id_or_name: idOrName,
       id: null,
@@ -289,10 +301,10 @@ const results = folderIdsOrNames.map(idOrName => {{
     }};
   }}
 
-  const resolvedId = folder.id.primaryKey;
+  const resolvedId = folder.id;
   const resolvedName = folder.name;
   try {{
-    deleteObject(folder);
+    deleteObject(folder.ref);
     return {{
       id_or_name: idOrName,
       id: resolvedId,

@@ -381,6 +381,19 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('if (sortBy === "dueDate") {');
   });
 
+  test("list_tasks sort by added alias is included in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-added", name: "sorted task" }]);
+    await getTool("list_tasks")({
+      sortBy: "added",
+      sortOrder: "desc",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const sortBy = "added";');
+    expect(script).toContain('const sortOrder = "desc";');
+    expect(script).toContain('sortBy === "addedDate" || sortBy === "added"');
+  });
+
   test("list_tasks sort by name desc is included in script", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-name", name: "sorted by name" }]);
     await getTool("list_tasks")({
@@ -703,7 +716,9 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain(
       "const notification = task.notifications.find(item => item.id.primaryKey === notificationId);"
     );
+    expect(script).toContain("const removedNotificationId = notification.id.primaryKey;");
     expect(script).toContain("task.removeNotification(notification);");
+    expect(script).toContain("notificationId: removedNotificationId,");
     expect(JSON.parse(result.content[0].text)).toEqual({
       taskId: "task-9",
       notificationId: "notif-1",
@@ -910,6 +925,21 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const sortBy = "name";');
     expect(script).toContain('const sortOrder = "desc";');
     expect(script).toContain("if (!(name.includes(queryFilter) || note.includes(queryFilter))) return false;");
+  });
+
+  test("search_tasks sort by planned alias is included in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "search-planned", name: "shape" }]);
+    await getTool("search_tasks")({
+      query: "shape",
+      status: "all",
+      sortBy: "planned",
+      sortOrder: "asc",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const sortBy = "planned";');
+    expect(script).toContain('const sortOrder = "asc";');
+    expect(script).toContain('sortBy === "plannedDate" || sortBy === "planned"');
   });
 
   test("search_tasks completion filters auto-sort by completion date", async () => {

@@ -409,6 +409,7 @@ const project = (() => {
     throw new Error(\`Folder not found: \${folderName}\`);
   }
   return new Project(projectName, targetFolder.ending);
+})();
 
 if (noteValue !== null) project.note = noteValue;
 if (dueDateValue !== null) project.dueDate = new Date(dueDateValue);
@@ -570,12 +571,24 @@ return {
         const projectIdsOrNamesValue = JSON.stringify(normalizedProjectIdsOrNames);
         const script = `
 const projectIdsOrNames = ${projectIdsOrNamesValue};
-const projects = document.flattenedProjects.slice();
+const projects = document.flattenedProjects
+  .map(item => {
+    try {
+      return {
+        id: item.id.primaryKey,
+        name: item.name,
+        ref: item
+      };
+    } catch (e) {
+      return null;
+    }
+  })
+  .filter(item => item !== null);
 const results = projectIdsOrNames.map(idOrName => {
   const project = projects.find(item => {
-    return item.id.primaryKey === idOrName || item.name === idOrName;
+    return item.id === idOrName || item.name === idOrName;
   });
-  if (!project) {
+  if (project === undefined) {
     return {
       id_or_name: idOrName,
       id: null,
@@ -585,10 +598,10 @@ const results = projectIdsOrNames.map(idOrName => {
     };
   }
 
-  const resolvedId = project.id.primaryKey;
+  const resolvedId = project.id;
   const resolvedName = project.name;
   try {
-    deleteObject(project);
+    deleteObject(project.ref);
     return {
       id_or_name: idOrName,
       id: resolvedId,

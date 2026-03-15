@@ -596,12 +596,24 @@ pub async fn delete_projects_batch<R: JxaRunner>(
     let project_ids_or_names_value = serde_json::to_string(&normalized_project_ids_or_names)?;
     let script = format!(
         r#"const projectIdsOrNames = {project_ids_or_names_value};
-const projects = document.flattenedProjects.slice();
+const projects = document.flattenedProjects
+  .map(item => {{
+    try {{
+      return {{
+        id: item.id.primaryKey,
+        name: item.name,
+        ref: item
+      }};
+    }} catch (e) {{
+      return null;
+    }}
+  }})
+  .filter(item => item !== null);
 const results = projectIdsOrNames.map(idOrName => {{
   const project = projects.find(item => {{
-    return item.id.primaryKey === idOrName || item.name === idOrName;
+    return item.id === idOrName || item.name === idOrName;
   }});
-  if (!project) {{
+  if (project === undefined) {{
     return {{
       id_or_name: idOrName,
       id: null,
@@ -611,10 +623,10 @@ const results = projectIdsOrNames.map(idOrName => {{
     }};
   }}
 
-  const resolvedId = project.id.primaryKey;
+  const resolvedId = project.id;
   const resolvedName = project.name;
   try {{
-    deleteObject(project);
+    deleteObject(project.ref);
     return {{
       id_or_name: idOrName,
       id: resolvedId,

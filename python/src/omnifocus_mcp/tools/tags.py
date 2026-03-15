@@ -95,7 +95,10 @@ return sortedTags.slice(0, {limit});
 
 @typed_tool(mcp)
 async def search_tags(query: str, limit: int = 100) -> str:
-    """search tags using omnifocus matching and return tag summaries."""
+    """search tags by query text using omnifocus matching.
+
+    returns lightweight tag summaries with id, name, and parent.
+    """
     if query.strip() == "":
         raise ValueError("query must not be empty.")
     if limit < 1:
@@ -130,7 +133,10 @@ return tagsMatching(queryValue)
 
 @typed_tool(mcp)
 async def create_tag(name: str, parent: str | None = None) -> str:
-    """create a tag with optional parent tag nesting and return its id."""
+    """create a tag with optional parent tag nesting.
+
+    returns created id, name, and parent.
+    """
     if name.strip() == "":
         raise ValueError("name must not be empty.")
     if parent is not None and parent.strip() == "":
@@ -166,7 +172,10 @@ async def update_tag(
     name: str | None = None,
     status: str | None = None,
 ) -> str:
-    """update a tag by id or name."""
+    """update a tag by id or name.
+
+    modifies only provided fields: name and/or status.
+    """
     if tag_name_or_id.strip() == "":
         raise ValueError("tag_name_or_id must not be empty.")
     if name is not None and name.strip() == "":
@@ -293,10 +302,22 @@ async def delete_tags_batch(tag_ids_or_names: list[str]) -> str:
     tag_ids_or_names_value = json.dumps(normalized_tag_ids_or_names)
     script = f"""
 const tagIdsOrNames = {tag_ids_or_names_value};
-const tags = document.flattenedTags.slice();
+const tags = document.flattenedTags
+  .map(item => {{
+    try {{
+      return {{
+        id: item.id.primaryKey,
+        name: item.name,
+        ref: item
+      }};
+    }} catch (e) {{
+      return null;
+    }}
+  }})
+  .filter(item => item !== null);
 const results = tagIdsOrNames.map(idOrName => {{
-  const tag = tags.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
-  if (!tag) {{
+  const tag = tags.find(item => item.id === idOrName || item.name === idOrName);
+  if (tag === undefined) {{
     return {{
       id_or_name: idOrName,
       id: null,
@@ -306,10 +327,10 @@ const results = tagIdsOrNames.map(idOrName => {{
     }};
   }}
 
-  const resolvedId = tag.id.primaryKey;
+  const resolvedId = tag.id;
   const resolvedName = tag.name;
   try {{
-    deleteObject(tag);
+    deleteObject(tag.ref);
     return {{
       id_or_name: idOrName,
       id: resolvedId,

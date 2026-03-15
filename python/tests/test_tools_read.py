@@ -454,6 +454,22 @@ async def test_list_tasks_sort_due_date_asc_is_included_in_script(
 
 
 @pytest.mark.asyncio
+async def test_list_tasks_sort_added_alias_is_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(sortBy="added", sortOrder="desc", limit=5)
+
+    script = state["calls"][0]["script"]
+    assert 'const sortBy = "added";' in script
+    assert 'const sortOrder = "desc";' in script
+    assert 'sortBy === "addedDate" || sortBy === "added"' in script
+
+
+@pytest.mark.asyncio
 async def test_list_tasks_sort_name_desc_is_included_in_script(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -939,7 +955,9 @@ async def test_remove_notification_happy_path(
     assert 'const taskId = "t3";' in script
     assert 'const notificationId = "n9";' in script
     assert "const notification = task.notifications.find(item => item.id.primaryKey === notificationId);" in script
+    assert "const removedNotificationId = notification.id.primaryKey;" in script
     assert "task.removeNotification(notification);" in script
+    assert "notificationId: removedNotificationId," in script
     assert "removed: true" in script
 
 
@@ -1151,6 +1169,23 @@ async def test_search_tasks_with_status_filter_and_sorting(
     assert 'const sortBy = "name";' in script
     assert 'const sortOrder = "desc";' in script
     assert 'if (statusFilter === "overdue") {' in script
+
+
+@pytest.mark.asyncio
+async def test_search_tasks_sort_planned_alias_is_included_in_script(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([{"id": "t-status", "name": "task"}])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.search_tasks(
+        query="shape", status="all", sortBy="planned", sortOrder="asc", limit=5
+    )
+    script = state["calls"][0]["script"]
+    assert 'const sortBy = "planned";' in script
+    assert 'const sortOrder = "asc";' in script
+    assert 'sortBy === "plannedDate" || sortBy === "planned"' in script
 
 
 @pytest.mark.asyncio

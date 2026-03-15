@@ -471,7 +471,9 @@ fn as_call_tool_result<T: Serialize>(value: &T) -> std::result::Result<CallToolR
 
 #[tool_router(router = tool_router)]
 impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
-    #[tool(description = "get inbox tasks from omnifocus.")]
+    #[tool(
+        description = "get inbox tasks from omnifocus. returns unprocessed inbox tasks with id, name, note, flagged, due/defer/completion dates, tags, estimated minutes, and taskStatus. supports limit."
+    )]
     async fn get_inbox(
         &self,
         Parameters(params): Parameters<LimitParams>,
@@ -483,7 +485,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "list tasks with optional filters. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp."
+        description = "list tasks with optional project/tag filters, status, date ranges, and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
     )]
     async fn list_tasks(
         &self,
@@ -574,7 +576,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "get full details for a task by id.")]
+    #[tool(
+        description = "get full details for one task by id. returns list_tasks fields plus children, parentName, sequential, repetitionRule, effective dates, and task status fields."
+    )]
     async fn get_task(
         &self,
         Parameters(params): Parameters<TaskIdParams>,
@@ -585,7 +589,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "list direct subtasks for a task id.")]
+    #[tool(
+        description = "list direct subtasks for a parent task id. returns summary fields for direct children only, limited by limit."
+    )]
     async fn list_subtasks(
         &self,
         Parameters(params): Parameters<TaskIdLimitParams>,
@@ -600,7 +606,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "list active notifications for a task by id.")]
+    #[tool(
+        description = "list active notifications for a task by id. returns notification id, kind, absolute/relative schedule fields, next fire date, and snooze state."
+    )]
     async fn list_notifications(
         &self,
         Parameters(params): Parameters<TaskIdParams>,
@@ -611,7 +619,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "add one notification to a task by id.")]
+    #[tool(
+        description = "add one notification to a task by id. provide exactly one of absoluteDate or relativeOffset. relativeOffset requires a task with an effective due date. returns created notification summary."
+    )]
     async fn add_notification(
         &self,
         Parameters(params): Parameters<AddNotificationParams>,
@@ -644,7 +654,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "remove one notification from a task by id.")]
+    #[tool(
+        description = "remove one notification from a task by task_id and notification_id."
+    )]
     async fn remove_notification(
         &self,
         Parameters(params): Parameters<RemoveNotificationParams>,
@@ -660,7 +672,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "search tasks by name and note text. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp."
+        description = "search tasks by case-insensitive name/note text with optional filters and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
     )]
     async fn search_tasks(
         &self,
@@ -697,7 +709,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "create one task in inbox or in a project.")]
+    #[tool(
+        description = "create one task in inbox or a named project. accepts name plus optional note, dates, flagged, tags, and estimated minutes. returns created task id/name."
+    )]
     async fn create_task(
         &self,
         Parameters(params): Parameters<CreateTaskParams>,
@@ -718,7 +732,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "create multiple tasks in one OmniFocus call.")]
+    #[tool(
+        description = "create multiple tasks in a single omnijs call. each item accepts the same fields as create_task; returns created task ids and names."
+    )]
     async fn create_tasks_batch(
         &self,
         Parameters(params): Parameters<CreateTasksBatchParams>,
@@ -743,7 +759,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "create a subtask under an existing parent task by id.")]
+    #[tool(
+        description = "create a subtask under an existing parent task id. supports optional note, dates, flagged, tags, and estimatedMinutes; returns child and parent references."
+    )]
     async fn create_subtask(
         &self,
         Parameters(params): Parameters<CreateSubtaskParams>,
@@ -764,7 +782,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "mark a task complete by id.")]
+    #[tool(
+        description = "mark a task complete by id. use this for done/completed task lifecycle updates."
+    )]
     async fn complete_task(
         &self,
         Parameters(params): Parameters<TaskIdParams>,
@@ -775,7 +795,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "mark a completed task incomplete by id.")]
+    #[tool(
+        description = "mark a completed task incomplete by id (reopen task). fails if the task is not currently completed."
+    )]
     async fn uncomplete_task(
         &self,
         Parameters(params): Parameters<TaskIdParams>,
@@ -786,7 +808,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "set or clear a task repetition rule by id.")]
+    #[tool(
+        description = "set or clear a task repetition rule by id. pass rule_string plus schedule_type (regularly/from_completion/none), or null rule_string to clear."
+    )]
     async fn set_task_repetition(
         &self,
         Parameters(params): Parameters<SetTaskRepetitionParams>,
@@ -802,7 +826,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "update fields on an existing task.")]
+    #[tool(
+        description = "update an existing task by id, modifying only provided fields. supports name, note, due/defer dates, flagged, tags replacement, and estimatedMinutes."
+    )]
     async fn update_task(
         &self,
         Parameters(params): Parameters<UpdateTaskParams>,
@@ -885,7 +911,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "append text to a task or project note by object id.")]
+    #[tool(
+        description = "append text to a task or project note by object id without replacing existing note content. returns id/name/type and resulting note length."
+    )]
     async fn append_to_note(
         &self,
         Parameters(params): Parameters<AppendToNoteParams>,
@@ -937,7 +965,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "search projects by name text using omnifocus fuzzy matching.")]
+    #[tool(
+        description = "search projects by name text using omnifocus matching. returns lightweight project summaries (id, name, status, folderName)."
+    )]
     async fn search_projects(
         &self,
         Parameters(params): Parameters<SearchProjectsParams>,
@@ -952,7 +982,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "get a project by id or by exact name.")]
+    #[tool(
+        description = "get full details for one project by id or exact name, including counts, status, dates, next-task hints, and root task summaries."
+    )]
     async fn get_project(
         &self,
         Parameters(params): Parameters<ProjectIdOrNameParams>,
@@ -963,7 +995,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "create a project with optional metadata.")]
+    #[tool(
+        description = "create a project with optional folder, note, due/defer dates, and sequential mode. returns created project id/name."
+    )]
     async fn create_project(
         &self,
         Parameters(params): Parameters<CreateProjectParams>,
@@ -1034,7 +1068,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "move a project by id or name to a folder or top level.")]
+    #[tool(
+        description = "move a project by id or name to a folder or top level (null folder). use this for organization changes without deleting/recreating."
+    )]
     async fn move_project(
         &self,
         Parameters(params): Parameters<MoveProjectParams>,
@@ -1049,7 +1085,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "update a project by id or name, modifying only provided fields.")]
+    #[tool(
+        description = "update a project by id or name, modifying only provided fields. supports name, note, dates, flagged, tags replacement, sequential, completedByChildren, and reviewInterval."
+    )]
     async fn update_project(
         &self,
         Parameters(params): Parameters<UpdateProjectParams>,
@@ -1089,7 +1127,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "search tags by name text using omnifocus fuzzy matching.")]
+    #[tool(
+        description = "search tags by name text using omnifocus matching. returns lightweight tag summaries (id, name, parent)."
+    )]
     async fn search_tags(
         &self,
         Parameters(params): Parameters<SearchTagsParams>,
@@ -1104,7 +1144,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "list tags.")]
+    #[tool(
+        description = "list tags with optional statusFilter and sorting; returns id/name/parent plus availableTaskCount and totalTaskCount."
+    )]
     async fn list_tags(
         &self,
         Parameters(params): Parameters<ListTagsParams>,
@@ -1121,7 +1163,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "create a tag with optional parent tag.")]
+    #[tool(
+        description = "create a tag with optional parent tag name and return created id/name/parent."
+    )]
     async fn create_tag(
         &self,
         Parameters(params): Parameters<CreateTagParams>,
@@ -1132,7 +1176,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "update a tag by id or name.")]
+    #[tool(
+        description = "update a tag by id or name, modifying provided name and/or status."
+    )]
     async fn update_tag(
         &self,
         Parameters(params): Parameters<UpdateTagParams>,
@@ -1174,7 +1220,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "list folders.")]
+    #[tool(
+        description = "list folders with hierarchy context and project counts. returns id, name, parentName, and projectCount. supports limit."
+    )]
     async fn list_folders(
         &self,
         Parameters(params): Parameters<LimitParams>,
@@ -1185,7 +1233,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "create a folder with optional parent folder.")]
+    #[tool(
+        description = "create a folder with optional parent folder name and return created id/name/parent."
+    )]
     async fn create_folder(
         &self,
         Parameters(params): Parameters<CreateFolderParams>,
@@ -1196,7 +1246,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "get a folder by id or name with direct child projects and subfolders.")]
+    #[tool(
+        description = "get full details for one folder by id or name, including direct child projects and direct subfolders."
+    )]
     async fn get_folder(
         &self,
         Parameters(params): Parameters<FolderNameOrIdParams>,
@@ -1207,7 +1259,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "update a folder by id or name.")]
+    #[tool(
+        description = "update a folder by id or name, modifying provided name and/or status."
+    )]
     async fn update_folder(
         &self,
         Parameters(params): Parameters<UpdateFolderParams>,
@@ -1262,7 +1316,9 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
         as_call_tool_result(&result)
     }
 
-    #[tool(description = "list available perspectives.")]
+    #[tool(
+        description = "list available perspectives including built-in and custom perspectives, deduplicated by id. supports limit."
+    )]
     async fn list_perspectives(
         &self,
         Parameters(params): Parameters<LimitParams>,

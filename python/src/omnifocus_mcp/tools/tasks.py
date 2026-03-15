@@ -85,15 +85,24 @@ async def list_tasks(
         "estimatedMinutes",
         "project",
         "flagged",
+        "addedDate",
+        "changedDate",
+        "plannedDate",
+        "added",
+        "modified",
+        "planned",
     ]
     | None = None,
     sortOrder: Literal["asc", "desc"] = "asc",
     limit: int = 100,
 ) -> str:
-    """list tasks with optional project, tag filters, flagged, status, and date filters.
+    """list tasks with optional project/tag filters, flagged, status, date filters, and sorting.
 
     added_* and changed_* filters expect ISO 8601 date strings; changed maps to
     the task's last modified timestamp (`task.modified`).
+    sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes,
+    project, flagged, addedDate, changedDate, plannedDate, and aliases
+    added/modified/planned.
     returns tasks with id, name, note, flagged state, due/defer dates,
     completion state, project name, tag names, and estimated minutes.
     """
@@ -117,9 +126,15 @@ async def list_tasks(
         "estimatedMinutes",
         "project",
         "flagged",
+        "addedDate",
+        "changedDate",
+        "plannedDate",
+        "added",
+        "modified",
+        "planned",
     ):
         raise ValueError(
-            "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged."
+            "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, added, modified, planned."
         )
     if sortOrder not in ("asc", "desc"):
         raise ValueError("sortOrder must be one of: asc, desc.")
@@ -361,6 +376,15 @@ const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort
   }} else if (sortBy === "flagged") {{
     aValue = a.flagged;
     bValue = b.flagged;
+  }} else if (sortBy === "addedDate" || sortBy === "added") {{
+    aValue = a.added;
+    bValue = b.added;
+  }} else if (sortBy === "changedDate" || sortBy === "modified") {{
+    aValue = a.modified;
+    bValue = b.modified;
+  }} else if (sortBy === "plannedDate" || sortBy === "planned") {{
+    aValue = getPlannedDate(a);
+    bValue = getPlannedDate(b);
   }}
   return compareValues(aValue, bValue, isString);
 }});
@@ -418,7 +442,10 @@ async def _get_task_counts_legacy(
     completedAfter: str | None = None,
     maxEstimatedMinutes: int | None = None,
 ) -> str:
-    """get aggregate task counts for any filter combination without listing tasks."""
+    """get aggregate task counts for any filter combination without listing tasks.
+
+    much faster than list_tasks for "how many" queries.
+    """
     if project is not None and project.strip() == "":
         raise ValueError("project must not be empty when provided.")
     if tag is not None and tag.strip() == "":
@@ -1002,15 +1029,24 @@ async def search_tasks(
         "estimatedMinutes",
         "project",
         "flagged",
+        "addedDate",
+        "changedDate",
+        "plannedDate",
+        "added",
+        "modified",
+        "planned",
     ]
     | None = None,
     sortOrder: Literal["asc", "desc"] = "asc",
     limit: int = 100,
 ) -> str:
-    """search task names and notes with case-insensitive matching.
+    """search task names and notes with case-insensitive matching plus optional filters/sorting.
 
     added_* and changed_* filters expect ISO 8601 date strings; changed maps to
     the task's last modified timestamp (`task.modified`).
+    sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes,
+    project, flagged, addedDate, changedDate, plannedDate, and aliases
+    added/modified/planned.
     returns matching tasks with the standard list_tasks fields.
     """
     if query.strip() == "":
@@ -1035,9 +1071,15 @@ async def search_tasks(
         "estimatedMinutes",
         "project",
         "flagged",
+        "addedDate",
+        "changedDate",
+        "plannedDate",
+        "added",
+        "modified",
+        "planned",
     ):
         raise ValueError(
-            "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged."
+            "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, added, modified, planned."
         )
     if sortOrder not in ("asc", "desc"):
         raise ValueError("sortOrder must be one of: asc, desc.")
@@ -1279,6 +1321,15 @@ const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort
   }} else if (sortBy === "flagged") {{
     aValue = a.flagged;
     bValue = b.flagged;
+  }} else if (sortBy === "addedDate" || sortBy === "added") {{
+    aValue = a.added;
+    bValue = b.added;
+  }} else if (sortBy === "changedDate" || sortBy === "modified") {{
+    aValue = a.modified;
+    bValue = b.modified;
+  }} else if (sortBy === "plannedDate" || sortBy === "planned") {{
+    aValue = getPlannedDate(a);
+    bValue = getPlannedDate(b);
   }}
   return compareValues(aValue, bValue, isString);
 }});
@@ -1474,7 +1525,7 @@ return {{
 
 @typed_tool(mcp)
 async def remove_notification(task_id: str, notification_id: str) -> str:
-    """remove one notification from a task by id."""
+    """remove one notification from a task by task_id and notification_id."""
     if task_id.strip() == "":
         raise ValueError("task_id must not be empty.")
     if notification_id.strip() == "":
@@ -1493,10 +1544,11 @@ const notification = task.notifications.find(item => item.id.primaryKey === noti
 if (!notification) {{
   throw new Error(`Notification not found: ${{notificationId}}`);
 }}
+const removedNotificationId = notification.id.primaryKey;
 task.removeNotification(notification);
 return {{
   taskId: task.id.primaryKey,
-  notificationId: notification.id.primaryKey,
+  notificationId: removedNotificationId,
   removed: true
 }};
 """.strip()
@@ -2336,7 +2388,10 @@ return {{
 
 @typed_tool(mcp)
 async def duplicate_task(task_id: str, includeChildren: bool = True) -> str:
-    """duplicate a task with all its properties. if the task has subtasks, they are cloned too by default."""
+    """duplicate a task with its properties.
+
+    includeChildren controls whether subtasks are cloned recursively.
+    """
     return await _duplicate_task_legacy(
         task_id=task_id, includeChildren=includeChildren
     )
@@ -2437,7 +2492,10 @@ async def append_to_note(
     object_id: str,
     text: str,
 ) -> str:
-    """append text to a task or project note by object id."""
+    """append text to a task or project note by object id.
+
+    keeps existing note content and appends the provided text.
+    """
     if object_type not in {"task", "project"}:
         raise ValueError("object_type must be one of: task, project.")
     if object_id.strip() == "":

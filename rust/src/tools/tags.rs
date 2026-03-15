@@ -309,10 +309,22 @@ pub async fn delete_tags_batch<R: JxaRunner>(
     let tag_ids_or_names_value = serde_json::to_string(&normalized_tag_ids_or_names)?;
     let script = format!(
         r#"const tagIdsOrNames = {tag_ids_or_names_value};
-const tags = document.flattenedTags.slice();
+const tags = document.flattenedTags
+  .map(item => {{
+    try {{
+      return {{
+        id: item.id.primaryKey,
+        name: item.name,
+        ref: item
+      }};
+    }} catch (e) {{
+      return null;
+    }}
+  }})
+  .filter(item => item !== null);
 const results = tagIdsOrNames.map(idOrName => {{
-  const tag = tags.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
-  if (!tag) {{
+  const tag = tags.find(item => item.id === idOrName || item.name === idOrName);
+  if (tag === undefined) {{
     return {{
       id_or_name: idOrName,
       id: null,
@@ -322,10 +334,10 @@ const results = tagIdsOrNames.map(idOrName => {{
     }};
   }}
 
-  const resolvedId = tag.id.primaryKey;
+  const resolvedId = tag.id;
   const resolvedName = tag.name;
   try {{
-    deleteObject(tag);
+    deleteObject(tag.ref);
     return {{
       id_or_name: idOrName,
       id: resolvedId,

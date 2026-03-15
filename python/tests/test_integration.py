@@ -43,18 +43,28 @@ except Exception:
     sys.modules["mcp.server.fastmcp"] = mcp_fastmcp_module
 
 from omnifocus_mcp.jxa import run_omnijs
-from omnifocus_mcp.tools.folders import list_folders
+from omnifocus_mcp.tools.folders import create_folder, delete_folder, delete_folders_batch, list_folders
 from omnifocus_mcp.tools.forecast import get_forecast
 from omnifocus_mcp.tools.perspectives import list_perspectives
-from omnifocus_mcp.tools.projects import complete_project, create_project, get_project, list_projects
-from omnifocus_mcp.tools.tags import list_tags
+from omnifocus_mcp.tools.projects import (
+    complete_project,
+    create_project,
+    delete_project,
+    delete_projects_batch,
+    get_project,
+    list_projects,
+)
+from omnifocus_mcp.tools.tags import create_tag, delete_tag, delete_tags_batch, list_tags
 from omnifocus_mcp.tools.tasks import (
+    add_notification,
     complete_task,
     create_task,
     delete_task,
     get_inbox,
     get_task,
+    list_notifications,
     list_tasks,
+    remove_notification,
     search_tasks,
     update_task,
 )
@@ -328,3 +338,130 @@ async def test_project_lifecycle(cleanup_registry: dict[str, list[str]]) -> None
     assert isinstance(completed, dict)
     assert completed["id"] == project_id
     assert completed["completed"] is True
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_new_feature_parity_matrix(cleanup_registry: dict[str, list[str]]) -> None:
+    created_tag_ids: list[str] = []
+    created_folder_ids: list[str] = []
+    created_batch_project_ids: list[str] = []
+    notification_task_id: str | None = None
+    notification_id: str | None = None
+    parity_project_name = _test_name("Parity matrix project")
+    try:
+        parity_project = _parse_json(await create_project(name=parity_project_name))
+        assert isinstance(parity_project, dict)
+        parity_project_id = parity_project.get("id")
+        assert isinstance(parity_project_id, str)
+        cleanup_registry["project_ids"].append(parity_project_id)
+
+        due_date = (datetime.now(timezone.utc) + timedelta(days=1)).replace(microsecond=0)
+        due_date_iso = due_date.isoformat().replace("+00:00", "Z")
+        created_task = _parse_json(
+            await create_task(
+                name=_test_name("Parity matrix task"),
+                note="parity matrix sort notification",
+                project=parity_project_name,
+                dueDate=due_date_iso,
+            )
+        )
+        assert isinstance(created_task, dict)
+        notification_task_id = created_task.get("id")
+        assert isinstance(notification_task_id, str)
+        cleanup_registry["task_ids"].append(notification_task_id)
+
+        listed_added = _parse_json(
+            await list_tasks(
+                project=parity_project_name,
+                sortBy="added",
+                sortOrder="desc",
+                status="all",
+                limit=50,
+            )
+        )
+        assert isinstance(listed_added, list)
+        assert any(isinstance(item, dict) and item.get("id") == notification_task_id for item in listed_added)
+
+        searched_planned = _parse_json(
+            await search_tasks(
+                query="parity matrix sort", sortBy="planned", sortOrder="asc", status="all", limit=50
+            )
+        )
+        assert isinstance(searched_planned, list)
+        assert any(isinstance(item, dict) and item.get("id") == notification_task_id for item in searched_planned)
+
+        created_notification = _parse_json(
+            await add_notification(task_id=notification_task_id, absoluteDate=due_date_iso)
+        )
+        assert isinstance(created_notification, dict)
+        notification_id = created_notification.get("id")
+        assert isinstance(notification_id, str)
+
+        listed_notifications = _parse_json(await list_notifications(task_id=notification_task_id))
+        assert isinstance(listed_notifications, list)
+        assert any(isinstance(item, dict) and item.get("id") == notification_id for item in listed_notifications)
+
+        removed_notification = _parse_json(
+            await remove_notification(task_id=notification_task_id, notification_id=notification_id)
+        )
+        assert isinstance(removed_notification, dict)
+        assert removed_notification.get("removed") is True
+        notification_id = None
+
+        tag_one = _parse_json(await create_tag(name=_test_name("Parity batch tag one")))
+        tag_two = _parse_json(await create_tag(name=_test_name("Parity batch tag two")))
+        assert isinstance(tag_one, dict) and isinstance(tag_two, dict)
+        tag_one_id = tag_one.get("id")
+        tag_two_id = tag_two.get("id")
+        assert isinstance(tag_one_id, str) and isinstance(tag_two_id, str)
+        created_tag_ids.extend([tag_one_id, tag_two_id])
+        deleted_tags = _parse_json(await delete_tags_batch([tag_one_id, tag_two_id]))
+        assert isinstance(deleted_tags, dict)
+        assert deleted_tags.get("summary", {}).get("deleted") == 2
+        created_tag_ids = []
+
+        folder_one = _parse_json(await create_folder(name=_test_name("Parity batch folder one")))
+        folder_two = _parse_json(await create_folder(name=_test_name("Parity batch folder two")))
+        assert isinstance(folder_one, dict) and isinstance(folder_two, dict)
+        folder_one_id = folder_one.get("id")
+        folder_two_id = folder_two.get("id")
+        assert isinstance(folder_one_id, str) and isinstance(folder_two_id, str)
+        created_folder_ids.extend([folder_one_id, folder_two_id])
+        deleted_folders = _parse_json(await delete_folders_batch([folder_one_id, folder_two_id]))
+        assert isinstance(deleted_folders, dict)
+        assert deleted_folders.get("summary", {}).get("deleted") == 2
+        created_folder_ids = []
+
+        project_one = _parse_json(await create_project(name=_test_name("Parity batch project one")))
+        project_two = _parse_json(await create_project(name=_test_name("Parity batch project two")))
+        assert isinstance(project_one, dict) and isinstance(project_two, dict)
+        project_one_id = project_one.get("id")
+        project_two_id = project_two.get("id")
+        assert isinstance(project_one_id, str) and isinstance(project_two_id, str)
+        created_batch_project_ids.extend([project_one_id, project_two_id])
+        deleted_projects = _parse_json(await delete_projects_batch([project_one_id, project_two_id]))
+        assert isinstance(deleted_projects, dict)
+        assert deleted_projects.get("summary", {}).get("deleted") == 2
+        created_batch_project_ids = []
+    finally:
+        if notification_task_id and notification_id:
+            try:
+                await remove_notification(task_id=notification_task_id, notification_id=notification_id)
+            except Exception:
+                pass
+        for tag_id in reversed(created_tag_ids):
+            try:
+                await delete_tag(tag_name_or_id=tag_id)
+            except Exception:
+                continue
+        for folder_id in reversed(created_folder_ids):
+            try:
+                await delete_folder(folder_name_or_id=folder_id)
+            except Exception:
+                continue
+        for project_id in reversed(created_batch_project_ids):
+            try:
+                await delete_project(project_id_or_name=project_id)
+            except Exception:
+                continue

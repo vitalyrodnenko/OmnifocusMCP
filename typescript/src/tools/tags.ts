@@ -136,9 +136,12 @@ return tagsMatching(queryValue)
         const script = `
 const tagName = ${tagName};
 const parentName = ${parentName};
-const parentTag = parentName === null ? null : document.flattenedTags.byName(parentName);
-if (parentName !== null && !parentTag) throw new Error(\`Tag not found: \${parentName}\`);
-const tag = parentTag ? new Tag(tagName, parentTag.tags.end) : new Tag(tagName, document.tags.end);
+const tag = (() => {
+  if (parentName === null) return new Tag(tagName);
+  const parentTag = document.flattenedTags.byName(parentName);
+  if (!parentTag) throw new Error(\`Tag not found: \${parentName}\`);
+  return new Tag(tagName, parentTag.ending);
+})();
 return { id: tag.id.primaryKey, name: tag.name };
 `.trim();
         return textResult(await runOmniJs(script));
@@ -298,10 +301,22 @@ return {
         const tagIdsOrNamesValue = JSON.stringify(normalizedTagIdsOrNames);
         const script = `
 const tagIdsOrNames = ${tagIdsOrNamesValue};
-const tags = document.flattenedTags.slice();
+const tags = document.flattenedTags
+  .map(item => {
+    try {
+      return {
+        id: item.id.primaryKey,
+        name: item.name,
+        ref: item
+      };
+    } catch (e) {
+      return null;
+    }
+  })
+  .filter(item => item !== null);
 const results = tagIdsOrNames.map(idOrName => {
-  const tag = tags.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
-  if (!tag) {
+  const tag = tags.find(item => item.id === idOrName || item.name === idOrName);
+  if (tag === undefined) {
     return {
       id_or_name: idOrName,
       id: null,
@@ -311,10 +326,10 @@ const results = tagIdsOrNames.map(idOrName => {
     };
   }
 
-  const resolvedId = tag.id.primaryKey;
+  const resolvedId = tag.id;
   const resolvedName = tag.name;
   try {
-    deleteObject(tag);
+    deleteObject(tag.ref);
     return {
       id_or_name: idOrName,
       id: resolvedId,

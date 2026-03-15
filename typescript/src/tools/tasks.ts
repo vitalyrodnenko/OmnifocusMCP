@@ -19,7 +19,7 @@ export function register(server: Server): void {
 
   server.tool(
     "list_tasks",
-    "list tasks with optional filters for project, tag/tags, flagged state, status, and date ranges. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp.",
+    "list tasks with optional filters for project, tag/tags, flagged state, status, date ranges, and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
     {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
@@ -49,6 +49,12 @@ export function register(server: Server): void {
           "estimatedMinutes",
           "project",
           "flagged",
+          "addedDate",
+          "changedDate",
+          "plannedDate",
+          "added",
+          "modified",
+          "planned",
         ])
         .optional(),
       sortOrder: z.enum(["asc", "desc"]).default("asc"),
@@ -177,7 +183,7 @@ export function register(server: Server): void {
     }
   );
 
-  server.tool("get_task", "get a single task by id.", { task_id: z.string().min(1) }, async ({ task_id }) => {
+  server.tool("get_task", "get full details for one task by id. returns list_tasks fields plus children, parentName, sequential state, repetitionRule, and effective date/status fields.", { task_id: z.string().min(1) }, async ({ task_id }) => {
     try {
       const taskId = escapeForJxa(task_id);
       const script = `
@@ -428,10 +434,11 @@ const notification = task.notifications.find(item => item.id.primaryKey === noti
 if (!notification) {
   throw new Error(\`Notification not found: \${notificationId}\`);
 }
+const removedNotificationId = notification.id.primaryKey;
 task.removeNotification(notification);
 return {
   taskId: task.id.primaryKey,
-  notificationId: notification.id.primaryKey,
+  notificationId: removedNotificationId,
   removed: true
 };
 `.trim();
@@ -538,7 +545,7 @@ return {
 
   server.tool(
     "search_tasks",
-    "search tasks by case-insensitive query across name and note. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp.",
+    "search tasks by case-insensitive query across name and note with optional filters and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
     {
       query: z.string().min(1),
       project: z.string().min(1).optional(),
@@ -569,6 +576,12 @@ return {
           "estimatedMinutes",
           "project",
           "flagged",
+          "addedDate",
+          "changedDate",
+          "plannedDate",
+          "added",
+          "modified",
+          "planned",
         ])
         .optional(),
       sortOrder: z.enum(["asc", "desc"]).default("asc"),
@@ -792,7 +805,7 @@ return tasks.map(item => {
     }
   );
 
-  server.tool("complete_task", "mark a task complete by id.", { task_id: z.string().min(1) }, async ({ task_id }) => {
+  server.tool("complete_task", "mark a task complete by id. use this for done/completed task lifecycle updates.", { task_id: z.string().min(1) }, async ({ task_id }) => {
     try {
       const taskId = escapeForJxa(task_id);
       const script = `
@@ -1514,6 +1527,12 @@ export async function listTasksData(
     | "estimatedMinutes"
     | "project"
     | "flagged"
+    | "addedDate"
+    | "changedDate"
+    | "plannedDate"
+    | "added"
+    | "modified"
+    | "planned"
     | undefined,
   sortOrder: "asc" | "desc",
   limit: number
@@ -1719,6 +1738,15 @@ const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort
   } else if (sortBy === "flagged") {
     aValue = a.flagged;
     bValue = b.flagged;
+  } else if (sortBy === "addedDate" || sortBy === "added") {
+    aValue = a.added;
+    bValue = b.added;
+  } else if (sortBy === "changedDate" || sortBy === "modified") {
+    aValue = a.modified;
+    bValue = b.modified;
+  } else if (sortBy === "plannedDate" || sortBy === "planned") {
+    aValue = getPlannedDate(a);
+    bValue = getPlannedDate(b);
   }
   return compareValues(aValue, bValue, isString);
 });
@@ -1932,6 +1960,12 @@ export async function searchTasksData(
     | "estimatedMinutes"
     | "project"
     | "flagged"
+    | "addedDate"
+    | "changedDate"
+    | "plannedDate"
+    | "added"
+    | "modified"
+    | "planned"
     | undefined,
   sortOrder: "asc" | "desc",
   limit: number
@@ -2142,6 +2176,15 @@ const sortedTasks = sortBy === null ? filteredTasks : filteredTasks.slice().sort
   } else if (sortBy === "flagged") {
     aValue = a.flagged;
     bValue = b.flagged;
+  } else if (sortBy === "addedDate" || sortBy === "added") {
+    aValue = a.added;
+    bValue = b.added;
+  } else if (sortBy === "changedDate" || sortBy === "modified") {
+    aValue = a.modified;
+    bValue = b.modified;
+  } else if (sortBy === "plannedDate" || sortBy === "planned") {
+    aValue = getPlannedDate(a);
+    bValue = getPlannedDate(b);
   }
   return compareValues(aValue, bValue, isString);
 });

@@ -7,7 +7,10 @@ from omnifocus_mcp.registration import typed_tool
 
 @typed_tool(mcp)
 async def list_folders(limit: int = 100) -> str:
-    """list folder hierarchy and project counts."""
+    """list folders with hierarchy context and project counts.
+
+    returns id, name, parentName, and projectCount.
+    """
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
 
@@ -37,7 +40,10 @@ return folders.map(folder => {{
 
 @typed_tool(mcp)
 async def create_folder(name: str, parent: str | None = None) -> str:
-    """create a folder with optional parent folder and return id/name."""
+    """create a folder with optional parent folder.
+
+    returns created id and name.
+    """
     if name.strip() == "":
         raise ValueError("name must not be empty.")
     if parent is not None and parent.strip() == "":
@@ -69,7 +75,10 @@ return {{
 
 @typed_tool(mcp)
 async def get_folder(folder_name_or_id: str) -> str:
-    """get a folder by id or name with direct child projects and subfolders."""
+    """get full details for one folder by id or name.
+
+    returns direct child projects and direct subfolders.
+    """
     if folder_name_or_id.strip() == "":
         raise ValueError("folder_name_or_id must not be empty.")
 
@@ -119,7 +128,10 @@ async def update_folder(
     name: str | None = None,
     status: str | None = None,
 ) -> str:
-    """update a folder by id or name."""
+    """update a folder by id or name.
+
+    modifies only provided fields: name and/or status.
+    """
     folder_filter = folder_name_or_id.strip()
     new_name_value = None if name is None else name.strip()
     status_value = status
@@ -249,10 +261,22 @@ async def delete_folders_batch(folder_ids_or_names: list[str]) -> str:
     folder_ids_or_names_value = json.dumps(normalized_folder_ids_or_names)
     script = f"""
 const folderIdsOrNames = {folder_ids_or_names_value};
-const folders = document.flattenedFolders.slice();
+const folders = document.flattenedFolders
+  .map(item => {{
+    try {{
+      return {{
+        id: item.id.primaryKey,
+        name: item.name,
+        ref: item
+      }};
+    }} catch (e) {{
+      return null;
+    }}
+  }})
+  .filter(item => item !== null);
 const results = folderIdsOrNames.map(idOrName => {{
-  const folder = folders.find(item => item.id.primaryKey === idOrName || item.name === idOrName);
-  if (!folder) {{
+  const folder = folders.find(item => item.id === idOrName || item.name === idOrName);
+  if (folder === undefined) {{
     return {{
       id_or_name: idOrName,
       id: null,
@@ -262,10 +286,10 @@ const results = folderIdsOrNames.map(idOrName => {{
     }};
   }}
 
-  const resolvedId = folder.id.primaryKey;
+  const resolvedId = folder.id;
   const resolvedName = folder.name;
   try {{
-    deleteObject(folder);
+    deleteObject(folder.ref);
     return {{
       id_or_name: idOrName,
       id: resolvedId,

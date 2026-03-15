@@ -1205,7 +1205,9 @@ async fn remove_notification_script_removes_notification_by_id() {
     assert!(script.contains(
         "const notification = task.notifications.find(item => item.id.primaryKey === notificationId);"
     ));
+    assert!(script.contains("const removedNotificationId = notification.id.primaryKey;"));
     assert!(script.contains("task.removeNotification(notification);"));
+    assert!(script.contains("notificationId: removedNotificationId,"));
     assert!(script.contains("removed: true"));
 }
 
@@ -1406,6 +1408,47 @@ async fn search_tasks_status_filter_and_sorting_are_in_script() {
     assert!(script.contains(r#"const sortBy = "name";"#));
     assert!(script.contains(r#"const sortOrder = "desc";"#));
     assert!(script.contains(r#"if (statusFilter === "overdue") {"#));
+}
+
+#[tokio::test]
+async fn search_tasks_sort_planned_alias_is_included_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-search-planned", "search planned task")]),
+        last_script: last_script.clone(),
+    };
+
+    let searched = search_tasks(
+        &runner,
+        "shape",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "all",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("planned"),
+        "asc",
+        5,
+    )
+    .await
+    .expect("search planned alias sort should parse");
+    assert_eq!(searched.len(), 1);
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const sortBy = "planned";"#));
+    assert!(script.contains(r#"const sortOrder = "asc";"#));
+    assert!(script.contains(r#"sortBy === "plannedDate" || sortBy === "planned""#));
 }
 
 #[tokio::test]
@@ -2456,6 +2499,46 @@ async fn list_tasks_sort_name_desc_is_included_in_script() {
     assert!(script.contains(r#"const sortBy = "name";"#));
     assert!(script.contains(r#"const sortOrder = "desc";"#));
     assert!(script.contains("left = String(aValue).toLowerCase();"));
+}
+
+#[tokio::test]
+async fn list_tasks_sort_added_alias_is_included_in_script() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-sort-added", "sorted task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        Some("added"),
+        "desc",
+        5,
+    )
+    .await
+    .expect("added alias sort should parse");
+
+    assert_eq!(listed.len(), 1);
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains(r#"const sortBy = "added";"#));
+    assert!(script.contains(r#"const sortOrder = "desc";"#));
+    assert!(script.contains(r#"sortBy === "addedDate" || sortBy === "added""#));
 }
 
 #[tokio::test]

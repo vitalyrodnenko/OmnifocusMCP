@@ -2,6 +2,19 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.6] - 2026-03-03
+
+### Fixed
+- added missing task sort fields in `list_tasks` and `search_tasks` across Python, TypeScript, and Rust:
+  - canonical date fields: `addedDate`, `changedDate`, `plannedDate`
+  - aliases accepted by clients/LLMs: `added`, `modified`, `planned`
+- fixed a TypeScript `create_project` OmniJS script syntax bug that could fail with
+  `Unexpected keyword 'catch'` during real integration calls
+- updated Rust integration harness calls to match the current task API signature
+
+### Validation
+- re-ran real OmniFocus integration suites in Python, TypeScript, and Rust, plus Rust smoke test
+
 ## [1.1.5] - 2026-03-05
 
 ### Added

@@ -77,7 +77,8 @@ Full lifecycle management for OmniFocus tasks:
 
 All list/search tools support `sortBy` and `sortOrder`:
 
-- Sort by: `name`, `due`, `defer`, `added`, `modified`, `completed`, `estimated`, `planned`
+- Sort by: `name`, `dueDate`, `deferDate`, `completionDate`, `estimatedMinutes`, `project`, `flagged`, `addedDate`, `changedDate`, `plannedDate`
+- Aliases: `added` -> `addedDate`, `modified` -> `changedDate`, `planned` -> `plannedDate`
 - Sort order: `asc` (default) or `desc`
 - Task payloads include `addedDate` and `changedDate` (ISO 8601 or `null`)
 

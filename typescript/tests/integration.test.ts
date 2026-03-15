@@ -334,4 +334,160 @@ integrationDescribe("typescript integration", () => {
       expect(completed.completed).toBe(true);
     }
   );
+
+  test(
+    "test_new_feature_parity_matrix",
+    { timeout: INTEGRATION_TIMEOUT_MS },
+    async () => {
+      const createProject = getHandler("create_project");
+      const createTask = getHandler("create_task");
+      const listTasks = getHandler("list_tasks");
+      const searchTasks = getHandler("search_tasks");
+      const addNotification = getHandler("add_notification");
+      const listNotifications = getHandler("list_notifications");
+      const removeNotification = getHandler("remove_notification");
+      const createTag = getHandler("create_tag");
+      const deleteTag = getHandler("delete_tag");
+      const deleteTagsBatch = getHandler("delete_tags_batch");
+      const createFolder = getHandler("create_folder");
+      const deleteFolder = getHandler("delete_folder");
+      const deleteFoldersBatch = getHandler("delete_folders_batch");
+      const deleteProject = getHandler("delete_project");
+      const deleteProjectsBatch = getHandler("delete_projects_batch");
+
+      const extraTagIds: string[] = [];
+      const extraFolderIds: string[] = [];
+      const extraProjectIds: string[] = [];
+      let taskId: string | null = null;
+      let notificationId: string | null = null;
+      try {
+        const parityProjectName = `${TEST_PREFIX} TS Parity Project ${Date.now()}`;
+        const parityProject = parseToolResult(await createProject({ name: parityProjectName })) as {
+          id: string;
+        };
+        cleanupProjectIds.push(parityProject.id);
+
+        const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const createdTask = parseToolResult(
+          await createTask({
+            name: `${TEST_PREFIX} TS Parity Task ${Date.now()}`,
+            note: "parity matrix sort notification",
+            project: parityProjectName,
+            dueDate,
+          })
+        ) as { id: string };
+        taskId = createdTask.id;
+        cleanupTaskIds.push(taskId);
+
+        const listed = parseToolResult(
+          await listTasks({
+            project: parityProjectName,
+            status: "all",
+            sortBy: "added",
+            sortOrder: "desc",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        expect(listed.some((item) => String(item.id) === taskId)).toBe(true);
+
+        const searched = parseToolResult(
+          await searchTasks({
+            query: "parity matrix sort notification",
+            status: "all",
+            sortBy: "planned",
+            sortOrder: "asc",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        expect(searched.some((item) => String(item.id) === taskId)).toBe(true);
+
+        const createdNotification = parseToolResult(
+          await addNotification({ task_id: taskId, absoluteDate: dueDate })
+        ) as { id: string };
+        notificationId = createdNotification.id;
+
+        const notifications = parseToolResult(
+          await listNotifications({ task_id: taskId })
+        ) as Array<Record<string, unknown>>;
+        expect(notifications.some((item) => String(item.id) === notificationId)).toBe(true);
+
+        const removed = parseToolResult(
+          await removeNotification({ task_id: taskId, notification_id: notificationId })
+        ) as Record<string, unknown>;
+        expect(removed.removed).toBe(true);
+        notificationId = null;
+
+        const tagOne = parseToolResult(
+          await createTag({ name: `${TEST_PREFIX} TS Batch Tag One ${Date.now()}` })
+        ) as { id: string };
+        const tagTwo = parseToolResult(
+          await createTag({ name: `${TEST_PREFIX} TS Batch Tag Two ${Date.now()}` })
+        ) as { id: string };
+        extraTagIds.push(tagOne.id, tagTwo.id);
+        const deletedTags = parseToolResult(
+          await deleteTagsBatch({ tag_ids_or_names: [tagOne.id, tagTwo.id] })
+        ) as { summary?: { deleted?: number } };
+        expect(deletedTags.summary?.deleted).toBe(2);
+        extraTagIds.length = 0;
+
+        const folderOne = parseToolResult(
+          await createFolder({ name: `${TEST_PREFIX} TS Batch Folder One ${Date.now()}` })
+        ) as { id: string };
+        const folderTwo = parseToolResult(
+          await createFolder({ name: `${TEST_PREFIX} TS Batch Folder Two ${Date.now()}` })
+        ) as { id: string };
+        extraFolderIds.push(folderOne.id, folderTwo.id);
+        const deletedFolders = parseToolResult(
+          await deleteFoldersBatch({ folder_ids_or_names: [folderOne.id, folderTwo.id] })
+        ) as { summary?: { deleted?: number } };
+        expect(deletedFolders.summary?.deleted).toBe(2);
+        extraFolderIds.length = 0;
+
+        const projectOne = parseToolResult(
+          await createProject({ name: `${TEST_PREFIX} TS Batch Project One ${Date.now()}` })
+        ) as { id: string };
+        const projectTwo = parseToolResult(
+          await createProject({ name: `${TEST_PREFIX} TS Batch Project Two ${Date.now()}` })
+        ) as { id: string };
+        extraProjectIds.push(projectOne.id, projectTwo.id);
+        const deletedProjects = parseToolResult(
+          await deleteProjectsBatch({ project_ids_or_names: [projectOne.id, projectTwo.id] })
+        ) as { summary?: { deleted?: number } };
+        expect(deletedProjects.summary?.deleted).toBe(2);
+        extraProjectIds.length = 0;
+      } finally {
+        if (taskId && notificationId) {
+          try {
+            await removeNotification({ task_id: taskId, notification_id: notificationId });
+          } catch {
+            notificationId = null;
+          }
+        }
+
+        for (const id of extraTagIds) {
+          try {
+            await deleteTag({ tag_name_or_id: id });
+          } catch {
+            continue;
+          }
+        }
+
+        for (const id of extraFolderIds) {
+          try {
+            await deleteFolder({ folder_name_or_id: id });
+          } catch {
+            continue;
+          }
+        }
+
+        for (const id of extraProjectIds) {
+          try {
+            await deleteProject({ project_id_or_name: id });
+          } catch {
+            continue;
+          }
+        }
+      }
+    }
+  );
 });
