@@ -1609,14 +1609,16 @@ async def create_task(
     note: str | None = None,
     dueDate: str | None = None,
     deferDate: str | None = None,
+    plannedDate: str | None = None,
     flagged: bool | None = None,
     tags: list[str] | None = None,
     estimatedMinutes: int | None = None,
 ) -> str:
     """create a new task in inbox or a named project.
 
-    accepts required name and optional project, note, dates, flagged state,
-    tags, and estimated minutes. returns the created task id and name.
+    accepts required name and optional project, note, dates (due, defer,
+    planned), flagged state, tags, and estimated minutes. returns the created
+    task id and name.
     """
     if name.strip() == "":
         raise ValueError("name must not be empty.")
@@ -1628,6 +1630,7 @@ async def create_task(
     note_value = "null" if note is None else escape_for_jxa(note)
     due_date_value = "null" if dueDate is None else escape_for_jxa(dueDate)
     defer_date_value = "null" if deferDate is None else escape_for_jxa(deferDate)
+    planned_date_value = "null" if plannedDate is None else escape_for_jxa(plannedDate)
     flagged_value = "null" if flagged is None else ("true" if flagged else "false")
     tags_value = "null" if tags is None else json.dumps(tags)
     estimated_minutes_value = (
@@ -1640,6 +1643,7 @@ const projectName = {project_name};
 const noteValue = {note_value};
 const dueDateValue = {due_date_value};
 const deferDateValue = {defer_date_value};
+const plannedDateValue = {planned_date_value};
 const flaggedValue = {flagged_value};
 const tagNames = {tags_value};
 const estimatedMinutesValue = {estimated_minutes_value};
@@ -1658,6 +1662,7 @@ const task = new Task(taskName, parent);
 if (noteValue !== null) task.note = noteValue;
 if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
 if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (plannedDateValue !== null) task.plannedDate = new Date(plannedDateValue);
 if (flaggedValue !== null) task.flagged = flaggedValue;
 if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
 
@@ -1684,14 +1689,16 @@ async def create_subtask(
     note: str | None = None,
     dueDate: str | None = None,
     deferDate: str | None = None,
+    plannedDate: str | None = None,
     flagged: bool | None = None,
     tags: list[str] | None = None,
     estimatedMinutes: int | None = None,
 ) -> str:
     """create a new subtask under an existing parent task.
 
-    accepts required name and parent task id plus create_task optional fields.
-    returns created task id/name and parent task id/name.
+    accepts required name and parent task id plus create_task optional fields
+    (including plannedDate). returns created task id/name and parent task
+    id/name.
     """
     if name.strip() == "":
         raise ValueError("name must not be empty.")
@@ -1703,6 +1710,7 @@ async def create_subtask(
     note_value = "null" if note is None else escape_for_jxa(note)
     due_date_value = "null" if dueDate is None else escape_for_jxa(dueDate)
     defer_date_value = "null" if deferDate is None else escape_for_jxa(deferDate)
+    planned_date_value = "null" if plannedDate is None else escape_for_jxa(plannedDate)
     flagged_value = "null" if flagged is None else ("true" if flagged else "false")
     tags_value = "null" if tags is None else json.dumps(tags)
     estimated_minutes_value = (
@@ -1715,6 +1723,7 @@ const parentTaskId = {parent_task_id_value};
 const noteValue = {note_value};
 const dueDateValue = {due_date_value};
 const deferDateValue = {defer_date_value};
+const plannedDateValue = {planned_date_value};
 const flaggedValue = {flagged_value};
 const tagNames = {tags_value};
 const estimatedMinutesValue = {estimated_minutes_value};
@@ -1729,6 +1738,7 @@ const task = new Task(taskName, parentTask.ending);
 if (noteValue !== null) task.note = noteValue;
 if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
 if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (plannedDateValue !== null) task.plannedDate = new Date(plannedDateValue);
 if (flaggedValue !== null) task.flagged = flaggedValue;
 if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
 
@@ -1784,6 +1794,12 @@ async def create_tasks_batch(
         if defer_date_value is not None and not isinstance(defer_date_value, str):
             raise ValueError("task deferDate must be an ISO 8601 string when provided.")
 
+        planned_date_value = task.get("plannedDate")
+        if planned_date_value is not None and not isinstance(planned_date_value, str):
+            raise ValueError(
+                "task plannedDate must be an ISO 8601 string when provided."
+            )
+
         flagged_value = task.get("flagged")
         if flagged_value is not None and not isinstance(flagged_value, bool):
             raise ValueError("task flagged must be a boolean when provided.")
@@ -1808,6 +1824,7 @@ async def create_tasks_batch(
                 "note": note_value,
                 "dueDate": due_date_value,
                 "deferDate": defer_date_value,
+                "plannedDate": planned_date_value,
                 "flagged": flagged_value,
                 "tags": tags_value,
                 "estimatedMinutes": estimated_minutes_value,
@@ -1835,6 +1852,7 @@ const created = taskInputs.map(input => {{
   if (input.note !== null && input.note !== undefined) task.note = input.note;
   if (input.dueDate !== null && input.dueDate !== undefined) task.dueDate = new Date(input.dueDate);
   if (input.deferDate !== null && input.deferDate !== undefined) task.deferDate = new Date(input.deferDate);
+  if (input.plannedDate !== null && input.plannedDate !== undefined) task.plannedDate = new Date(input.plannedDate);
   if (input.flagged !== null && input.flagged !== undefined) task.flagged = input.flagged;
   if (input.estimatedMinutes !== null && input.estimatedMinutes !== undefined) {{
     task.estimatedMinutes = input.estimatedMinutes;
@@ -1988,14 +2006,16 @@ async def update_task(
     note: str | None = None,
     dueDate: str | None = None,
     deferDate: str | None = None,
+    plannedDate: str | None = None,
     flagged: bool | None = None,
     tags: list[str] | None = None,
     estimatedMinutes: int | None = None,
 ) -> str:
     """update a task by id, modifying only provided fields.
 
-    accepts optional updates for name, note, dates, flagged state, tags, and
-    estimated minutes. returns the updated task fields.
+    accepts optional updates for name, note, dates (due, defer, planned),
+    flagged state, tags, and estimated minutes. returns the updated task
+    fields.
     """
     if task_id.strip() == "":
         raise ValueError("task_id must not be empty.")
@@ -2011,6 +2031,8 @@ async def update_task(
         updates["dueDate"] = dueDate
     if deferDate is not None:
         updates["deferDate"] = deferDate
+    if plannedDate is not None:
+        updates["plannedDate"] = plannedDate
     if flagged is not None:
         updates["flagged"] = flagged
     if tags is not None:
@@ -2035,6 +2057,7 @@ if (has("name")) task.name = updates.name;
 if (has("note")) task.note = updates.note;
 if (has("dueDate")) task.dueDate = new Date(updates.dueDate);
 if (has("deferDate")) task.deferDate = new Date(updates.deferDate);
+if (has("plannedDate")) task.plannedDate = new Date(updates.plannedDate);
 if (has("flagged")) task.flagged = updates.flagged;
 if (has("estimatedMinutes")) task.estimatedMinutes = updates.estimatedMinutes;
 
@@ -2059,6 +2082,7 @@ return {{
   changedDate: task.modified ? task.modified.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   completed: task.completed,
+  plannedDate: task.plannedDate ? task.plannedDate.toISOString() : null,
   projectName: task.containingProject ? task.containingProject.name : null,
   tags: task.tags.map(tag => tag.name),
   estimatedMinutes: task.estimatedMinutes
