@@ -14,18 +14,23 @@ def _normalize_tag_filter_mode_input(value: str) -> Literal["any", "all"]:
         return "all"
     if normalized_value == "or":
         return "any"
-    raise ValueError("tagFilterMode must be one of: any, all.")
+    raise ValueError(f"tagFilterMode must be one of: any, all. received: {value!r}.")
 
 
 def _normalize_task_status_input(
     value: str,
-) -> Literal["available", "due_soon", "overdue", "completed", "all"]:
+) -> Literal["available", "due_soon", "overdue", "on_hold", "completed", "all"]:
     normalized_value = value.strip().lower().replace("-", "_").replace(" ", "_")
     if normalized_value in ("available", "overdue", "completed", "all"):
         return normalized_value
+    if normalized_value in ("on_hold", "onhold"):
+        return "on_hold"
     if normalized_value in ("due_soon", "duesoon"):
         return "due_soon"
-    raise ValueError("status must be one of: available, due_soon, overdue, completed, all.")
+    raise ValueError(
+        "status must be one of: available, due_soon, overdue, on_hold, completed, all. "
+        f"received: {value!r}."
+    )
 
 
 def _normalize_sort_order_input(value: str) -> Literal["asc", "desc"]:
@@ -36,7 +41,7 @@ def _normalize_sort_order_input(value: str) -> Literal["asc", "desc"]:
         return "asc"
     if normalized_value == "descending":
         return "desc"
-    raise ValueError("sortOrder must be one of: asc, desc.")
+    raise ValueError(f"sortOrder must be one of: asc, desc. received: {value!r}.")
 
 
 @typed_tool(mcp)

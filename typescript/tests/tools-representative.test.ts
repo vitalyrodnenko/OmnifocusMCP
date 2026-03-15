@@ -537,7 +537,7 @@ describe("representative read and write tool handlers", () => {
     });
     expect(invalidSortResult.isError).toBe(true);
     expect(parseToolResult(invalidSortResult)).toEqual({
-      error: "sortOrder must be one of: asc, desc.",
+      error: 'sortOrder must be one of: asc, desc. received: "backwards".',
     });
 
     const invalidStatusResult = await getTool("search_tasks")({
@@ -547,7 +547,8 @@ describe("representative read and write tool handlers", () => {
     });
     expect(invalidStatusResult.isError).toBe(true);
     expect(parseToolResult(invalidStatusResult)).toEqual({
-      error: "status must be one of: available, due_soon, overdue, on_hold, completed, all.",
+      error:
+        'status must be one of: available, due_soon, overdue, on_hold, completed, all. received: "later".',
     });
 
     const invalidTagModeResult = await getTool("get_task_counts")({
@@ -555,7 +556,7 @@ describe("representative read and write tool handlers", () => {
     });
     expect(invalidTagModeResult.isError).toBe(true);
     expect(parseToolResult(invalidTagModeResult)).toEqual({
-      error: "tagFilterMode must be one of: any, all.",
+      error: 'tagFilterMode must be one of: any, all. received: "both".',
     });
   });
 
@@ -686,7 +687,7 @@ describe("representative read and write tool handlers", () => {
     });
     const searchError = String((JSON.parse(searchResult.content[0].text) as { error: string }).error);
     expect(searchError).toContain(
-      "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+      "status must be one of: available, due_soon, overdue, completed, all."
     );
   });
 
@@ -1199,19 +1200,20 @@ describe("representative read and write tool handlers", () => {
     let result = await getTool("list_tasks")({ sortOrder: "backwards" });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "sortOrder must be one of: asc, desc.",
+      error: 'sortOrder must be one of: asc, desc. received: "backwards".',
     });
 
     result = await getTool("get_task_counts")({ tagFilterMode: "xor" });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "tagFilterMode must be one of: any, all.",
+      error: 'tagFilterMode must be one of: any, all. received: "xor".',
     });
 
     result = await getTool("search_tasks")({ query: "ship", status: "later" });
     expect(result.isError).toBe(true);
     expect(JSON.parse(result.content[0].text)).toEqual({
-      error: "status must be one of: available, due_soon, overdue, on_hold, completed, all.",
+      error:
+        'status must be one of: available, due_soon, overdue, on_hold, completed, all. received: "later".',
     });
   });
 

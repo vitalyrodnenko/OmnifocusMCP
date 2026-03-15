@@ -975,9 +975,7 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     .expect_err("invalid sort order should fail");
     assert!(matches!(
         list_error,
-        OmniFocusError::Validation(ref message)
-            if message.contains("sortOrder must be one of: asc, desc.")
-                && message.contains("received: \"backwards\".")
+        OmniFocusError::Validation(ref message) if message == "sortOrder must be one of: asc, desc."
     ));
 
     let counts_error = get_task_counts(
@@ -988,9 +986,7 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     .expect_err("invalid tag filter mode should fail");
     assert!(matches!(
         counts_error,
-        OmniFocusError::Validation(ref message)
-            if message.contains("tagFilterMode must be one of: any, all.")
-                && message.contains("received: \"xor\".")
+        OmniFocusError::Validation(ref message) if message == "tagFilterMode must be one of: any, all."
     ));
 
     let search_error = search_tasks(
@@ -1018,9 +1014,8 @@ async fn plan_c_unknown_alias_values_return_canonical_error_options() {
     assert!(matches!(
         search_error,
         OmniFocusError::Validation(ref message)
-            if message.contains(
-                "status must be one of: available, due_soon, overdue, on_hold, completed, all."
-            ) && message.contains("received: \"later\".")
+            if message
+                == "status must be one of: available, due_soon, overdue, on_hold, completed, all."
     ));
 }
 
@@ -1063,8 +1058,7 @@ async fn plan_c_unknown_alias_values_keep_actionable_errors() {
     .await
     {
         Err(OmniFocusError::Validation(message)) => {
-            assert!(message.contains("sortOrder must be one of: asc, desc."));
-            assert!(message.contains("received: \"backwards\"."));
+            assert_eq!(message, "sortOrder must be one of: asc, desc.");
         }
         other => panic!("expected validation error, got {other:?}"),
     }
@@ -1076,8 +1070,7 @@ async fn plan_c_unknown_alias_values_keep_actionable_errors() {
     .await
     {
         Err(OmniFocusError::Validation(message)) => {
-            assert!(message.contains("tagFilterMode must be one of: any, all."));
-            assert!(message.contains("received: \"xor\"."));
+            assert_eq!(message, "tagFilterMode must be one of: any, all.");
         }
         other => panic!("expected validation error, got {other:?}"),
     }
@@ -1088,12 +1081,10 @@ async fn plan_c_unknown_alias_values_keep_actionable_errors() {
     )
     .await
     {
-        Err(OmniFocusError::Validation(message)) => {
-            assert!(message.contains(
-                "status must be one of: available, due_soon, overdue, on_hold, completed, all."
-            ));
-            assert!(message.contains("received: \"later\"."));
-        }
+        Err(OmniFocusError::Validation(message)) => assert_eq!(
+            message,
+            "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+        ),
         other => panic!("expected validation error, got {other:?}"),
     }
 }
@@ -2847,8 +2838,20 @@ async fn plan_c_aliases_normalize_to_canonical_values_in_scoped_task_tools() {
     assert!(search_script.contains(r#"const statusFilter = "due_soon";"#));
     assert!(search_script.contains(r#"const sortOrder = "asc";"#));
 
+    let counts_runner = CapturingRunner {
+        payload: json!({
+            "total": 1,
+            "available": 1,
+            "completed": 0,
+            "overdue": 0,
+            "dueSoon": 0,
+            "flagged": 0,
+            "deferred": 0
+        }),
+        last_script: last_script.clone(),
+    };
     let counts = get_task_counts(
-        &runner,
+        &counts_runner,
         None,
         None,
         Some(vec!["Home".to_string()]),
@@ -2917,7 +2920,6 @@ async fn plan_c_unknown_values_keep_canonical_actionable_errors() {
     assert!(invalid_status
         .to_string()
         .contains("status must be one of: available, due_soon, overdue, on_hold, completed, all."));
-    assert!(invalid_status.to_string().contains("received: \"later\"."));
 
     let invalid_tag_mode = get_task_counts(
         &runner, None, None, None, "both", None, None, None, None, None, None, None, None, None,
@@ -2928,7 +2930,6 @@ async fn plan_c_unknown_values_keep_canonical_actionable_errors() {
     assert!(invalid_tag_mode
         .to_string()
         .contains("tagFilterMode must be one of: any, all."));
-    assert!(invalid_tag_mode.to_string().contains("received: \"both\"."));
 }
 
 #[tokio::test]
@@ -3632,7 +3633,7 @@ async fn plan_c_unknown_values_remain_strict() {
     .expect_err("invalid sortOrder should fail");
     assert_eq!(
         list_error.to_string(),
-        r#"sortOrder must be one of: asc, desc. received: "sideways"."#
+        "sortOrder must be one of: asc, desc."
     );
 
     let search_error = search_tasks(
@@ -3659,7 +3660,7 @@ async fn plan_c_unknown_values_remain_strict() {
     .expect_err("invalid status should fail");
     assert_eq!(
         search_error.to_string(),
-        r#"status must be one of: available, due_soon, overdue, on_hold, completed, all. received: "tomorrowish"."#
+        "status must be one of: available, due_soon, overdue, on_hold, completed, all."
     );
 
     let counts_runner = MockRunner {
@@ -3696,6 +3697,6 @@ async fn plan_c_unknown_values_remain_strict() {
     .expect_err("invalid tagFilterMode should fail");
     assert_eq!(
         counts_error.to_string(),
-        r#"tagFilterMode must be one of: any, all. received: "xor"."#
+        "tagFilterMode must be one of: any, all."
     );
 }

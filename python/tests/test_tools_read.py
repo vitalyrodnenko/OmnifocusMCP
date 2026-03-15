@@ -2049,7 +2049,7 @@ async def test_plan_c_unknown_alias_values_keep_actionable_errors(
         await server_module.get_task_counts(tagFilterMode="xor")
     with pytest.raises(
         ValueError,
-        match="status must be one of: available, due_soon, overdue, on_hold, completed, all.",
+        match="status must be one of: available, due_soon, overdue, completed, all.",
     ):
         await server_module.search_tasks(query="ship", status="later")
 

@@ -19,9 +19,10 @@ fn normalize_tag_filter_mode_input(value: &str) -> Result<&'static str> {
         "all" => Ok("all"),
         "and" => Ok("all"),
         "or" => Ok("any"),
-        _ => Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        )),
+        _ => Err(OmniFocusError::Validation(format!(
+            "tagFilterMode must be one of: any, all. received: {}.",
+            serde_json::to_string(value).unwrap_or_else(|_| "\"<invalid>\"".to_string())
+        ))),
     }
 }
 
@@ -34,11 +35,13 @@ fn normalize_task_status_input(value: &str) -> Result<&'static str> {
         "available" => Ok("available"),
         "due_soon" | "duesoon" => Ok("due_soon"),
         "overdue" => Ok("overdue"),
+        "on_hold" | "onhold" => Ok("on_hold"),
         "completed" => Ok("completed"),
         "all" => Ok("all"),
-        _ => Err(OmniFocusError::Validation(
-            "status must be one of: available, due_soon, overdue, completed, all.".to_string(),
-        )),
+        _ => Err(OmniFocusError::Validation(format!(
+            "status must be one of: available, due_soon, overdue, on_hold, completed, all. received: {}.",
+            serde_json::to_string(value).unwrap_or_else(|_| "\"<invalid>\"".to_string())
+        ))),
     }
 }
 
@@ -49,9 +52,10 @@ fn normalize_sort_order_input(value: &str) -> Result<&'static str> {
         "desc" => Ok("desc"),
         "ascending" => Ok("asc"),
         "descending" => Ok("desc"),
-        _ => Err(OmniFocusError::Validation(
-            "sortOrder must be one of: asc, desc.".to_string(),
-        )),
+        _ => Err(OmniFocusError::Validation(format!(
+            "sortOrder must be one of: asc, desc. received: {}.",
+            serde_json::to_string(value).unwrap_or_else(|_| "\"<invalid>\"".to_string())
+        ))),
     }
 }
 

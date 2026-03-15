@@ -990,6 +990,7 @@ async fn test_plan_c_alias_inputs_work_for_task_tools() -> Result<(), Box<dyn st
             None,
             None,
             None,
+            None,
             "descending",
             100,
         )
