@@ -302,12 +302,14 @@ async def delete_tags_batch(tag_ids_or_names: list[str]) -> str:
     tag_ids_or_names_value = json.dumps(normalized_tag_ids_or_names)
     script = f"""
 const tagIdsOrNames = {tag_ids_or_names_value};
+const requests = tagIdsOrNames.map((idOrName, index) => ({{ idOrName, index }}));
 const tags = document.flattenedTags
   .map(item => {{
     try {{
       return {{
         id: item.id.primaryKey,
         name: item.name,
+        parentId: item.parent ? item.parent.id.primaryKey : null,
         ref: item
       }};
     }} catch (e) {{
@@ -315,39 +317,100 @@ const tags = document.flattenedTags
     }}
   }})
   .filter(item => item !== null);
-const results = tagIdsOrNames.map(idOrName => {{
-  const tag = tags.find(item => item.id === idOrName || item.name === idOrName);
-  if (tag === undefined) {{
-    return {{
-      id_or_name: idOrName,
-      id: null,
-      name: null,
-      deleted: false,
-      error: "not found"
-    }};
-  }}
+const tagsById = new Map(tags.map(tag => [tag.id, tag]));
 
-  const resolvedId = tag.id;
-  const resolvedName = tag.name;
-  try {{
-    deleteObject(tag.ref);
-    return {{
-      id_or_name: idOrName,
-      id: resolvedId,
-      name: resolvedName,
-      deleted: true,
-      error: null
-    }};
-  }} catch (e) {{
-    const errorMessage = e && e.message ? String(e.message) : String(e);
-    return {{
-      id_or_name: idOrName,
-      id: resolvedId,
-      name: resolvedName,
-      deleted: false,
-      error: errorMessage
-    }};
+const resolveTag = (idOrName) => {{
+  const byId = tagsById.get(idOrName);
+  if (byId) return byId;
+  return tags.find(tag => tag.name === idOrName);
+}};
+
+const depthCache = new Map();
+const getDepth = (tagId, stack = new Set()) => {{
+  if (depthCache.has(tagId)) return depthCache.get(tagId);
+  if (stack.has(tagId)) return 0;
+  stack.add(tagId);
+  const tag = tagsById.get(tagId);
+  let depth = 0;
+  if (tag && tag.parentId && tagsById.has(tag.parentId)) {{
+    depth = getDepth(tag.parentId, stack) + 1;
   }}
+  stack.delete(tagId);
+  depthCache.set(tagId, depth);
+  return depth;
+}};
+
+const existsTagById = (tagId) => {{
+  return document.flattenedTags.some(tag => {{
+    try {{
+      return tag.id.primaryKey === tagId;
+    }} catch (e) {{
+      return false;
+    }}
+  }});
+}};
+
+const results = new Array(requests.length);
+const unresolved = [];
+const resolved = [];
+
+requests.forEach(request => {{
+  const tag = resolveTag(request.idOrName);
+  if (!tag) {{
+    unresolved.push(request);
+    return;
+  }}
+  resolved.push({{
+    ...request,
+    tag,
+    depth: getDepth(tag.id)
+  }});
+}});
+
+resolved
+  .sort((left, right) => right.depth - left.depth || left.index - right.index)
+  .forEach(request => {{
+    const resolvedId = request.tag.id;
+    const resolvedName = request.tag.name;
+    try {{
+      deleteObject(request.tag.ref);
+      results[request.index] = {{
+        id_or_name: request.idOrName,
+        id: resolvedId,
+        name: resolvedName,
+        deleted: true,
+        error: null
+      }};
+    }} catch (e) {{
+      if (!existsTagById(resolvedId)) {{
+        results[request.index] = {{
+          id_or_name: request.idOrName,
+          id: resolvedId,
+          name: resolvedName,
+          deleted: true,
+          error: null
+        }};
+        return;
+      }}
+      const errorMessage = e && e.message ? String(e.message) : String(e);
+      results[request.index] = {{
+        id_or_name: request.idOrName,
+        id: resolvedId,
+        name: resolvedName,
+        deleted: false,
+        error: errorMessage
+      }};
+    }}
+  }});
+
+unresolved.forEach(request => {{
+  results[request.index] = {{
+    id_or_name: request.idOrName,
+    id: null,
+    name: null,
+    deleted: false,
+    error: "not found"
+  }};
 }});
 
 const deletedCount = results.filter(result => result.deleted).length;
