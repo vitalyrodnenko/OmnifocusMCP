@@ -606,7 +606,7 @@ async def _get_task_counts_legacy_2(
     project: str | None = None,
     tag: str | None = None,
     tags: list[str] | None = None,
-    tagFilterMode: Literal["any", "all"] = "any",
+    tagFilterMode: str = "any",
     flagged: bool | None = None,
     dueBefore: str | None = None,
     dueAfter: str | None = None,
