@@ -1420,6 +1420,9 @@ async def test_delete_tags_batch_happy_path(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert 'const tagIdsOrNames = ["tag-1", "Home"];' in script
+    assert "sort((left, right) => right.depth - left.depth || left.index - right.index)" in script
+    assert "const getLiveTagById = (tagId) => {" in script
+    assert "deleteObject(liveTag);" in script
     assert "summary" in script
     assert "partial_success" in script
 
@@ -1454,6 +1457,47 @@ async def test_delete_tags_batch_partial_success(
     result = await server.delete_tags_batch(["tag-1", "missing-tag"])
 
     assert json.loads(result) == payload
+
+
+@pytest.mark.asyncio
+async def test_delete_tags_batch_hierarchy_cascade_effective_success_plan_a(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "summary": {"requested": 2, "deleted": 2, "failed": 0},
+        "partial_success": False,
+        "results": [
+            {
+                "id_or_name": "parent-tag",
+                "id": "tag-parent",
+                "name": "Parent Tag",
+                "deleted": True,
+                "error": None,
+            },
+            {
+                "id_or_name": "child-tag",
+                "id": "tag-child",
+                "name": "Child Tag",
+                "deleted": True,
+                "error": None,
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_tags_batch(["parent-tag", "child-tag"])
+    parsed = json.loads(result)
+
+    assert parsed == payload
+    assert parsed["summary"]["failed"] == 0
+    assert parsed["partial_success"] is False
+    script = state["calls"][0]["script"]
+    assert "parentId: item.parent ? item.parent.id.primaryKey : null" in script
+    assert "right.depth - left.depth || left.index - right.index" in script
+    assert "if (!existsTagById(resolvedId)) {" in script
+    assert "partial_success: deletedCount > 0 && failedCount > 0" in script
 
 
 @pytest.mark.asyncio
@@ -1511,6 +1555,9 @@ async def test_delete_folders_batch_happy_path(
     assert json.loads(result) == payload
     script = state["calls"][0]["script"]
     assert 'const folderIdsOrNames = ["folder-1", "Work"];' in script
+    assert "sort((left, right) => right.depth - left.depth || left.index - right.index)" in script
+    assert "const getLiveFolderById = (folderId) => {" in script
+    assert "deleteObject(liveFolder);" in script
     assert "summary" in script
     assert "partial_success" in script
 
@@ -1545,6 +1592,47 @@ async def test_delete_folders_batch_partial_success(
     result = await server.delete_folders_batch(["folder-1", "missing-folder"])
 
     assert json.loads(result) == payload
+
+
+@pytest.mark.asyncio
+async def test_delete_folders_batch_hierarchy_cascade_effective_success_plan_a(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {
+        "summary": {"requested": 2, "deleted": 2, "failed": 0},
+        "partial_success": False,
+        "results": [
+            {
+                "id_or_name": "parent-folder",
+                "id": "folder-parent",
+                "name": "Parent Folder",
+                "deleted": True,
+                "error": None,
+            },
+            {
+                "id_or_name": "child-folder",
+                "id": "folder-child",
+                "name": "Child Folder",
+                "deleted": True,
+                "error": None,
+            },
+        ],
+    }
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    result = await server.delete_folders_batch(["parent-folder", "child-folder"])
+    parsed = json.loads(result)
+
+    assert parsed == payload
+    assert parsed["summary"]["failed"] == 0
+    assert parsed["partial_success"] is False
+    script = state["calls"][0]["script"]
+    assert "parentId: item.parent ? item.parent.id.primaryKey : null" in script
+    assert "right.depth - left.depth || left.index - right.index" in script
+    assert "if (!existsFolderById(resolvedId)) {" in script
+    assert "partial_success: deletedCount > 0 && failedCount > 0" in script
 
 
 @pytest.mark.asyncio

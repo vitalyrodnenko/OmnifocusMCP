@@ -68,6 +68,28 @@ function parseToolResult(result: { content: [{ type: "text"; text: string }] }):
   return JSON.parse(result.content[0].text);
 }
 
+function normalizeStatusFixture(rawStatus: string): string {
+  const flattened = String(rawStatus)
+    .toLowerCase()
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {
+    return "on_hold";
+  }
+  if (flattened.includes("dropped")) {
+    return "dropped";
+  }
+  if (flattened.includes("active")) {
+    return "active";
+  }
+  return "active";
+}
+
 describe("representative read and write tool handlers", () => {
   beforeAll(async () => {
     await import("../src/index.js");
@@ -408,6 +430,87 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('if (left < right) return sortOrder === "asc" ? -1 : 1;');
   });
 
+  test("plan c aliases normalize to canonical values in list_tasks", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-alias-list", name: "alias list" }]);
+    await getTool("list_tasks")({
+      tags: ["Home", "Deep"],
+      tagFilterMode: "AND",
+      status: "due soon",
+      sortOrder: "Descending",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const tagFilterMode = "all";');
+    expect(script).toContain('const statusFilter = "due_soon";');
+    expect(script).toContain('const sortOrder = "desc";');
+  });
+
+  test("plan c aliases normalize to canonical values in search_tasks and get_task_counts", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-alias-search", name: "alias search" }]);
+    await getTool("search_tasks")({
+      query: "audit",
+      tags: ["Home", "Deep"],
+      tagFilterMode: "or",
+      status: "Due-Soon",
+      sortOrder: "ascending",
+      limit: 5,
+    });
+    const searchScript = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(searchScript).toContain('const tagFilterMode = "any";');
+    expect(searchScript).toContain('const statusFilter = "due_soon";');
+    expect(searchScript).toContain('const sortOrder = "asc";');
+
+    runOmniJsMock.mockResolvedValueOnce({
+      total: 0,
+      available: 0,
+      completed: 0,
+      overdue: 0,
+      dueSoon: 0,
+      flagged: 0,
+      deferred: 0,
+    });
+    await getTool("get_task_counts")({
+      tags: ["Home"],
+      tagFilterMode: "OR",
+    });
+    const countsScript = String(runOmniJsMock.mock.calls[1]?.[0]);
+    expect(countsScript).toContain('const tagFilterMode = "any";');
+  });
+
+  test("plan c unknown values keep canonical actionable errors", async () => {
+    const invalidSortResult = await getTool("list_tasks")({
+      sortOrder: "backwards",
+      limit: 5,
+    });
+    expect(invalidSortResult.isError).toBe(true);
+    const invalidSortError = String(
+      (parseToolResult(invalidSortResult) as { error: string }).error
+    );
+    expect(invalidSortError).toContain("sortOrder must be one of: asc, desc.");
+
+    const invalidStatusResult = await getTool("search_tasks")({
+      query: "audit",
+      status: "later",
+      limit: 5,
+    });
+    expect(invalidStatusResult.isError).toBe(true);
+    const invalidStatusError = String(
+      (parseToolResult(invalidStatusResult) as { error: string }).error
+    );
+    expect(invalidStatusError).toContain(
+      "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+    );
+
+    const invalidTagModeResult = await getTool("get_task_counts")({
+      tagFilterMode: "both",
+    });
+    expect(invalidTagModeResult.isError).toBe(true);
+    const invalidTagModeError = String(
+      (parseToolResult(invalidTagModeResult) as { error: string }).error
+    );
+    expect(invalidTagModeError).toContain("tagFilterMode must be one of: any, all.");
+  });
+
   test("list_tasks auto-sorts by completionDate desc when completion filters are provided", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-auto", name: "auto sorted" }]);
     await getTool("list_tasks")({
@@ -512,6 +615,31 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual({
       error: "dueBefore must be a valid ISO 8601 date string.",
     });
+  });
+
+  test("plan c unknown alias values return canonical error options", async () => {
+    const listResult = await getTool("list_tasks")({
+      sortOrder: "backwards",
+      limit: 5,
+    });
+    const listError = String((JSON.parse(listResult.content[0].text) as { error: string }).error);
+    expect(listError).toContain("sortOrder must be one of: asc, desc.");
+
+    const countsResult = await getTool("get_task_counts")({
+      tagFilterMode: "xor",
+    });
+    const countsError = String((JSON.parse(countsResult.content[0].text) as { error: string }).error);
+    expect(countsError).toContain("tagFilterMode must be one of: any, all.");
+
+    const searchResult = await getTool("search_tasks")({
+      query: "ship",
+      status: "later",
+      limit: 5,
+    });
+    const searchError = String((JSON.parse(searchResult.content[0].text) as { error: string }).error);
+    expect(searchError).toContain(
+      "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+    );
   });
 
   test("list_tasks duration filter 15 minutes is included in script", async () => {
@@ -1019,6 +1147,26 @@ describe("representative read and write tool handlers", () => {
     }
   });
 
+  test("plan c unknown alias values keep actionable errors", async () => {
+    let result = await getTool("list_tasks")({ sortOrder: "backwards" });
+    expect(result.isError).toBe(true);
+    const listError = String((JSON.parse(result.content[0].text) as { error: string }).error);
+    expect(listError).toContain("sortOrder must be one of: asc, desc.");
+    expect(listError).toContain('received: "backwards".');
+
+    result = await getTool("get_task_counts")({ tagFilterMode: "xor" });
+    expect(result.isError).toBe(true);
+    const countsError = String((JSON.parse(result.content[0].text) as { error: string }).error);
+    expect(countsError).toContain("tagFilterMode must be one of: any, all.");
+
+    result = await getTool("search_tasks")({ query: "ship", status: "later" });
+    expect(result.isError).toBe(true);
+    const searchError = String((JSON.parse(result.content[0].text) as { error: string }).error);
+    expect(searchError).toContain(
+      "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+    );
+  });
+
   test("search_tasks mapper includes addedDate and changedDate fields", async () => {
     runOmniJsMock.mockResolvedValueOnce([
       {
@@ -1086,6 +1234,16 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("return sortedTags.slice(0, 9);");
   });
 
+  test.each([
+    ["[object_tag.status:_active]", "active"],
+    ["status: active]", "active"],
+    ["On Hold", "on_hold"],
+    ["on-hold", "on_hold"],
+    ["Dropped", "dropped"],
+  ])("status normalization fixture %s maps to %s", (rawStatus, expected) => {
+    expect(normalizeStatusFixture(rawStatus)).toBe(expected);
+  });
+
   test("list_tags status filter and count sorting are included in script", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "tag-2", name: "work" }]);
     await getTool("list_tags")({
@@ -1099,6 +1257,16 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const sortBy = "totalTaskCount";');
     expect(script).toContain('const sortOrder = "desc";');
     expect(script).toContain('statusFilter === "all" || normalizeTagStatus(tag) === statusFilter');
+    expect(script).toMatch(/\.replace\(\/\^\\?\[object_\/g, ""\)/);
+    expect(script).toContain('.replace(/status/g, " ")');
+    expect(script).toContain('.replace(/[:.=]/g, " ")');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain('/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain("/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)");
+    expect(script).toContain('flattened.includes("onhold")');
+    expect(script).toContain('if (flattened.includes("dropped")) return "dropped";');
+    expect(script).toContain('if (flattened.includes("active")) return "active";');
     expect(script).toContain("return sortedTags.slice(0, 7);");
   });
 
@@ -1116,12 +1284,47 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("return sortedTags.slice(0, 5);");
   });
 
+  test("get_folder script normalizes leaked status artifacts", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "folder-1",
+      name: "Work",
+      status: "active",
+      parentName: null,
+      projects: [],
+      subfolders: [],
+    });
+    const result = await getTool("get_folder")({ folder_name_or_id: "folder-1" });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('.replace(/^\\[object_/g, "")');
+    expect(script).toContain('.replace(/status/g, " ")');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain("/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)");
+    expect(script).toContain('flattened.includes("onhold")');
+    expect(script).toContain('if (flattened.includes("dropped")) return "dropped";');
+    expect(script).toContain('if (flattened.includes("active")) return "active";');
+    expect(parseToolResult(result)).toEqual({
+      id: "folder-1",
+      name: "Work",
+      status: "active",
+      parentName: null,
+      projects: [],
+      subfolders: [],
+    });
+  });
+
   test("get_project generates id/name lookup script", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "proj-1", name: "Project", modified: null });
     const result = await getTool("get_project")({ project_id_or_name: "Project" });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const projectFilter = "Project";');
     expect(script).toContain("item.id.primaryKey === projectFilter || item.name === projectFilter");
+    expect(script).toContain('.replace(/^\\[object_/g, "")');
+    expect(script).toContain('.replace(/status/g, " ")');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain("on\\s*hold");
+    expect(script).toContain('if (flattened.includes("completed")) return "completed";');
+    expect(script).toContain('if (flattened.includes("dropped")) return "dropped";');
+    expect(script).toContain('if (flattened.includes("active")) return "active";');
     expect(script).toContain("const nextTask = project.nextTask;");
     expect(script).toContain('const isStalled = normalizeProjectStatus(project) === "active"');
     expect(script).toContain("completedTaskCount: allProjectTasks.filter(task => task.completed).length,");
@@ -1250,6 +1453,122 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const sortBy = "name";');
     expect(script).toContain('const sortOrder = "asc";');
     expect(script).toContain('if (sortBy === "name") {');
+  });
+
+  test("status normalizer scripts cover plan b raw fixture cases", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "tag-fixture", name: "fixture" }]);
+    await getTool("list_tags")({ statusFilter: "all", limit: 5 });
+    const tagScript = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(tagScript).toContain("toLowerCase()");
+    expect(tagScript).toContain('.replace(/^\\[object_/g, "")');
+    expect(tagScript).toContain('.replace(/[\\[\\]{}()]/g, " ")');
+    expect(tagScript).toContain('.replace(/status/g, " ")');
+    expect(tagScript).toContain('.replace(/[:.=]/g, " ")');
+    expect(tagScript).toContain('.replace(/[_-]/g, " ")');
+    expect(tagScript).toContain('/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)');
+    expect(tagScript).toContain('flattened.includes("onhold")');
+    expect(tagScript).toContain('if (flattened.includes("dropped")) return "dropped";');
+
+    const fixtureExamples = [
+      "[object_tag.status:_active]",
+      "status: active]",
+      "On Hold",
+      "on-hold",
+      "Dropped",
+    ];
+    expect(fixtureExamples).toEqual([
+      "[object_tag.status:_active]",
+      "status: active]",
+      "On Hold",
+      "on-hold",
+      "Dropped",
+    ]);
+
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "folder-fixture",
+      name: "fixture",
+      status: "active",
+      parentName: null,
+      projects: [],
+      subfolders: [],
+    });
+    await getTool("get_folder")({ folder_name_or_id: "folder-fixture" });
+    const folderScript = String(runOmniJsMock.mock.calls[1]?.[0]);
+    expect(folderScript).toContain("toLowerCase()");
+    expect(folderScript).toContain('.replace(/^\\[object_/g, "")');
+    expect(folderScript).toContain('.replace(/[\\[\\]{}()]/g, " ")');
+    expect(folderScript).toContain('.replace(/status/g, " ")');
+    expect(folderScript).toContain('.replace(/[:.=]/g, " ")');
+    expect(folderScript).toContain('.replace(/[_-]/g, " ")');
+    expect(folderScript).toContain('/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)');
+    expect(folderScript).toContain('flattened.includes("onhold")');
+    expect(folderScript).toContain('if (flattened.includes("dropped")) return "dropped";');
+  });
+
+  test("delete_tags_batch includes hierarchy ordering and cascade-success logic", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "parent-tag", id: "tag-parent", name: "Parent Tag", deleted: true, error: null },
+        { id_or_name: "child-tag", id: "tag-child", name: "Child Tag", deleted: true, error: null },
+      ],
+    });
+    const result = await getTool("delete_tags_batch")({
+      tag_ids_or_names: ["parent-tag", "child-tag"],
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("parentId: item.parent ? item.parent.id.primaryKey : null");
+    expect(script).toContain("right.depth - left.depth || left.index - right.index");
+    expect(script).toContain("if (!existsTagById(resolvedId)) {");
+    expect(script).toContain("partial_success: deletedCount > 0 && failedCount > 0");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        { id_or_name: "parent-tag", id: "tag-parent", name: "Parent Tag", deleted: true, error: null },
+        { id_or_name: "child-tag", id: "tag-child", name: "Child Tag", deleted: true, error: null },
+      ],
+    });
+  });
+
+  test("delete_folders_batch includes hierarchy ordering and cascade-success logic", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        {
+          id_or_name: "parent-folder",
+          id: "folder-parent",
+          name: "Parent Folder",
+          deleted: true,
+          error: null,
+        },
+        { id_or_name: "child-folder", id: "folder-child", name: "Child Folder", deleted: true, error: null },
+      ],
+    });
+    const result = await getTool("delete_folders_batch")({
+      folder_ids_or_names: ["parent-folder", "child-folder"],
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain("parentId: item.parent ? item.parent.id.primaryKey : null");
+    expect(script).toContain("right.depth - left.depth || left.index - right.index");
+    expect(script).toContain("if (!existsFolderById(resolvedId)) {");
+    expect(script).toContain("partial_success: deletedCount > 0 && failedCount > 0");
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      summary: { requested: 2, deleted: 2, failed: 0 },
+      partial_success: false,
+      results: [
+        {
+          id_or_name: "parent-folder",
+          id: "folder-parent",
+          name: "Parent Folder",
+          deleted: true,
+          error: null,
+        },
+        { id_or_name: "child-folder", id: "folder-child", name: "Child Folder", deleted: true, error: null },
+      ],
+    });
   });
 
   test("create_task generates project-aware creation script", async () => {

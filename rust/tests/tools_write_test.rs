@@ -1241,6 +1241,43 @@ async fn delete_tags_batch_partial_success() {
 }
 
 #[tokio::test]
+async fn delete_tags_batch_hierarchy_cascade_effective_success_plan_a() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 2, "failed": 0},
+            "partial_success": false,
+            "results": [
+                {"id_or_name": "parent-tag", "id": "tag-parent", "name": "Parent Tag", "deleted": true, "error": null},
+                {"id_or_name": "child-tag", "id": "tag-child", "name": "Child Tag", "deleted": true, "error": null}
+            ]
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = delete_tags_batch(
+        &runner,
+        vec!["parent-tag".to_string(), "child-tag".to_string()],
+    )
+    .await
+    .expect("delete_tags_batch should succeed");
+    assert_eq!(result["summary"]["failed"], 0);
+    assert_eq!(result["partial_success"], false);
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("parentId: item.parent ? item.parent.id.primaryKey : null"));
+    assert!(captured.contains("right.depth - left.depth || left.index - right.index"));
+    assert!(captured.contains("if (!existsTagById(resolvedId)) {"));
+    assert!(captured.contains("partial_success: deletedCount > 0 && failedCount > 0"));
+}
+
+#[tokio::test]
 async fn delete_tags_batch_validation_errors() {
     let runner = MockRunner { payload: json!({}) };
     assert!(matches!(
@@ -1255,6 +1292,35 @@ async fn delete_tags_batch_validation_errors() {
         delete_tags_batch(&runner, vec!["tag-a".to_string(), "tag-a".to_string()]).await,
         Err(OmniFocusError::Validation(_))
     ));
+}
+
+#[tokio::test]
+async fn delete_tags_batch_script_uses_hierarchy_order_and_live_lookup() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 2, "failed": 0},
+            "partial_success": false,
+            "results": []
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let _ = delete_tags_batch(&runner, vec!["tag-1".to_string(), "tag-2".to_string()])
+        .await
+        .expect("delete_tags_batch should succeed");
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock")
+        .first()
+        .cloned()
+        .expect("captured script");
+    assert!(captured
+        .contains("sort((left, right) => right.depth - left.depth || left.index - right.index)"));
+    assert!(captured.contains("const getLiveTagById = (tagId) => {"));
+    assert!(captured.contains("deleteObject(liveTag);"));
 }
 
 #[tokio::test]
@@ -1312,6 +1378,43 @@ async fn delete_folders_batch_partial_success() {
 }
 
 #[tokio::test]
+async fn delete_folders_batch_hierarchy_cascade_effective_success_plan_a() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 2, "failed": 0},
+            "partial_success": false,
+            "results": [
+                {"id_or_name": "parent-folder", "id": "folder-parent", "name": "Parent Folder", "deleted": true, "error": null},
+                {"id_or_name": "child-folder", "id": "folder-child", "name": "Child Folder", "deleted": true, "error": null}
+            ]
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = delete_folders_batch(
+        &runner,
+        vec!["parent-folder".to_string(), "child-folder".to_string()],
+    )
+    .await
+    .expect("delete_folders_batch should succeed");
+    assert_eq!(result["summary"]["failed"], 0);
+    assert_eq!(result["partial_success"], false);
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+    assert!(captured.contains("parentId: item.parent ? item.parent.id.primaryKey : null"));
+    assert!(captured.contains("right.depth - left.depth || left.index - right.index"));
+    assert!(captured.contains("if (!existsFolderById(resolvedId)) {"));
+    assert!(captured.contains("partial_success: deletedCount > 0 && failedCount > 0"));
+}
+
+#[tokio::test]
 async fn delete_folders_batch_validation_errors() {
     let runner = MockRunner { payload: json!({}) };
     assert!(matches!(
@@ -1330,6 +1433,38 @@ async fn delete_folders_batch_validation_errors() {
         .await,
         Err(OmniFocusError::Validation(_))
     ));
+}
+
+#[tokio::test]
+async fn delete_folders_batch_script_uses_hierarchy_order_and_live_lookup() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({
+            "summary": {"requested": 2, "deleted": 2, "failed": 0},
+            "partial_success": false,
+            "results": []
+        }),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let _ = delete_folders_batch(
+        &runner,
+        vec!["folder-1".to_string(), "folder-2".to_string()],
+    )
+    .await
+    .expect("delete_folders_batch should succeed");
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock")
+        .first()
+        .cloned()
+        .expect("captured script");
+    assert!(captured
+        .contains("sort((left, right) => right.depth - left.depth || left.index - right.index)"));
+    assert!(captured.contains("const getLiveFolderById = (folderId) => {"));
+    assert!(captured.contains("deleteObject(liveFolder);"));
 }
 
 #[tokio::test]

@@ -3,6 +3,57 @@ import { z } from "zod";
 import { escapeForJxa, runOmniJs } from "../jxa.js";
 import { errorResult, normalizeError, textResult, type Server, type TaskStatus } from "../types.js";
 
+function normalizeTagFilterModeInput(value: string): "any" | "all" {
+  const normalizedValue = value.trim().toLowerCase();
+  if (normalizedValue === "any" || normalizedValue === "all") {
+    return normalizedValue;
+  }
+  if (normalizedValue === "and") {
+    return "all";
+  }
+  if (normalizedValue === "or") {
+    return "any";
+  }
+  throw new Error(`tagFilterMode must be one of: any, all. received: ${JSON.stringify(value)}.`);
+}
+
+function normalizeTaskStatusInput(value: string): TaskStatus {
+  const normalizedValue = value.trim().toLowerCase().replace(/-/g, "_").replace(/\s+/g, "_");
+  if (
+    normalizedValue === "available" ||
+    normalizedValue === "overdue" ||
+    normalizedValue === "on_hold" ||
+    normalizedValue === "onhold" ||
+    normalizedValue === "completed" ||
+    normalizedValue === "all"
+  ) {
+    if (normalizedValue === "onhold") {
+      return "on_hold";
+    }
+    return normalizedValue as TaskStatus;
+  }
+  if (normalizedValue === "due_soon" || normalizedValue === "duesoon") {
+    return "due_soon";
+  }
+  throw new Error(
+    `status must be one of: available, due_soon, overdue, on_hold, completed, all. received: ${JSON.stringify(value)}.`
+  );
+}
+
+function normalizeSortOrderInput(value: string): "asc" | "desc" {
+  const normalizedValue = value.trim().toLowerCase();
+  if (normalizedValue === "asc" || normalizedValue === "desc") {
+    return normalizedValue;
+  }
+  if (normalizedValue === "ascending") {
+    return "asc";
+  }
+  if (normalizedValue === "descending") {
+    return "desc";
+  }
+  throw new Error(`sortOrder must be one of: asc, desc. received: ${JSON.stringify(value)}.`);
+}
+
 export function register(server: Server): void {
   server.tool(
     "get_inbox",
@@ -19,14 +70,22 @@ export function register(server: Server): void {
 
   server.tool(
     "list_tasks",
-    "list tasks with optional filters for project, tag/tags, flagged state, status, date ranges, and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
+    "list tasks with optional filters for project, tag/tags, flagged state, status, date ranges, and sorting. canonical status values are available, due_soon, overdue, on_hold, completed, and all. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon and on hold or on-hold, and tagFilterMode and/or. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
     {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       tags: z.array(z.string().min(1)).optional(),
-      tagFilterMode: z.enum(["any", "all"]).default("any"),
+      tagFilterMode: z
+        .string()
+        .default("any")
+        .describe("tag matching mode: any/all. aliases: and/or (case-insensitive)."),
       flagged: z.boolean().optional(),
-      status: z.enum(["available", "due_soon", "overdue", "completed", "all"]).default("available"),
+      status: z
+        .string()
+        .default("available")
+        .describe(
+          "task status filter: available, due_soon, overdue, on_hold, completed, all. aliases: due soon/due-soon, on hold/on-hold."
+        ),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
       deferBefore: z.string().optional(),
@@ -57,7 +116,10 @@ export function register(server: Server): void {
           "planned",
         ])
         .optional(),
-      sortOrder: z.enum(["asc", "desc"]).default("asc"),
+      sortOrder: z
+        .string()
+        .default("asc")
+        .describe("sort direction: asc/desc. aliases: ascending/descending."),
       limit: z.number().int().min(1).default(100),
     },
     async ({
@@ -85,14 +147,17 @@ export function register(server: Server): void {
       limit,
     }) => {
       try {
+        const normalizedTagFilterMode = normalizeTagFilterModeInput(tagFilterMode ?? "any");
+        const normalizedStatus = normalizeTaskStatusInput(status ?? "available");
+        const normalizedSortOrder = normalizeSortOrderInput(sortOrder ?? "asc");
         return textResult(
           await listTasksData(
             project,
             tag,
             tags,
-            tagFilterMode ?? "any",
+            normalizedTagFilterMode,
             flagged,
-            status,
+            normalizedStatus,
             dueBefore,
             dueAfter,
             deferBefore,
@@ -107,7 +172,7 @@ export function register(server: Server): void {
             plannedAfter,
             maxEstimatedMinutes,
             sortBy,
-            sortOrder,
+            normalizedSortOrder,
             limit
           )
         );
@@ -119,12 +184,15 @@ export function register(server: Server): void {
 
   server.tool(
     "get_task_counts",
-    "get aggregate task counts for any filter combination without listing individual tasks. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp. much faster than list_tasks for answering 'how many' questions.",
+    "get aggregate task counts for any filter combination without listing individual tasks. added_* and changed_* filters must be ISO 8601 date strings; changed means the task's last modified timestamp. tagFilterMode accepts canonical any/all and aliases and/or (case-insensitive). much faster than list_tasks for answering 'how many' questions.",
     {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       tags: z.array(z.string().min(1)).optional(),
-      tagFilterMode: z.enum(["any", "all"]).default("any"),
+      tagFilterMode: z
+        .string()
+        .default("any")
+        .describe("tag matching mode: any/all. aliases: and/or (case-insensitive)."),
       flagged: z.boolean().optional(),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
@@ -157,12 +225,13 @@ export function register(server: Server): void {
       maxEstimatedMinutes,
     }) => {
       try {
+        const normalizedTagFilterMode = normalizeTagFilterModeInput(tagFilterMode ?? "any");
         return textResult(
           await getTaskCountsData(
             project,
             tag,
             tags,
-            tagFilterMode ?? "any",
+            normalizedTagFilterMode,
             flagged,
             dueBefore,
             dueAfter,
@@ -545,15 +614,23 @@ return {
 
   server.tool(
     "search_tasks",
-    "search tasks by case-insensitive query across name and note with optional filters and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
+    "search tasks by case-insensitive query across name and note with optional filters and sorting. canonical status values are available, due_soon, overdue, on_hold, completed, and all. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon and on hold or on-hold, and tagFilterMode and/or. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
     {
       query: z.string().min(1),
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       tags: z.array(z.string().min(1)).optional(),
-      tagFilterMode: z.enum(["any", "all"]).default("any"),
+      tagFilterMode: z
+        .string()
+        .default("any")
+        .describe("tag matching mode: any/all. aliases: and/or (case-insensitive)."),
       flagged: z.boolean().optional(),
-      status: z.enum(["available", "due_soon", "overdue", "completed", "all"]).default("available"),
+      status: z
+        .string()
+        .default("available")
+        .describe(
+          "task status filter: available, due_soon, overdue, on_hold, completed, all. aliases: due soon/due-soon, on hold/on-hold."
+        ),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
       deferBefore: z.string().optional(),
@@ -584,7 +661,10 @@ return {
           "planned",
         ])
         .optional(),
-      sortOrder: z.enum(["asc", "desc"]).default("asc"),
+      sortOrder: z
+        .string()
+        .default("asc")
+        .describe("sort direction: asc/desc. aliases: ascending/descending."),
       limit: z.number().int().min(1).default(100),
     },
     async ({
@@ -613,15 +693,18 @@ return {
       limit,
     }) => {
       try {
+        const normalizedTagFilterMode = normalizeTagFilterModeInput(tagFilterMode ?? "any");
+        const normalizedStatus = normalizeTaskStatusInput(status ?? "available");
+        const normalizedSortOrder = normalizeSortOrderInput(sortOrder ?? "asc");
         return textResult(
           await searchTasksData(
             query,
             project,
             tag,
             tags,
-            tagFilterMode ?? "any",
+            normalizedTagFilterMode,
             flagged,
-            status ?? "available",
+            normalizedStatus,
             dueBefore,
             dueAfter,
             deferBefore,
@@ -636,7 +719,7 @@ return {
             plannedAfter,
             maxEstimatedMinutes,
             sortBy,
-            sortOrder,
+            normalizedSortOrder,
             limit
           )
         );
@@ -1676,6 +1759,12 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       } else if (statusFilter === "due_soon") {
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      } else if (statusFilter === "on_hold") {
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches =
+          projectStatus.includes("onhold") ||
+          projectStatus.includes("on hold") ||
+          projectStatus.includes("on_hold");
       }
     }
     if (!statusMatches) return false;
@@ -2114,6 +2203,12 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       } else if (statusFilter === "due_soon") {
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      } else if (statusFilter === "on_hold") {
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches =
+          projectStatus.includes("onhold") ||
+          projectStatus.includes("on hold") ||
+          projectStatus.includes("on_hold");
       }
     }
     if (!statusMatches) return false;

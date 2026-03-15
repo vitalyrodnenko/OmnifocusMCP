@@ -115,11 +115,20 @@ document.flattenedTasks.forEach(task => {{
 
 const normalizeProjectStatus = (project) => {{
   const rawStatus = String(project.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+  const flattened = rawStatus
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{{}}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
+  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
   return "active";
 }};
 
@@ -225,11 +234,20 @@ pub async fn search_projects<R: JxaRunner>(runner: &R, query: &str, limit: i32) 
         r#"const queryValue = {query_value};
 const normalizeProjectStatus = (project) => {{
   const rawStatus = String(project.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+  const flattened = rawStatus
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{{}}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
+  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
   return "active";
 }};
 
@@ -268,11 +286,20 @@ pub async fn get_project_counts<R: JxaRunner>(
 
 const normalizeProjectStatus = (project) => {{
   const rawStatus = String(project.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+  const flattened = rawStatus
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{{}}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
+  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
   return "active";
 }};
 
@@ -330,11 +357,20 @@ if (!project) {{
 
 const normalizeProjectStatus = (item) => {{
   const rawStatus = String(item.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+  const flattened = rawStatus
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{{}}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
+  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
   return "active";
 }};
 
@@ -862,11 +898,20 @@ if (!project) {{
 const has = (key) => Object.prototype.hasOwnProperty.call(updates, key);
 const normalizeProjectStatus = (item) => {{
   const rawStatus = String(item.status || "").toLowerCase();
-  if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {{
+  const flattened = rawStatus
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{{}}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (rawStatus.includes("completed")) return "completed";
-  if (rawStatus.includes("dropped")) return "dropped";
+  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
   return "active";
 }};
 const parseReviewInterval = (value) => {{

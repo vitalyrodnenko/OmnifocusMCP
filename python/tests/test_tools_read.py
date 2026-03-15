@@ -1,6 +1,7 @@
 import json
 from collections.abc import Callable
 import importlib
+import re
 import sys
 import types
 from typing import Any
@@ -25,6 +26,37 @@ def _patch_run_omnijs(
         monkeypatch.setattr(
             importlib.import_module(module_name), "run_omnijs", fake_run_omnijs
         )
+
+
+def _normalize_status_fixture(raw_status: str) -> str:
+    flattened = re.sub(
+        r"\s+",
+        " ",
+        re.sub(
+            r"[_-]",
+            " ",
+            re.sub(
+                r"[:.=]",
+                " ",
+                re.sub(
+                    r"status",
+                    " ",
+                    re.sub(
+                        r"[\[\]{}()]",
+                        " ",
+                        re.sub(r"^\[object_", "", str(raw_status).lower()),
+                    ),
+                ),
+            ),
+        ),
+    ).strip()
+    if "onhold" in flattened or re.search(r"(^|\s)on\s*hold(\s|$)", flattened):
+        return "on_hold"
+    if "dropped" in flattened:
+        return "dropped"
+    if "active" in flattened:
+        return "active"
+    return "active"
 
 
 @pytest.fixture
@@ -577,6 +609,75 @@ async def test_list_tasks_tags_filter_merges_tag_and_tags_union(
 
 
 @pytest.mark.asyncio
+async def test_list_tasks_alias_inputs_normalize_to_canonical_values(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(
+        tags=["Home", "Deep"],
+        tagFilterMode="AND",
+        status="due soon",
+        sortOrder="Descending",
+        limit=5,
+    )
+
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "all";' in script
+    assert 'const statusFilter = "due_soon";' in script
+    assert 'const sortOrder = "desc";' in script
+
+
+@pytest.mark.asyncio
+async def test_search_tasks_alias_inputs_normalize_to_canonical_values(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.search_tasks(
+        query="audit",
+        tags=["Home", "Deep"],
+        tagFilterMode="or",
+        status="Due-Soon",
+        sortOrder="ascending",
+        limit=5,
+    )
+
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "any";' in script
+    assert 'const statusFilter = "due_soon";' in script
+    assert 'const sortOrder = "asc";' in script
+
+
+@pytest.mark.asyncio
+async def test_get_task_counts_alias_input_normalizes_to_canonical_values(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs(
+        {
+            "total": 0,
+            "available": 0,
+            "completed": 0,
+            "overdue": 0,
+            "dueSoon": 0,
+            "flagged": 0,
+            "deferred": 0,
+        }
+    )
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.get_task_counts(tags=["Home"], tagFilterMode="OR")
+
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "any";' in script
+
+
+@pytest.mark.asyncio
 async def test_list_tasks_tags_filter_ignores_empty_tags_array(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -810,12 +911,88 @@ async def test_get_task_counts_happy_path(
 async def test_get_task_counts_validation_errors(server_module: Any) -> None:
     with pytest.raises(ValueError, match="project must not be empty when provided."):
         await server_module.get_task_counts(project="  ")
-    with pytest.raises(ValueError, match="tagFilterMode must be one of: any, all."):
+    with pytest.raises(
+        ValueError, match=r"tagFilterMode must be one of: any, all\. received: 'invalid'\."
+    ):
         await server_module.get_task_counts(tagFilterMode="invalid")
     with pytest.raises(
         ValueError, match="maxEstimatedMinutes must be greater than or equal to 0."
     ):
         await server_module.get_task_counts(maxEstimatedMinutes=-1)
+
+
+@pytest.mark.asyncio
+async def test_get_task_counts_tag_filter_mode_alias_maps_to_all(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs(
+        {
+            "total": 1,
+            "available": 1,
+            "completed": 0,
+            "overdue": 0,
+            "dueSoon": 0,
+            "flagged": 0,
+            "deferred": 0,
+        }
+    )
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.get_task_counts(project="Errands", tagFilterMode="AND")
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "all";' in script
+
+
+@pytest.mark.asyncio
+async def test_plan_c_aliases_are_normalized_for_list_and_search(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tasks(
+        tags=["Home", "Work"],
+        tagFilterMode="AND",
+        status="due soon",
+        sortOrder="Descending",
+        limit=5,
+    )
+    list_script = state["calls"][-1]["script"]
+    assert 'const tagFilterMode = "all";' in list_script
+    assert 'const statusFilter = "due_soon";' in list_script
+    assert 'const sortOrder = "desc";' in list_script
+
+    await server.search_tasks(
+        query="alias probe",
+        tags=["Home", "Work"],
+        tagFilterMode="OR",
+        status="Due-Soon",
+        sortOrder="Ascending",
+        limit=5,
+    )
+    search_script = state["calls"][-1]["script"]
+    assert 'const tagFilterMode = "any";' in search_script
+    assert 'const statusFilter = "due_soon";' in search_script
+    assert 'const sortOrder = "asc";' in search_script
+
+
+@pytest.mark.asyncio
+async def test_plan_c_alias_unknown_values_remain_strict(server_module: Any) -> None:
+    with pytest.raises(
+        ValueError, match=r"sortOrder must be one of: asc, desc\. received: 'sideways'\."
+    ):
+        await server_module.list_tasks(sortOrder="sideways")
+    with pytest.raises(
+        ValueError,
+        match=r"status must be one of: available, due_soon, overdue, on_hold, completed, all\. received: 'tomorrowish'\.",
+    ):
+        await server_module.search_tasks(query="alias strict", status="tomorrowish")
+    with pytest.raises(
+        ValueError, match=r"tagFilterMode must be one of: any, all\. received: 'xor'\."
+    ):
+        await server_module.get_task_counts(tagFilterMode="xor")
 
 
 @pytest.mark.asyncio
@@ -1201,6 +1378,29 @@ async def test_search_tasks_validation_errors(server_module: Any) -> None:
 
 
 @pytest.mark.asyncio
+async def test_search_tasks_aliases_map_to_canonical_values(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([{"id": "t-alias", "name": "task"}])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.search_tasks(
+        query="shape",
+        tags=["Home"],
+        tagFilterMode="OR",
+        status="Due Soon",
+        sortBy="name",
+        sortOrder="Ascending",
+        limit=5,
+    )
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "any";' in script
+    assert 'const statusFilter = "due_soon";' in script
+    assert 'const sortOrder = "asc";' in script
+
+
+@pytest.mark.asyncio
 async def test_list_projects_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -1381,6 +1581,13 @@ async def test_get_project_happy_path(
     assert 'const projectFilter = "p2";' in script
     assert "const nextTask = project.nextTask;" in script
     assert 'const isStalled = normalizeProjectStatus(project) === "active"' in script
+    assert ".replace(/^\\[object_/g, \"\")" in script
+    assert ".replace(/status/g, \" \")" in script
+    assert ".replace(/[_-]/g, \" \")" in script
+    assert "on\\s*hold" in script
+    assert 'if (flattened.includes("completed")) return "completed";' in script
+    assert 'if (flattened.includes("dropped")) return "dropped";' in script
+    assert 'if (flattened.includes("active")) return "active";' in script
     assert (
         "completedTaskCount: allProjectTasks.filter(task => task.completed).length,"
         in script
@@ -1470,6 +1677,14 @@ async def test_list_tags_status_filter_and_sorting_script(
     assert (
         'statusFilter === "all" || normalizeTagStatus(tag) === statusFilter' in script
     )
+    assert '.replace(/^\\[object_/g, "")' in script
+    assert '.replace(/status/g, " ")' in script
+    assert '.replace(/[:.=]/g, " ")' in script
+    assert '.replace(/[_-]/g, " ")' in script
+    assert "/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)" in script
+    assert 'flattened.includes("onhold")' in script
+    assert 'if (flattened.includes("dropped")) return "dropped";' in script
+    assert 'if (flattened.includes("active")) return "active";' in script
     assert "return sortedTags.slice(0, 7);" in script
 
 
@@ -1497,6 +1712,20 @@ async def test_list_tags_name_sort_script(
     assert 'const sortBy = "name";' in script
     assert 'const sortOrder = "asc";' in script
     assert 'if (sortBy === "name") {' in script
+
+
+@pytest.mark.parametrize(
+    ("raw_status", "expected"),
+    [
+        ("[object_tag.status:_active]", "active"),
+        ("status: active]", "active"),
+        ("On Hold", "on_hold"),
+        ("on-hold", "on_hold"),
+        ("Dropped", "dropped"),
+    ],
+)
+def test_status_normalizer_fixtures_plan_b(raw_status: str, expected: str) -> None:
+    assert _normalize_status_fixture(raw_status) == expected
 
 
 @pytest.mark.asyncio
@@ -1539,6 +1768,62 @@ async def test_get_folder_happy_path_criterion16(
     assert "Folder not found" in script
     assert "projects: folder.projects.map" in script
     assert "subfolders: folder.folders.map" in script
+    assert '.replace(/^\\[object_/g, "")' in script
+    assert '.replace(/status/g, " ")' in script
+    assert '.replace(/[:.=]/g, " ")' in script
+    assert '.replace(/[_-]/g, " ")' in script
+    assert "/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)" in script
+    assert 'flattened.includes("onhold")' in script
+    assert 'if (flattened.includes("dropped")) return "dropped";' in script
+    assert 'if (flattened.includes("active")) return "active";' in script
+
+
+@pytest.mark.asyncio
+async def test_status_normalizer_scripts_cover_plan_b_raw_fixture_cases(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.list_tags(statusFilter="all", limit=5)
+    tag_script = state["calls"][0]["script"]
+    assert "toLowerCase()" in tag_script
+    assert '.replace(/^\\[object_/g, "")' in tag_script
+    assert '.replace(/[\\[\\]{}()]/g, " ")' in tag_script
+    assert '.replace(/status/g, " ")' in tag_script
+    assert '.replace(/[:.=]/g, " ")' in tag_script
+    assert '.replace(/[_-]/g, " ")' in tag_script
+    assert '/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)' in tag_script
+    assert 'flattened.includes("onhold")' in tag_script
+    assert 'if (flattened.includes("dropped")) return "dropped";' in tag_script
+
+    fixture_examples = [
+        "[object_tag.status:_active]",
+        "status: active]",
+        "On Hold",
+        "on-hold",
+        "Dropped",
+    ]
+    assert fixture_examples == [
+        "[object_tag.status:_active]",
+        "status: active]",
+        "On Hold",
+        "on-hold",
+        "Dropped",
+    ]
+
+    await server.get_folder(folder_name_or_id="folder-1")
+    folder_script = state["calls"][1]["script"]
+    assert "toLowerCase()" in folder_script
+    assert '.replace(/^\\[object_/g, "")' in folder_script
+    assert '.replace(/[\\[\\]{}()]/g, " ")' in folder_script
+    assert '.replace(/status/g, " ")' in folder_script
+    assert '.replace(/[:.=]/g, " ")' in folder_script
+    assert '.replace(/[_-]/g, " ")' in folder_script
+    assert '/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)' in folder_script
+    assert 'flattened.includes("onhold")' in folder_script
+    assert 'if (flattened.includes("dropped")) return "dropped";' in folder_script
 
 
 @pytest.mark.asyncio
@@ -1750,6 +2035,21 @@ async def test_duplicate_task_validation_errors(server_module: Any) -> None:
 async def test_list_tasks_invalid_status_validation_error(server_module: Any) -> None:
     with pytest.raises(ValueError, match="status must be one of"):
         await server_module.list_tasks(status="invalid-status")  # type: ignore[arg-type]
+
+
+@pytest.mark.asyncio
+async def test_plan_c_unknown_alias_values_keep_actionable_errors(
+    server_module: Any,
+) -> None:
+    with pytest.raises(ValueError, match=r"sortOrder must be one of: asc, desc\."):
+        await server_module.list_tasks(sortOrder="backwards")
+    with pytest.raises(ValueError, match=r"tagFilterMode must be one of: any, all\."):
+        await server_module.get_task_counts(tagFilterMode="xor")
+    with pytest.raises(
+        ValueError,
+        match=r"status must be one of: available, due_soon, overdue, on_hold, completed, all\.",
+    ):
+        await server_module.search_tasks(query="ship", status="later")
 
 
 @pytest.mark.asyncio

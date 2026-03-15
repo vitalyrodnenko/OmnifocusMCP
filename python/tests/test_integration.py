@@ -43,7 +43,13 @@ except Exception:
     sys.modules["mcp.server.fastmcp"] = mcp_fastmcp_module
 
 from omnifocus_mcp.jxa import run_omnijs
-from omnifocus_mcp.tools.folders import create_folder, delete_folder, delete_folders_batch, list_folders
+from omnifocus_mcp.tools.folders import (
+    create_folder,
+    delete_folder,
+    delete_folders_batch,
+    get_folder,
+    list_folders,
+)
 from omnifocus_mcp.tools.forecast import get_forecast
 from omnifocus_mcp.tools.perspectives import list_perspectives
 from omnifocus_mcp.tools.projects import (
@@ -60,6 +66,7 @@ from omnifocus_mcp.tools.tasks import (
     complete_task,
     create_task,
     delete_task,
+    get_task_counts,
     get_inbox,
     get_task,
     list_notifications,
@@ -84,7 +91,7 @@ def _test_name(suffix: str) -> str:
 
 @pytest_asyncio.fixture
 async def cleanup_registry() -> dict[str, list[str]]:
-    registry: dict[str, list[str]] = {"task_ids": [], "project_ids": []}
+    registry: dict[str, list[str]] = {"task_ids": [], "project_ids": [], "folder_ids": []}
     try:
         yield registry
     finally:
@@ -97,6 +104,11 @@ async def cleanup_registry() -> dict[str, list[str]]:
         for project_id in reversed(registry["project_ids"]):
             try:
                 await complete_project(project_id_or_name=project_id)
+            except Exception:
+                continue
+        for folder_id in reversed(registry["folder_ids"]):
+            try:
+                await delete_folder(folder_name_or_id=folder_id)
             except Exception:
                 continue
 
@@ -250,12 +262,28 @@ async def test_read_tools_return_valid_json(cleanup_registry: dict[str, list[str
     if tags:
         assert isinstance(tags[0], dict)
         _assert_keys(tags[0], {"id", "name", "parent", "availableTaskCount", "totalTaskCount", "status"})
+        allowed_statuses = {"active", "on_hold", "dropped"}
+        for item in tags:
+            if isinstance(item, dict):
+                assert item.get("status") in allowed_statuses
 
     folders = _parse_json(await list_folders(limit=20))
     assert isinstance(folders, list)
     if folders:
         assert isinstance(folders[0], dict)
         _assert_keys(folders[0], {"id", "name", "parentName", "projectCount"})
+
+    status_folder = _parse_json(await create_folder(name=_test_name("Status probe folder")))
+    assert isinstance(status_folder, dict)
+    status_folder_id = status_folder.get("id")
+    assert isinstance(status_folder_id, str)
+    cleanup_registry["folder_ids"].append(status_folder_id)
+    folder_details = _parse_json(await get_folder(folder_name_or_id=status_folder_id))
+    assert isinstance(folder_details, dict)
+    assert folder_details.get("status") in {"active", "on_hold", "dropped"}
+    for project in folder_details.get("projects", []):
+        if isinstance(project, dict):
+            assert project.get("status") in {"active", "on_hold", "dropped"}
 
     forecast = _parse_json(await get_forecast(limit=20))
     assert isinstance(forecast, dict)
@@ -409,28 +437,55 @@ async def test_new_feature_parity_matrix(cleanup_registry: dict[str, list[str]])
         assert removed_notification.get("removed") is True
         notification_id = None
 
-        tag_one = _parse_json(await create_tag(name=_test_name("Parity batch tag one")))
-        tag_two = _parse_json(await create_tag(name=_test_name("Parity batch tag two")))
-        assert isinstance(tag_one, dict) and isinstance(tag_two, dict)
-        tag_one_id = tag_one.get("id")
-        tag_two_id = tag_two.get("id")
-        assert isinstance(tag_one_id, str) and isinstance(tag_two_id, str)
-        created_tag_ids.extend([tag_one_id, tag_two_id])
-        deleted_tags = _parse_json(await delete_tags_batch([tag_one_id, tag_two_id]))
+        tag_parent_name = _test_name("Parity batch parent tag")
+        tag_parent = _parse_json(await create_tag(name=tag_parent_name))
+        assert isinstance(tag_parent, dict)
+        tag_child = _parse_json(
+            await create_tag(name=_test_name("Parity batch child tag"), parent=tag_parent_name)
+        )
+        assert isinstance(tag_child, dict)
+        tag_parent_id = tag_parent.get("id")
+        tag_child_id = tag_child.get("id")
+        assert isinstance(tag_parent_id, str) and isinstance(tag_child_id, str)
+        created_tag_ids.extend([tag_parent_id, tag_child_id])
+        deleted_tags = _parse_json(await delete_tags_batch([tag_parent_id, tag_child_id]))
         assert isinstance(deleted_tags, dict)
         assert deleted_tags.get("summary", {}).get("deleted") == 2
+        assert deleted_tags.get("summary", {}).get("failed") == 0
+        assert deleted_tags.get("partial_success") is False
+        tag_error_text = " ".join(
+            str(item.get("error", ""))
+            for item in deleted_tags.get("results", [])
+            if isinstance(item, dict) and item.get("error")
+        ).lower()
+        assert "invalid object instance" not in tag_error_text
         created_tag_ids = []
 
-        folder_one = _parse_json(await create_folder(name=_test_name("Parity batch folder one")))
-        folder_two = _parse_json(await create_folder(name=_test_name("Parity batch folder two")))
-        assert isinstance(folder_one, dict) and isinstance(folder_two, dict)
-        folder_one_id = folder_one.get("id")
-        folder_two_id = folder_two.get("id")
-        assert isinstance(folder_one_id, str) and isinstance(folder_two_id, str)
-        created_folder_ids.extend([folder_one_id, folder_two_id])
-        deleted_folders = _parse_json(await delete_folders_batch([folder_one_id, folder_two_id]))
+        folder_parent_name = _test_name("Parity batch parent folder")
+        folder_parent = _parse_json(await create_folder(name=folder_parent_name))
+        assert isinstance(folder_parent, dict)
+        folder_child = _parse_json(
+            await create_folder(
+                name=_test_name("Parity batch child folder"),
+                parent=folder_parent_name,
+            )
+        )
+        assert isinstance(folder_child, dict)
+        folder_parent_id = folder_parent.get("id")
+        folder_child_id = folder_child.get("id")
+        assert isinstance(folder_parent_id, str) and isinstance(folder_child_id, str)
+        created_folder_ids.extend([folder_parent_id, folder_child_id])
+        deleted_folders = _parse_json(await delete_folders_batch([folder_parent_id, folder_child_id]))
         assert isinstance(deleted_folders, dict)
         assert deleted_folders.get("summary", {}).get("deleted") == 2
+        assert deleted_folders.get("summary", {}).get("failed") == 0
+        assert deleted_folders.get("partial_success") is False
+        folder_error_text = " ".join(
+            str(item.get("error", ""))
+            for item in deleted_folders.get("results", [])
+            if isinstance(item, dict) and item.get("error")
+        ).lower()
+        assert "invalid object instance" not in folder_error_text
         created_folder_ids = []
 
         project_one = _parse_json(await create_project(name=_test_name("Parity batch project one")))
@@ -465,3 +520,214 @@ async def test_new_feature_parity_matrix(cleanup_registry: dict[str, list[str]])
                 await delete_project(project_id_or_name=project_id)
             except Exception:
                 continue
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_plan_a_parent_child_batch_delete_effective_success() -> None:
+    prefix = _test_name("Plan A hierarchy")
+    created_tag_ids: list[str] = []
+    created_folder_ids: list[str] = []
+    try:
+        parent_tag_name = f"{prefix} parent tag"
+        child_tag_name = f"{prefix} child tag"
+        parent_tag = _parse_json(await create_tag(name=parent_tag_name))
+        assert isinstance(parent_tag, dict)
+        parent_tag_id = parent_tag.get("id")
+        assert isinstance(parent_tag_id, str)
+        created_tag_ids.append(parent_tag_id)
+
+        child_tag = _parse_json(await create_tag(name=child_tag_name, parent=parent_tag_name))
+        assert isinstance(child_tag, dict)
+        child_tag_id = child_tag.get("id")
+        assert isinstance(child_tag_id, str)
+        created_tag_ids.append(child_tag_id)
+
+        deleted_tags = _parse_json(await delete_tags_batch([parent_tag_id, child_tag_id]))
+        assert isinstance(deleted_tags, dict)
+        assert deleted_tags.get("summary", {}).get("deleted") == 2
+        assert deleted_tags.get("summary", {}).get("failed") == 0
+        assert deleted_tags.get("partial_success") is False
+        tag_results = deleted_tags.get("results")
+        assert isinstance(tag_results, list)
+        assert all(isinstance(item, dict) and item.get("deleted") is True for item in tag_results)
+        assert all(
+            isinstance(item, dict)
+            and "invalid" not in str(item.get("error", "")).lower()
+            and "instance" not in str(item.get("error", "")).lower()
+            for item in tag_results
+        )
+        created_tag_ids = []
+
+        parent_folder_name = f"{prefix} parent folder"
+        child_folder_name = f"{prefix} child folder"
+        parent_folder = _parse_json(await create_folder(name=parent_folder_name))
+        assert isinstance(parent_folder, dict)
+        parent_folder_id = parent_folder.get("id")
+        assert isinstance(parent_folder_id, str)
+        created_folder_ids.append(parent_folder_id)
+
+        child_folder = _parse_json(await create_folder(name=child_folder_name, parent=parent_folder_name))
+        assert isinstance(child_folder, dict)
+        child_folder_id = child_folder.get("id")
+        assert isinstance(child_folder_id, str)
+        created_folder_ids.append(child_folder_id)
+
+        deleted_folders = _parse_json(await delete_folders_batch([parent_folder_id, child_folder_id]))
+        assert isinstance(deleted_folders, dict)
+        assert deleted_folders.get("summary", {}).get("deleted") == 2
+        assert deleted_folders.get("summary", {}).get("failed") == 0
+        assert deleted_folders.get("partial_success") is False
+        folder_results = deleted_folders.get("results")
+        assert isinstance(folder_results, list)
+        assert all(
+            isinstance(item, dict) and item.get("deleted") is True for item in folder_results
+        )
+        assert all(
+            isinstance(item, dict)
+            and "invalid" not in str(item.get("error", "")).lower()
+            and "instance" not in str(item.get("error", "")).lower()
+            for item in folder_results
+        )
+        created_folder_ids = []
+    finally:
+        for tag_id in reversed(created_tag_ids):
+            try:
+                await delete_tag(tag_name_or_id=tag_id)
+            except Exception:
+                continue
+        for folder_id in reversed(created_folder_ids):
+            try:
+                await delete_folder(folder_name_or_id=folder_id)
+            except Exception:
+                continue
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
+    cleanup_registry: dict[str, list[str]],
+) -> None:
+    allowed_statuses = {"active", "on_hold", "dropped"}
+    tag_id: str | None = None
+    folder_id: str | None = None
+    project_id: str | None = None
+    try:
+        created_tag = _parse_json(await create_tag(name=_test_name("Plan B status tag")))
+        assert isinstance(created_tag, dict)
+        tag_id = created_tag.get("id")
+        assert isinstance(tag_id, str)
+
+        created_folder = _parse_json(await create_folder(name=_test_name("Plan B status folder")))
+        assert isinstance(created_folder, dict)
+        folder_id = created_folder.get("id")
+        folder_name = created_folder.get("name")
+        assert isinstance(folder_id, str)
+        assert isinstance(folder_name, str)
+        cleanup_registry["folder_ids"].append(folder_id)
+
+        created_project = _parse_json(
+            await create_project(name=_test_name("Plan B status project"), folder=folder_name)
+        )
+        assert isinstance(created_project, dict)
+        project_id = created_project.get("id")
+        assert isinstance(project_id, str)
+        cleanup_registry["project_ids"].append(project_id)
+
+        listed_tags = _parse_json(await list_tags(limit=100))
+        assert isinstance(listed_tags, list)
+        matching_tag = next(
+            (
+                item
+                for item in listed_tags
+                if isinstance(item, dict) and item.get("id") == tag_id
+            ),
+            None,
+        )
+        assert isinstance(matching_tag, dict)
+        assert matching_tag.get("status") in allowed_statuses
+
+        folder_details = _parse_json(await get_folder(folder_name_or_id=folder_id))
+        assert isinstance(folder_details, dict)
+        assert folder_details.get("status") in allowed_statuses
+        folder_projects = folder_details.get("projects")
+        assert isinstance(folder_projects, list)
+        matching_project = next(
+            (
+                item
+                for item in folder_projects
+                if isinstance(item, dict) and item.get("id") == project_id
+            ),
+            None,
+        )
+        assert isinstance(matching_project, dict)
+        assert matching_project.get("status") in allowed_statuses
+    finally:
+        if tag_id is not None:
+            try:
+                await delete_tag(tag_name_or_id=tag_id)
+            except Exception:
+                pass
+
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_plan_c_alias_inputs_work_for_task_tools(
+    cleanup_registry: dict[str, list[str]],
+) -> None:
+    tag_id: str | None = None
+    try:
+        tag_name = _test_name("Plan C alias tag")
+        created_tag = _parse_json(await create_tag(name=tag_name))
+        assert isinstance(created_tag, dict)
+        tag_id = created_tag.get("id")
+        assert isinstance(tag_id, str)
+
+        task_name = _test_name("Plan C alias task")
+        due_date = (datetime.now(timezone.utc) + timedelta(days=2)).replace(microsecond=0)
+        due_date_iso = due_date.isoformat().replace("+00:00", "Z")
+        created_task = _parse_json(
+            await create_task(name=task_name, dueDate=due_date_iso, tags=[tag_name])
+        )
+        assert isinstance(created_task, dict)
+        task_id = created_task.get("id")
+        assert isinstance(task_id, str)
+        cleanup_registry["task_ids"].append(task_id)
+
+        listed = _parse_json(
+            await list_tasks(
+                tags=[tag_name], tagFilterMode="AND", status="due soon", sortOrder="descending", limit=100
+            )
+        )
+        assert isinstance(listed, list)
+        assert any(
+            isinstance(item, dict) and item.get("id") == task_id and item.get("taskStatus") == "due_soon"
+            for item in listed
+        )
+
+        searched = _parse_json(
+            await search_tasks(
+                query=task_name,
+                tags=[tag_name],
+                tagFilterMode="and",
+                status="due-soon",
+                sortOrder="descending",
+                limit=100,
+            )
+        )
+        assert isinstance(searched, list)
+        assert any(
+            isinstance(item, dict) and item.get("id") == task_id and item.get("taskStatus") == "due_soon"
+            for item in searched
+        )
+
+        counts = _parse_json(await get_task_counts(tags=[tag_name], tagFilterMode="AND"))
+        assert isinstance(counts, dict)
+        assert isinstance(counts.get("total"), int)
+        assert counts["total"] >= 1
+    finally:
+        if tag_id is not None:
+            try:
+                await delete_tag(tag_name_or_id=tag_id)
+            except Exception:
+                pass

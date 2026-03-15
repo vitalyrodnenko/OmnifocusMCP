@@ -1346,6 +1346,14 @@ describe("tool happy paths", () => {
     expect(script).toContain("Folder not found");
     expect(script).toContain("projects: folder.projects.map");
     expect(script).toContain("subfolders: folder.folders.map");
+    expect(script).toContain('.replace(/^\\[object_/g, "")');
+    expect(script).toContain('.replace(/status/g, " ")');
+    expect(script).toContain('.replace(/[:.=]/g, " ")');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain('/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)');
+    expect(script).toContain('flattened.includes("onhold")');
+    expect(script).toContain('if (flattened.includes("dropped")) return "dropped";');
+    expect(script).toContain('if (flattened.includes("active")) return "active";');
   });
 
   test("get_folder returns folder details with direct children", async () => {
@@ -1561,6 +1569,10 @@ describe("tool happy paths", () => {
         { id_or_name: "Home", id: "tag-2", name: "Home", deleted: true, error: null },
       ],
     });
+    const script = runOmniJsMock.mock.calls.at(-1)?.[0] as string;
+    expect(script).toContain("sort((left, right) => right.depth - left.depth || left.index - right.index)");
+    expect(script).toContain("const getLiveTagById = tagId => {");
+    expect(script).toContain("deleteObject(liveTag);");
   });
 
   test("delete_tags_batch supports partial success", async () => {
@@ -1635,6 +1647,10 @@ describe("tool happy paths", () => {
         { id_or_name: "Work", id: "folder-2", name: "Work", deleted: true, error: null },
       ],
     });
+    const script = runOmniJsMock.mock.calls.at(-1)?.[0] as string;
+    expect(script).toContain("sort((left, right) => right.depth - left.depth || left.index - right.index)");
+    expect(script).toContain("const getLiveFolderById = folderId => {");
+    expect(script).toContain("deleteObject(liveFolder);");
   });
 
   test("delete_folders_batch supports partial success", async () => {

@@ -173,6 +173,9 @@ integrationDescribe("typescript integration", () => {
       const getProject = getHandler("get_project");
       const listTags = getHandler("list_tags");
       const listFolders = getHandler("list_folders");
+      const getFolder = getHandler("get_folder");
+      const createFolder = getHandler("create_folder");
+      const deleteFolder = getHandler("delete_folder");
       const getForecast = getHandler("get_forecast");
       const listPerspectives = getHandler("list_perspectives");
 
@@ -221,9 +224,37 @@ integrationDescribe("typescript integration", () => {
 
       const tags = parseToolResult(await listTags({ statusFilter: "all", limit: 20 })) as unknown[];
       expect(Array.isArray(tags)).toBe(true);
+      for (const tag of tags as Array<Record<string, unknown>>) {
+        expect(["active", "on_hold", "dropped"]).toContain(String(tag.status));
+      }
 
       const folders = parseToolResult(await listFolders({ limit: 20 })) as unknown[];
       expect(Array.isArray(folders)).toBe(true);
+      let statusFolderId: string | null = null;
+      let createdStatusFolderId: string | null = null;
+      if (folders.length > 0) {
+        const firstFolder = folders[0] as Record<string, unknown>;
+        if (firstFolder.id !== undefined && firstFolder.id !== null) {
+          statusFolderId = String(firstFolder.id);
+        }
+      }
+      if (statusFolderId === null) {
+        const createdFolder = parseToolResult(
+          await createFolder({ name: `${TEST_PREFIX} TS Status Folder ${Date.now()}` })
+        ) as { id: string };
+        statusFolderId = createdFolder.id;
+        createdStatusFolderId = createdFolder.id;
+      }
+      const folderDetails = parseToolResult(
+        await getFolder({ folder_name_or_id: statusFolderId })
+      ) as Record<string, unknown>;
+      expect(["active", "on_hold", "dropped"]).toContain(String(folderDetails.status));
+      for (const projectItem of (folderDetails.projects as Array<Record<string, unknown>> | undefined) ?? []) {
+        expect(["active", "on_hold", "dropped"]).toContain(String(projectItem.status));
+      }
+      if (createdStatusFolderId !== null) {
+        await deleteFolder({ folder_name_or_id: createdStatusFolderId });
+      }
 
       const forecast = parseToolResult(await getForecast({ limit: 20 })) as Record<string, unknown>;
       expect(forecast).toHaveProperty("overdue");
@@ -417,30 +448,58 @@ integrationDescribe("typescript integration", () => {
         expect(removed.removed).toBe(true);
         notificationId = null;
 
-        const tagOne = parseToolResult(
-          await createTag({ name: `${TEST_PREFIX} TS Batch Tag One ${Date.now()}` })
+        const tagParentName = `${TEST_PREFIX} TS Batch Parent Tag ${Date.now()}`;
+        const tagParent = parseToolResult(await createTag({ name: tagParentName })) as { id: string };
+        const tagChild = parseToolResult(
+          await createTag({
+            name: `${TEST_PREFIX} TS Batch Child Tag ${Date.now()}`,
+            parent: tagParentName,
+          })
         ) as { id: string };
-        const tagTwo = parseToolResult(
-          await createTag({ name: `${TEST_PREFIX} TS Batch Tag Two ${Date.now()}` })
-        ) as { id: string };
-        extraTagIds.push(tagOne.id, tagTwo.id);
+        extraTagIds.push(tagParent.id, tagChild.id);
         const deletedTags = parseToolResult(
-          await deleteTagsBatch({ tag_ids_or_names: [tagOne.id, tagTwo.id] })
-        ) as { summary?: { deleted?: number } };
+          await deleteTagsBatch({ tag_ids_or_names: [tagParent.id, tagChild.id] })
+        ) as {
+          summary?: { deleted?: number; failed?: number };
+          partial_success?: boolean;
+          results?: Array<{ error?: unknown }>;
+        };
         expect(deletedTags.summary?.deleted).toBe(2);
+        expect(deletedTags.summary?.failed).toBe(0);
+        expect(deletedTags.partial_success).toBe(false);
+        const tagErrors = (deletedTags.results ?? [])
+          .map((item) => String(item.error ?? ""))
+          .join(" ")
+          .toLowerCase();
+        expect(tagErrors.includes("invalid object instance")).toBe(false);
         extraTagIds.length = 0;
 
-        const folderOne = parseToolResult(
-          await createFolder({ name: `${TEST_PREFIX} TS Batch Folder One ${Date.now()}` })
+        const folderParentName = `${TEST_PREFIX} TS Batch Parent Folder ${Date.now()}`;
+        const folderParent = parseToolResult(
+          await createFolder({ name: folderParentName })
         ) as { id: string };
-        const folderTwo = parseToolResult(
-          await createFolder({ name: `${TEST_PREFIX} TS Batch Folder Two ${Date.now()}` })
+        const folderChild = parseToolResult(
+          await createFolder({
+            name: `${TEST_PREFIX} TS Batch Child Folder ${Date.now()}`,
+            parent: folderParentName,
+          })
         ) as { id: string };
-        extraFolderIds.push(folderOne.id, folderTwo.id);
+        extraFolderIds.push(folderParent.id, folderChild.id);
         const deletedFolders = parseToolResult(
-          await deleteFoldersBatch({ folder_ids_or_names: [folderOne.id, folderTwo.id] })
-        ) as { summary?: { deleted?: number } };
+          await deleteFoldersBatch({ folder_ids_or_names: [folderParent.id, folderChild.id] })
+        ) as {
+          summary?: { deleted?: number; failed?: number };
+          partial_success?: boolean;
+          results?: Array<{ error?: unknown }>;
+        };
         expect(deletedFolders.summary?.deleted).toBe(2);
+        expect(deletedFolders.summary?.failed).toBe(0);
+        expect(deletedFolders.partial_success).toBe(false);
+        const folderErrors = (deletedFolders.results ?? [])
+          .map((item) => String(item.error ?? ""))
+          .join(" ")
+          .toLowerCase();
+        expect(folderErrors.includes("invalid object instance")).toBe(false);
         extraFolderIds.length = 0;
 
         const projectOne = parseToolResult(
@@ -485,6 +544,354 @@ integrationDescribe("typescript integration", () => {
             await deleteProject({ project_id_or_name: id });
           } catch {
             continue;
+          }
+        }
+      }
+    }
+  );
+
+  test(
+    "test_plan_a_parent_child_batch_delete_effective_success",
+    { timeout: INTEGRATION_TIMEOUT_MS },
+    async () => {
+      const createTag = getHandler("create_tag");
+      const deleteTag = getHandler("delete_tag");
+      const deleteTagsBatch = getHandler("delete_tags_batch");
+      const createFolder = getHandler("create_folder");
+      const deleteFolder = getHandler("delete_folder");
+      const deleteFoldersBatch = getHandler("delete_folders_batch");
+
+      const extraTagIds: string[] = [];
+      const extraFolderIds: string[] = [];
+      const prefix = `${TEST_PREFIX} hierarchy ${Date.now()}`;
+      try {
+        const parentTagName = `${prefix} parent tag`;
+        const childTagName = `${prefix} child tag`;
+        const parentTag = parseToolResult(await createTag({ name: parentTagName })) as { id: string };
+        const childTag = parseToolResult(
+          await createTag({ name: childTagName, parent: parentTagName })
+        ) as { id: string };
+        extraTagIds.push(parentTag.id, childTag.id);
+        const deletedTags = parseToolResult(
+          await deleteTagsBatch({ tag_ids_or_names: [parentTag.id, childTag.id] })
+        ) as {
+          summary?: { deleted?: number; failed?: number };
+          partial_success?: boolean;
+          results?: Array<{ deleted?: boolean; error?: unknown }>;
+        };
+        expect(deletedTags.summary?.deleted).toBe(2);
+        expect(deletedTags.summary?.failed).toBe(0);
+        expect(deletedTags.partial_success).toBe(false);
+        expect((deletedTags.results ?? []).every((item) => item.deleted === true)).toBe(true);
+        expect(
+          (deletedTags.results ?? []).every((item) => {
+            const message = String(item.error ?? "").toLowerCase();
+            return !(message.includes("invalid") && message.includes("instance"));
+          })
+        ).toBe(true);
+        extraTagIds.length = 0;
+
+        const parentFolderName = `${prefix} parent folder`;
+        const childFolderName = `${prefix} child folder`;
+        const parentFolder = parseToolResult(
+          await createFolder({ name: parentFolderName })
+        ) as { id: string };
+        const childFolder = parseToolResult(
+          await createFolder({ name: childFolderName, parent: parentFolderName })
+        ) as { id: string };
+        extraFolderIds.push(parentFolder.id, childFolder.id);
+        const deletedFolders = parseToolResult(
+          await deleteFoldersBatch({ folder_ids_or_names: [parentFolder.id, childFolder.id] })
+        ) as {
+          summary?: { deleted?: number; failed?: number };
+          partial_success?: boolean;
+          results?: Array<{ deleted?: boolean; error?: unknown }>;
+        };
+        expect(deletedFolders.summary?.deleted).toBe(2);
+        expect(deletedFolders.summary?.failed).toBe(0);
+        expect(deletedFolders.partial_success).toBe(false);
+        expect((deletedFolders.results ?? []).every((item) => item.deleted === true)).toBe(true);
+        expect(
+          (deletedFolders.results ?? []).every((item) => {
+            const message = String(item.error ?? "").toLowerCase();
+            return !(message.includes("invalid") && message.includes("instance"));
+          })
+        ).toBe(true);
+        extraFolderIds.length = 0;
+      } finally {
+        for (const id of extraTagIds) {
+          try {
+            await deleteTag({ tag_name_or_id: id });
+          } catch {
+            continue;
+          }
+        }
+        for (const id of extraFolderIds) {
+          try {
+            await deleteFolder({ folder_name_or_id: id });
+          } catch {
+            continue;
+          }
+        }
+      }
+    }
+  );
+
+  test(
+    "test_plan_c_alias_calls_match_canonical_behavior",
+    { timeout: INTEGRATION_TIMEOUT_MS },
+    async () => {
+      const createProject = getHandler("create_project");
+      const createTask = getHandler("create_task");
+      const createTag = getHandler("create_tag");
+      const deleteTag = getHandler("delete_tag");
+      const listTasks = getHandler("list_tasks");
+      const searchTasks = getHandler("search_tasks");
+      const getTaskCounts = getHandler("get_task_counts");
+
+      const extraTagIds: string[] = [];
+      let taskId: string | null = null;
+      try {
+        const projectName = `${TEST_PREFIX} TS Plan C Alias Project ${Date.now()}`;
+        const createdProject = parseToolResult(await createProject({ name: projectName })) as {
+          id: string;
+        };
+        cleanupProjectIds.push(createdProject.id);
+
+        const tagA = parseToolResult(
+          await createTag({ name: `${TEST_PREFIX} TS Plan C Alias Tag A ${Date.now()}` })
+        ) as { id: string; name: string };
+        const tagB = parseToolResult(
+          await createTag({ name: `${TEST_PREFIX} TS Plan C Alias Tag B ${Date.now()}` })
+        ) as { id: string; name: string };
+        extraTagIds.push(tagA.id, tagB.id);
+
+        const dueDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        const taskName = `${TEST_PREFIX} TS Plan C Alias Task ${Date.now()}`;
+        const createdTask = parseToolResult(
+          await createTask({
+            name: taskName,
+            note: "plan c alias integration probe",
+            project: projectName,
+            dueDate,
+            tags: [tagA.name, tagB.name],
+          })
+        ) as { id: string };
+        taskId = createdTask.id;
+        cleanupTaskIds.push(taskId);
+
+        const canonicalList = parseToolResult(
+          await listTasks({
+            project: projectName,
+            tags: [tagA.name, tagB.name],
+            tagFilterMode: "all",
+            status: "due_soon",
+            sortOrder: "desc",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        const aliasList = parseToolResult(
+          await listTasks({
+            project: projectName,
+            tags: [tagA.name, tagB.name],
+            tagFilterMode: "AND",
+            status: "due soon",
+            sortOrder: "descending",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        expect(canonicalList.some((item) => String(item.id) === taskId)).toBe(true);
+        expect(aliasList.some((item) => String(item.id) === taskId)).toBe(true);
+
+        const canonicalSearch = parseToolResult(
+          await searchTasks({
+            query: "plan c alias integration probe",
+            project: projectName,
+            tagFilterMode: "any",
+            status: "due_soon",
+            sortOrder: "asc",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        const aliasSearch = parseToolResult(
+          await searchTasks({
+            query: "plan c alias integration probe",
+            project: projectName,
+            tagFilterMode: "OR",
+            status: "due-soon",
+            sortOrder: "ascending",
+            limit: 50,
+          })
+        ) as Array<Record<string, unknown>>;
+        expect(canonicalSearch.some((item) => String(item.id) === taskId)).toBe(true);
+        expect(aliasSearch.some((item) => String(item.id) === taskId)).toBe(true);
+
+        const canonicalCounts = parseToolResult(
+          await getTaskCounts({
+            project: projectName,
+            tags: [tagA.name, tagB.name],
+            tagFilterMode: "all",
+          })
+        ) as { total?: number };
+        const aliasCounts = parseToolResult(
+          await getTaskCounts({
+            project: projectName,
+            tags: [tagA.name, tagB.name],
+            tagFilterMode: "AND",
+          })
+        ) as { total?: number };
+        expect(canonicalCounts.total).toBe(aliasCounts.total);
+      } finally {
+        for (const id of extraTagIds) {
+          try {
+            await deleteTag({ tag_name_or_id: id });
+          } catch {
+            continue;
+          }
+        }
+      }
+    }
+  );
+
+  test(
+    "test_plan_b_statuses_are_canonical_in_tags_and_folder_projects",
+    { timeout: INTEGRATION_TIMEOUT_MS },
+    async () => {
+      const createTag = getHandler("create_tag");
+      const listTags = getHandler("list_tags");
+      const deleteTag = getHandler("delete_tag");
+      const createFolder = getHandler("create_folder");
+      const getFolder = getHandler("get_folder");
+      const deleteFolder = getHandler("delete_folder");
+      const createProject = getHandler("create_project");
+      const completeProject = getHandler("complete_project");
+
+      const allowedStatuses = new Set(["active", "on_hold", "dropped"]);
+      let tagId: string | null = null;
+      let folderId: string | null = null;
+      let projectId: string | null = null;
+      try {
+        const createdTag = parseToolResult(
+          await createTag({ name: `${TEST_PREFIX} TS Plan B Status Tag ${Date.now()}` })
+        ) as { id: string };
+        tagId = createdTag.id;
+
+        const createdFolder = parseToolResult(
+          await createFolder({ name: `${TEST_PREFIX} TS Plan B Status Folder ${Date.now()}` })
+        ) as { id: string; name: string };
+        folderId = createdFolder.id;
+
+        const createdProject = parseToolResult(
+          await createProject({
+            name: `${TEST_PREFIX} TS Plan B Status Project ${Date.now()}`,
+            folder: createdFolder.name,
+          })
+        ) as { id: string };
+        projectId = createdProject.id;
+
+        const tags = parseToolResult(await listTags({ statusFilter: "all", limit: 100 })) as Array<
+          Record<string, unknown>
+        >;
+        const tagEntry = tags.find((item) => String(item.id) === tagId);
+        expect(tagEntry).toBeDefined();
+        expect(allowedStatuses.has(String(tagEntry?.status))).toBe(true);
+
+        const folder = parseToolResult(
+          await getFolder({ folder_name_or_id: folderId })
+        ) as Record<string, unknown>;
+        expect(allowedStatuses.has(String(folder.status))).toBe(true);
+        const projects = (folder.projects ?? []) as Array<Record<string, unknown>>;
+        const nestedProject = projects.find((item) => String(item.id) === projectId);
+        expect(nestedProject).toBeDefined();
+        expect(allowedStatuses.has(String(nestedProject?.status))).toBe(true);
+      } finally {
+        if (tagId) {
+          try {
+            await deleteTag({ tag_name_or_id: tagId });
+          } catch {
+            tagId = null;
+          }
+        }
+        if (projectId) {
+          try {
+            await completeProject({ project_id_or_name: projectId });
+          } catch {
+            projectId = null;
+          }
+        }
+        if (folderId) {
+          try {
+            await deleteFolder({ folder_name_or_id: folderId });
+          } catch {
+            folderId = null;
+          }
+        }
+      }
+    }
+  );
+
+  test(
+    "test_plan_c_alias_inputs_work_for_task_tools",
+    { timeout: INTEGRATION_TIMEOUT_MS },
+    async () => {
+      const createTag = getHandler("create_tag");
+      const deleteTag = getHandler("delete_tag");
+      const createTask = getHandler("create_task");
+      const listTasks = getHandler("list_tasks");
+      const searchTasks = getHandler("search_tasks");
+      const getTaskCounts = getHandler("get_task_counts");
+
+      let tagId: string | null = null;
+      try {
+        const tagName = `${TEST_PREFIX} TS Plan C Alias Tag ${Date.now()}`;
+        const createdTag = parseToolResult(await createTag({ name: tagName })) as { id: string };
+        tagId = createdTag.id;
+
+        const taskName = `${TEST_PREFIX} TS Plan C Alias Task ${Date.now()}`;
+        const dueDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();
+        const createdTask = parseToolResult(
+          await createTask({ name: taskName, dueDate, tags: [tagName] })
+        ) as { id: string };
+        cleanupTaskIds.push(createdTask.id);
+
+        const listed = parseToolResult(
+          await listTasks({
+            tags: [tagName],
+            tagFilterMode: "AND",
+            status: "due soon",
+            sortOrder: "descending",
+            limit: 100,
+          })
+        ) as Array<Record<string, unknown>>;
+        const listedMatch = listed.find((item) => String(item.id) === createdTask.id);
+        expect(listedMatch).toBeDefined();
+        expect(String(listedMatch?.taskStatus)).toBe("due_soon");
+
+        const searched = parseToolResult(
+          await searchTasks({
+            query: taskName,
+            tags: [tagName],
+            tagFilterMode: "and",
+            status: "due-soon",
+            sortOrder: "descending",
+            limit: 100,
+          })
+        ) as Array<Record<string, unknown>>;
+        const searchedMatch = searched.find((item) => String(item.id) === createdTask.id);
+        expect(searchedMatch).toBeDefined();
+        expect(String(searchedMatch?.taskStatus)).toBe("due_soon");
+
+        const counts = parseToolResult(
+          await getTaskCounts({ tags: [tagName], tagFilterMode: "AND" })
+        ) as { total?: number };
+        expect(typeof counts.total).toBe("number");
+        expect((counts.total ?? 0) >= 1).toBe(true);
+      } finally {
+        if (tagId !== null) {
+          try {
+            await deleteTag({ tag_name_or_id: tagId });
+          } catch {
+            tagId = null;
           }
         }
       }

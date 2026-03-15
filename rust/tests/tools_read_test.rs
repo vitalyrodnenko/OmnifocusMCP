@@ -16,7 +16,8 @@ use omnifocus_mcp::{
         tasks::{
             add_notification, duplicate_task, get_inbox, get_task,
             get_task_counts_with_added_changed, list_notifications, list_subtasks,
-            list_tasks_with_added_changed, remove_notification, search_tasks_with_added_changed,
+            list_tasks as list_tasks_impl, list_tasks_with_added_changed, remove_notification,
+            search_tasks_with_added_changed,
         },
     },
 };
@@ -57,6 +58,25 @@ impl JxaRunner for CapturingRunner {
 #[derive(Clone)]
 struct ErrorRunner {
     message: String,
+}
+
+fn normalize_status_fixture(raw_status: &str) -> String {
+    let mut flattened = raw_status.to_lowercase().replace("[object_", "");
+    for needle in ["[", "]", "{", "}", "(", ")", ":", ".", "=", "_", "-"] {
+        flattened = flattened.replace(needle, " ");
+    }
+    flattened = flattened.replace("status", " ");
+    let flattened = flattened.split_whitespace().collect::<Vec<_>>().join(" ");
+    if flattened.contains("onhold") || flattened.contains("on hold") {
+        return "on_hold".to_string();
+    }
+    if flattened.contains("dropped") {
+        return "dropped".to_string();
+    }
+    if flattened.contains("active") {
+        return "active".to_string();
+    }
+    "active".to_string()
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -121,7 +141,7 @@ async fn list_tasks_with_duration<R: JxaRunner>(
     sort_order: &str,
     limit: i32,
 ) -> Result<Vec<omnifocus_mcp::types::TaskResult>, OmniFocusError> {
-    list_tasks_with_added_changed(
+    list_tasks_impl(
         runner,
         project,
         tag,
@@ -135,10 +155,6 @@ async fn list_tasks_with_duration<R: JxaRunner>(
         defer_after,
         completed_before,
         completed_after,
-        None,
-        None,
-        None,
-        None,
         None,
         None,
         max_estimated_minutes,
@@ -945,6 +961,63 @@ async fn validation_errors_for_read_tools() {
 }
 
 #[tokio::test]
+async fn plan_c_unknown_alias_values_return_canonical_error_options() {
+    let runner = MockRunner { payload: json!([]) };
+
+    let list_error = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "backwards",
+        10,
+    )
+    .await
+    .expect_err("invalid sort order should fail");
+    assert!(matches!(
+        list_error,
+        OmniFocusError::Validation(ref message)
+            if message == "sortOrder must be one of: asc, desc. received: \"backwards\"."
+    ));
+
+    let counts_error = get_task_counts(
+        &runner, None, None, None, "xor", None, None, None, None, None, None, None, None, None,
+        None, None, None,
+    )
+    .await
+    .expect_err("invalid tag filter mode should fail");
+    assert!(matches!(
+        counts_error,
+        OmniFocusError::Validation(ref message)
+            if message == "tagFilterMode must be one of: any, all. received: \"xor\"."
+    ));
+
+    let search_error = search_tasks(
+        &runner, "ship", None, None, None, "any", None, "later", None, None, None, None, None,
+        None, None, None, "asc", 10,
+    )
+    .await
+    .expect_err("invalid status should fail");
+    assert!(matches!(
+        search_error,
+        OmniFocusError::Validation(ref message)
+            if message
+                == "status must be one of: available, due_soon, overdue, on_hold, completed, all. received: \"later\"."
+    ));
+}
+
+#[tokio::test]
 async fn get_inbox_script_includes_completion_and_children_fields() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
@@ -970,6 +1043,69 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
     assert!(script.contains("taskStatus: (() => {"));
     assert!(script.contains("if (s.includes(\"Available\")) return \"available\";"));
     assert!(script.contains("taskStatus: (() => {"));
+}
+
+#[tokio::test]
+async fn plan_c_unknown_alias_values_keep_actionable_errors() {
+    let runner = MockRunner { payload: json!([]) };
+
+    match list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "backwards",
+        100,
+    )
+    .await
+    {
+        Err(OmniFocusError::Validation(message)) => {
+            assert_eq!(
+                message,
+                "sortOrder must be one of: asc, desc. received: \"backwards\"."
+            );
+        }
+        other => panic!("expected validation error, got {other:?}"),
+    }
+
+    match get_task_counts_with_added_changed(
+        &runner, None, None, None, "xor", None, None, None, None, None, None, None, None, None,
+        None, None, None,
+    )
+    .await
+    {
+        Err(OmniFocusError::Validation(message)) => {
+            assert_eq!(
+                message,
+                "tagFilterMode must be one of: any, all. received: \"xor\"."
+            );
+        }
+        other => panic!("expected validation error, got {other:?}"),
+    }
+
+    match search_tasks(
+        &runner, "ship", None, None, None, "any", None, "later", None, None, None, None, None,
+        None, None, None, "asc", 100,
+    )
+    .await
+    {
+        Err(OmniFocusError::Validation(message)) => assert_eq!(
+            message,
+            "status must be one of: available, due_soon, overdue, on_hold, completed, all. received: \"later\"."
+        ),
+        other => panic!("expected validation error, got {other:?}"),
+    }
 }
 
 #[tokio::test]
@@ -1468,6 +1604,16 @@ async fn list_projects_script_includes_stalled_and_next_task_fields() {
         .lock()
         .expect("script capture lock should succeed")
         .clone();
+    assert!(script.contains(r#".replace(/^\[object_/g, "")"#));
+    assert!(script.contains(r#".replace(/status/g, " ")"#));
+    assert!(script.contains(r#".replace(/[:.=]/g, " ")"#));
+    assert!(script.contains(r#".replace(/[_-]/g, " ")"#));
+    assert!(script.contains(r#"/(^|\s)on\s*hold(\s|$)/.test(flattened)"#));
+    assert!(script.contains(r#".replace(/[_-]/g, " ")"#));
+    assert!(script.contains(r#"on\s*hold"#));
+    assert!(script.contains(r#"if (flattened.includes("completed")) return "completed";"#));
+    assert!(script.contains(r#"if (flattened.includes("dropped")) return "dropped";"#));
+    assert!(script.contains(r#"if (flattened.includes("active")) return "active";"#));
     assert!(script.contains("const nextTask = project.nextTask;"));
     assert!(script.contains(r#"const isStalled = normalizeProjectStatus(project) === "active""#));
     assert!(script.contains(
@@ -1499,6 +1645,20 @@ async fn list_tags_script_includes_total_count_and_sorting() {
     assert!(script.contains(r#"const sortOrder = "desc";"#));
     assert!(script.contains("totalTaskCount: counts.totalTaskCount,"));
     assert!(script.contains("return sortedTags.slice(0, 7);"));
+}
+
+#[test]
+fn status_normalization_fixture_examples_map_to_canonical_values() {
+    let fixtures = [
+        ("[object_tag.status:_active]", "active"),
+        ("status: active]", "active"),
+        ("On Hold", "on_hold"),
+        ("on-hold", "on_hold"),
+        ("Dropped", "dropped"),
+    ];
+    for (raw_status, expected) in fixtures {
+        assert_eq!(normalize_status_fixture(raw_status), expected);
+    }
 }
 
 #[tokio::test]
@@ -1615,7 +1775,93 @@ async fn list_tags_sort_and_status_filter_are_in_script() {
     assert!(
         script.contains(r#"statusFilter === "all" || normalizeTagStatus(tag) === statusFilter"#)
     );
+    assert!(script.contains(r#".replace(/^\[object_/g, "")"#));
+    assert!(script.contains(r#".replace(/status/g, " ")"#));
+    assert!(script.contains(r#".replace(/[:.=]/g, " ")"#));
+    assert!(script.contains(r#".replace(/[_-]/g, " ")"#));
+    assert!(script.contains(r#"/(^|\s)on\s*hold(\s|$)/.test(flattened)"#));
+    assert!(script.contains(r#".replace(/[_-]/g, " ")"#));
+    assert!(script.contains(r#"/(^|\s)on\s*hold(\s|$)/.test(flattened)"#));
+    assert!(script.contains(r#"flattened.includes("onhold")"#));
+    assert!(script.contains(r#"if (flattened.includes("dropped")) return "dropped";"#));
+    assert!(script.contains(r#"if (flattened.includes("active")) return "active";"#));
     assert!(script.contains("return sortedTags.slice(0, 7);"));
+}
+
+#[tokio::test]
+async fn get_folder_script_normalizes_status_artifacts() {
+    let fixture_examples = vec![
+        "[object_tag.status:_active]",
+        "status: active]",
+        "On Hold",
+        "on-hold",
+        "Dropped",
+    ];
+    assert_eq!(
+        fixture_examples,
+        vec![
+            "[object_tag.status:_active]",
+            "status: active]",
+            "On Hold",
+            "on-hold",
+            "Dropped",
+        ]
+    );
+
+    let tags_script_capture = Arc::new(Mutex::new(String::new()));
+    let tags_runner = CapturingRunner {
+        payload: json!([{"id": "tag-fixture", "name": "fixture"}]),
+        last_script: tags_script_capture.clone(),
+    };
+    let _ = list_tags(&tags_runner, "all", None, "asc", 5)
+        .await
+        .expect("list_tags should parse");
+    let tags_script = tags_script_capture
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(tags_script.contains("toLowerCase()"));
+    assert!(tags_script.contains(r#".replace(/^\[object_/g, "")"#));
+    assert!(tags_script.contains(r#".replace(/[\[\]{}()]/g, " ")"#));
+    assert!(tags_script.contains(r#".replace(/status/g, " ")"#));
+    assert!(tags_script.contains(r#".replace(/[:.=]/g, " ")"#));
+    assert!(tags_script.contains(r#".replace(/[_-]/g, " ")"#));
+    assert!(tags_script.contains(r#"/(^|\s)on\s*hold(\s|$)/.test(flattened)"#));
+    assert!(tags_script.contains(r#"flattened.includes("onhold")"#));
+    assert!(tags_script.contains(r#"if (flattened.includes("dropped")) return "dropped";"#));
+
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!({
+            "id": "folder-1",
+            "name": "Work",
+            "status": "active",
+            "parentName": null,
+            "projects": [],
+            "subfolders": []
+        }),
+        last_script: last_script.clone(),
+    };
+
+    let folder = get_folder(&runner, "folder-1")
+        .await
+        .expect("folder should parse");
+    assert_eq!(folder["status"], "active");
+
+    let script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(script.contains("toLowerCase()"));
+    assert!(script.contains(r#".replace(/^\[object_/g, "")"#));
+    assert!(script.contains(r#".replace(/[\[\]{}()]/g, " ")"#));
+    assert!(script.contains(r#".replace(/status/g, " ")"#));
+    assert!(script.contains(r#".replace(/[:.=]/g, " ")"#));
+    assert!(script.contains(r#".replace(/[_-]/g, " ")"#));
+    assert!(script.contains(r#"/(^|\s)on\s*hold(\s|$)/.test(flattened)"#));
+    assert!(script.contains(r#"flattened.includes("onhold")"#));
+    assert!(script.contains(r#"if (flattened.includes("dropped")) return "dropped";"#));
+    assert!(script.contains(r#"if (flattened.includes("active")) return "active";"#));
 }
 
 #[tokio::test]
@@ -2539,6 +2785,172 @@ async fn list_tasks_sort_added_alias_is_included_in_script() {
     assert!(script.contains(r#"const sortBy = "added";"#));
     assert!(script.contains(r#"const sortOrder = "desc";"#));
     assert!(script.contains(r#"sortBy === "addedDate" || sortBy === "added""#));
+}
+
+#[tokio::test]
+async fn plan_c_aliases_normalize_to_canonical_values_in_scoped_task_tools() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-alias", "alias task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        Some(vec!["Home".to_string(), "Deep".to_string()]),
+        "AND",
+        None,
+        "due soon",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "Descending",
+        5,
+    )
+    .await
+    .expect("list tasks aliases should parse");
+
+    assert_eq!(listed.len(), 1);
+    let list_script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(list_script.contains(r#"const tagFilterMode = "all";"#));
+    assert!(list_script.contains(r#"const statusFilter = "due_soon";"#));
+    assert!(list_script.contains(r#"const sortOrder = "desc";"#));
+
+    let searched = search_tasks(
+        &runner,
+        "audit",
+        None,
+        None,
+        Some(vec!["Home".to_string(), "Deep".to_string()]),
+        "or",
+        None,
+        "Due-Soon",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "ascending",
+        5,
+    )
+    .await
+    .expect("search tasks aliases should parse");
+    assert_eq!(searched.len(), 1);
+    let search_script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(search_script.contains(r#"const tagFilterMode = "any";"#));
+    assert!(search_script.contains(r#"const statusFilter = "due_soon";"#));
+    assert!(search_script.contains(r#"const sortOrder = "asc";"#));
+
+    let counts_runner = CapturingRunner {
+        payload: json!({
+            "total": 1,
+            "available": 1,
+            "completed": 0,
+            "overdue": 0,
+            "dueSoon": 0,
+            "flagged": 0,
+            "deferred": 0
+        }),
+        last_script: last_script.clone(),
+    };
+    let counts = get_task_counts(
+        &counts_runner,
+        None,
+        None,
+        Some(vec!["Home".to_string()]),
+        "OR",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    .expect("task counts aliases should parse");
+    assert_eq!(counts.total, 1);
+    let counts_script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(counts_script.contains(r#"const tagFilterMode = "any";"#));
+}
+
+#[tokio::test]
+async fn plan_c_unknown_values_keep_canonical_actionable_errors() {
+    let runner = MockRunner {
+        payload: json!([task_value("t-invalid", "invalid task")]),
+    };
+
+    let invalid_sort = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "backwards",
+        5,
+    )
+    .await
+    .expect_err("invalid sort order should fail");
+    assert!(invalid_sort
+        .to_string()
+        .contains("sortOrder must be one of: asc, desc."));
+    assert!(invalid_sort
+        .to_string()
+        .contains("received: \"backwards\"."));
+
+    let invalid_status = search_tasks(
+        &runner, "audit", None, None, None, "any", None, "later", None, None, None, None, None,
+        None, None, None, "asc", 5,
+    )
+    .await
+    .expect_err("invalid status should fail");
+    assert!(invalid_status
+        .to_string()
+        .contains("status must be one of: available, due_soon, overdue, on_hold, completed, all."));
+
+    let invalid_tag_mode = get_task_counts(
+        &runner, None, None, None, "both", None, None, None, None, None, None, None, None, None,
+        None, None, None,
+    )
+    .await
+    .expect_err("invalid tag filter mode should fail");
+    assert!(invalid_tag_mode
+        .to_string()
+        .contains("tagFilterMode must be one of: any, all."));
 }
 
 #[tokio::test]

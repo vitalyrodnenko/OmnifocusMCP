@@ -2,6 +2,14 @@
 
 All notable changes to this project are documented in this file.
 
+## [1.1.7] - 2026-03-15
+
+### Fixed
+- stabilized live integration behavior for task, project, tag, and folder workflows:
+  - hierarchy-safe batch deletion now handles parent+child requests without false partial failures
+  - status outputs are normalized to canonical values across tag/folder/project surfaces
+  - natural-language aliases are accepted for key filters (`descending`, `due soon`, `on hold`, `AND`/`OR`)
+
 ## [1.1.6] - 2026-03-03
 
 ### Fixed

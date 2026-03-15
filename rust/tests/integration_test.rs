@@ -2,15 +2,17 @@
 
 use std::{
     collections::HashSet,
+    future::Future,
+    pin::Pin,
     process::Command,
     sync::OnceLock,
     time::{SystemTime, UNIX_EPOCH},
 };
 
 use omnifocus_mcp::{
-    jxa::{run_omnijs, RealJxaRunner},
+    jxa::{run_omnijs, run_omnijs_with_timeout, JxaRunner},
     tools::{
-        folders::{create_folder, delete_folder, delete_folders_batch, list_folders},
+        folders::{create_folder, delete_folder, delete_folders_batch, get_folder, list_folders},
         forecast::get_forecast,
         perspectives::list_perspectives,
         projects::{
@@ -20,7 +22,8 @@ use omnifocus_mcp::{
         tags::{create_tag, delete_tag, delete_tags_batch, list_tags},
         tasks::{
             add_notification, complete_task, create_task, delete_task, get_inbox, get_task,
-            list_notifications, list_tasks, remove_notification, search_tasks, update_task,
+            get_task_counts, list_notifications, list_tasks, remove_notification, search_tasks,
+            update_task,
         },
     },
 };
@@ -28,6 +31,7 @@ use serde_json::Value;
 use tokio::sync::Mutex;
 
 static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
+const INTEGRATION_TIMEOUT_SECONDS: f64 = 60.0;
 
 #[derive(Default)]
 struct CleanupRegistry {
@@ -125,6 +129,18 @@ fn test_lock() -> &'static Mutex<()> {
     TEST_LOCK.get_or_init(|| Mutex::new(()))
 }
 
+#[derive(Debug, Clone, Default)]
+struct IntegrationRunner;
+
+impl JxaRunner for IntegrationRunner {
+    fn run_omnijs<'a>(
+        &'a self,
+        script: &'a str,
+    ) -> Pin<Box<dyn Future<Output = omnifocus_mcp::error::Result<Value>> + Send + 'a>> {
+        Box::pin(async move { run_omnijs_with_timeout(script, INTEGRATION_TIMEOUT_SECONDS).await })
+    }
+}
+
 fn unique_name(label: &str) -> String {
     let millis = SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -160,8 +176,29 @@ fn assert_has_keys(value: &Value, required: &[&str]) {
     }
 }
 
+fn integration_enabled() -> bool {
+    std::env::var("OMNIFOCUS_INTEGRATION")
+        .map(|value| value == "1")
+        .unwrap_or(false)
+}
+
+fn omnifocus_running() -> bool {
+    Command::new("osascript")
+        .arg("-e")
+        .arg(r#"tell application "OmniFocus" to running"#)
+        .output()
+        .ok()
+        .filter(|result| result.status.success())
+        .and_then(|result| String::from_utf8(result.stdout).ok())
+        .map(|stdout| stdout.trim().eq_ignore_ascii_case("true"))
+        .unwrap_or(false)
+}
+
 #[tokio::test]
 async fn test_jxa_bridge_connectivity() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
     let result = run_omnijs("return document.flattenedTasks.length;").await?;
     let count = result
@@ -173,8 +210,11 @@ async fn test_jxa_bridge_connectivity() -> Result<(), Box<dyn std::error::Error>
 
 #[tokio::test]
 async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
 
     let created_task = create_task(
@@ -329,12 +369,32 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
             ],
         );
     }
+    for item in tags_array {
+        if let Some(status) = item.get("status").and_then(Value::as_str) {
+            assert!(matches!(status, "active" | "on_hold" | "dropped"));
+        }
+    }
 
     let folders = list_folders(&runner, 20).await?;
     let folders_array = require_array(&folders, "list_folders result");
     if let Some(first) = folders_array.first() {
         assert_has_keys(first, &["id", "name", "parentName", "projectCount"]);
     }
+    let status_folder_name = unique_name("Status probe folder");
+    let status_folder = create_folder(&runner, &status_folder_name, None).await?;
+    let status_folder_id = require_str_field(&status_folder, "id");
+    let folder_details = get_folder(&runner, &status_folder_id).await?;
+    if let Some(folder_status) = folder_details.get("status").and_then(Value::as_str) {
+        assert!(matches!(folder_status, "active" | "on_hold" | "dropped"));
+    }
+    if let Some(projects) = folder_details.get("projects").and_then(Value::as_array) {
+        for project in projects {
+            if let Some(project_status) = project.get("status").and_then(Value::as_str) {
+                assert!(matches!(project_status, "active" | "on_hold" | "dropped"));
+            }
+        }
+    }
+    let _ = delete_folder(&runner, &status_folder_id).await;
 
     let forecast = get_forecast(&runner, 20).await?;
     assert_has_keys(
@@ -364,8 +424,11 @@ async fn test_read_tools_return_valid_json() -> Result<(), Box<dyn std::error::E
 
 #[tokio::test]
 async fn test_task_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
 
     let created = create_task(
@@ -418,8 +481,11 @@ async fn test_task_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tokio::test]
 async fn test_search_finds_created_task() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
 
     let token = SystemTime::now()
@@ -472,8 +538,11 @@ async fn test_search_finds_created_task() -> Result<(), Box<dyn std::error::Erro
 
 #[tokio::test]
 async fn test_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
 
     let project_name = unique_name("Lifecycle project");
@@ -497,8 +566,11 @@ async fn test_project_lifecycle() -> Result<(), Box<dyn std::error::Error>> {
 
 #[tokio::test]
 async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
     let _guard = test_lock().lock().await;
-    let runner = RealJxaRunner::new();
+    let runner = IntegrationRunner;
     let mut cleanup = CleanupRegistry::default();
     let mut extra_tag_ids: Vec<String> = Vec::new();
     let mut extra_folder_ids: Vec<String> = Vec::new();
@@ -595,14 +667,16 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
         assert_eq!(removed.get("removed").and_then(Value::as_bool), Some(true));
         notification_id = None;
 
-        let tag_one = create_tag(&runner, &unique_name("Parity batch tag one"), None).await?;
-        let tag_two = create_tag(&runner, &unique_name("Parity batch tag two"), None).await?;
-        let tag_one_id = require_str_field(&tag_one, "id");
-        let tag_two_id = require_str_field(&tag_two, "id");
-        extra_tag_ids.push(tag_one_id.clone());
-        extra_tag_ids.push(tag_two_id.clone());
+        let tag_parent_name = unique_name("Parity batch parent tag");
+        let tag_child_name = unique_name("Parity batch child tag");
+        let tag_parent = create_tag(&runner, &tag_parent_name, None).await?;
+        let tag_parent_id = require_str_field(&tag_parent, "id");
+        let tag_child = create_tag(&runner, &tag_child_name, Some(&tag_parent_name)).await?;
+        let tag_child_id = require_str_field(&tag_child, "id");
+        extra_tag_ids.push(tag_parent_id.clone());
+        extra_tag_ids.push(tag_child_id.clone());
         let deleted_tags =
-            delete_tags_batch(&runner, vec![tag_one_id.clone(), tag_two_id.clone()]).await?;
+            delete_tags_batch(&runner, vec![tag_parent_id.clone(), tag_child_id.clone()]).await?;
         assert_eq!(
             deleted_tags
                 .get("summary")
@@ -611,19 +685,47 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
                 .and_then(Value::as_i64),
             Some(2)
         );
+        assert_eq!(
+            deleted_tags
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("failed"))
+                .and_then(Value::as_i64),
+            Some(0)
+        );
+        assert_eq!(
+            deleted_tags.get("partial_success").and_then(Value::as_bool),
+            Some(false)
+        );
+        let tag_error_text = deleted_tags
+            .get("results")
+            .and_then(Value::as_array)
+            .map(|results| {
+                results
+                    .iter()
+                    .filter_map(|item| item.get("error").and_then(Value::as_str))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    .to_lowercase()
+            })
+            .unwrap_or_default();
+        assert!(!tag_error_text.contains("invalid object instance"));
         extra_tag_ids.clear();
 
-        let folder_one =
-            create_folder(&runner, &unique_name("Parity batch folder one"), None).await?;
-        let folder_two =
-            create_folder(&runner, &unique_name("Parity batch folder two"), None).await?;
-        let folder_one_id = require_str_field(&folder_one, "id");
-        let folder_two_id = require_str_field(&folder_two, "id");
-        extra_folder_ids.push(folder_one_id.clone());
-        extra_folder_ids.push(folder_two_id.clone());
-        let deleted_folders =
-            delete_folders_batch(&runner, vec![folder_one_id.clone(), folder_two_id.clone()])
-                .await?;
+        let folder_parent_name = unique_name("Parity batch parent folder");
+        let folder_child_name = unique_name("Parity batch child folder");
+        let folder_parent = create_folder(&runner, &folder_parent_name, None).await?;
+        let folder_parent_id = require_str_field(&folder_parent, "id");
+        let folder_child =
+            create_folder(&runner, &folder_child_name, Some(&folder_parent_name)).await?;
+        let folder_child_id = require_str_field(&folder_child, "id");
+        extra_folder_ids.push(folder_parent_id.clone());
+        extra_folder_ids.push(folder_child_id.clone());
+        let deleted_folders = delete_folders_batch(
+            &runner,
+            vec![folder_parent_id.clone(), folder_child_id.clone()],
+        )
+        .await?;
         assert_eq!(
             deleted_folders
                 .get("summary")
@@ -632,6 +734,33 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
                 .and_then(Value::as_i64),
             Some(2)
         );
+        assert_eq!(
+            deleted_folders
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("failed"))
+                .and_then(Value::as_i64),
+            Some(0)
+        );
+        assert_eq!(
+            deleted_folders
+                .get("partial_success")
+                .and_then(Value::as_bool),
+            Some(false)
+        );
+        let folder_error_text = deleted_folders
+            .get("results")
+            .and_then(Value::as_array)
+            .map(|results| {
+                results
+                    .iter()
+                    .filter_map(|item| item.get("error").and_then(Value::as_str))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    .to_lowercase()
+            })
+            .unwrap_or_default();
+        assert!(!folder_error_text.contains("invalid object instance"));
         extra_folder_ids.clear();
 
         let project_one = create_project(
@@ -690,6 +819,359 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
     }
     for id in &extra_project_ids {
         let _ = delete_project(&runner, id).await;
+    }
+
+    result
+}
+
+#[tokio::test]
+async fn test_plan_b_statuses_are_canonical_in_tags_and_folder_projects(
+) -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
+    let _guard = test_lock().lock().await;
+    let runner = IntegrationRunner;
+    let mut tag_id: Option<String> = None;
+    let mut folder_id: Option<String> = None;
+    let mut project_id: Option<String> = None;
+
+    let result: Result<(), Box<dyn std::error::Error>> = async {
+        let created_tag = create_tag(&runner, &unique_name("Plan B status tag"), None).await?;
+        let created_tag_id = require_str_field(&created_tag, "id");
+        tag_id = Some(created_tag_id.clone());
+
+        let created_folder =
+            create_folder(&runner, &unique_name("Plan B status folder"), None).await?;
+        let created_folder_id = require_str_field(&created_folder, "id");
+        let created_folder_name = require_str_field(&created_folder, "name");
+        folder_id = Some(created_folder_id.clone());
+
+        let created_project = create_project(
+            &runner,
+            &unique_name("Plan B status project"),
+            Some(&created_folder_name),
+            None,
+            None,
+            None,
+            None,
+        )
+        .await?;
+        let created_project_id = require_str_field(&created_project, "id");
+        project_id = Some(created_project_id.clone());
+
+        let tags = list_tags(&runner, "all", None, "asc", 100).await?;
+        let tags_array = require_array(&tags, "plan b list_tags result");
+        let tag_entry = tags_array
+            .iter()
+            .find(|item| item.get("id").and_then(Value::as_str) == Some(created_tag_id.as_str()))
+            .ok_or_else(|| "plan b created tag not returned by list_tags".to_string())?;
+        let tag_status = tag_entry
+            .get("status")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "plan b tag missing status".to_string())?;
+        assert!(matches!(tag_status, "active" | "on_hold" | "dropped"));
+
+        let folder_details = get_folder(&runner, &created_folder_id).await?;
+        let folder_status = folder_details
+            .get("status")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "plan b folder missing status".to_string())?;
+        assert!(matches!(folder_status, "active" | "on_hold" | "dropped"));
+
+        let nested_project = folder_details
+            .get("projects")
+            .and_then(Value::as_array)
+            .and_then(|projects| {
+                projects.iter().find(|item| {
+                    item.get("id").and_then(Value::as_str) == Some(created_project_id.as_str())
+                })
+            })
+            .ok_or_else(|| "plan b nested project missing from folder details".to_string())?;
+        let nested_project_status = nested_project
+            .get("status")
+            .and_then(Value::as_str)
+            .ok_or_else(|| "plan b nested project missing status".to_string())?;
+        assert!(matches!(
+            nested_project_status,
+            "active" | "on_hold" | "dropped"
+        ));
+
+        Ok(())
+    }
+    .await;
+
+    if let Some(id) = project_id {
+        let _ = complete_project(&runner, &id).await;
+    }
+    if let Some(id) = folder_id {
+        let _ = delete_folder(&runner, &id).await;
+    }
+    if let Some(id) = tag_id {
+        let _ = delete_tag(&runner, &id).await;
+    }
+
+    result
+}
+
+#[tokio::test]
+async fn test_plan_c_alias_inputs_work_for_task_tools() -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
+    if std::env::var("OMNIFOCUS_PLAN_C_INTEGRATION")
+        .map(|value| value != "1")
+        .unwrap_or(true)
+    {
+        return Ok(());
+    }
+    let _guard = test_lock().lock().await;
+    let runner = IntegrationRunner;
+    let mut cleanup = CleanupRegistry::default();
+    let mut tag_id: Option<String> = None;
+
+    let result: Result<(), Box<dyn std::error::Error>> = async {
+        let tag_name = unique_name("Plan C alias tag");
+        let created_tag = create_tag(&runner, &tag_name, None).await?;
+        let created_tag_id = require_str_field(&created_tag, "id");
+        tag_id = Some(created_tag_id.clone());
+
+        let task_name = unique_name("Plan C alias task");
+        let due_date_iso =
+            run_omnijs("return new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString();")
+                .await?
+                .as_str()
+                .ok_or_else(|| "plan c due date probe did not return a string".to_string())?
+                .to_string();
+        let created_task = create_task(
+            &runner,
+            &task_name,
+            None,
+            None,
+            Some(&due_date_iso),
+            None,
+            None,
+            Some(vec![tag_name.clone()]),
+            None,
+        )
+        .await?;
+        let created_task_id = require_str_field(&created_task, "id");
+        cleanup.register_task(created_task_id.clone());
+
+        let listed = list_tasks(
+            &runner,
+            None,
+            None,
+            Some(vec![tag_name.clone()]),
+            "AND",
+            None,
+            "due soon",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            "descending",
+            100,
+        )
+        .await?;
+        let listed_match = listed
+            .iter()
+            .find(|item| item.id == created_task_id)
+            .ok_or_else(|| {
+                "plan c list_tasks alias call did not return created task".to_string()
+            })?;
+        assert_eq!(listed_match.task_status, "due_soon");
+
+        let searched = search_tasks(
+            &runner,
+            &task_name,
+            None,
+            None,
+            Some(vec![tag_name.clone()]),
+            "and",
+            None,
+            "due-soon",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            "descending",
+            100,
+        )
+        .await?;
+        let searched_match = searched
+            .iter()
+            .find(|item| item.id == created_task_id)
+            .ok_or_else(|| {
+                "plan c search_tasks alias call did not return created task".to_string()
+            })?;
+        assert_eq!(searched_match.task_status, "due_soon");
+
+        let counts = get_task_counts(
+            &runner,
+            None,
+            None,
+            Some(vec![tag_name]),
+            "AND",
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await?;
+        assert!(counts.total >= 1);
+
+        Ok(())
+    }
+    .await;
+
+    if let Some(id) = tag_id {
+        let _ = delete_tag(&runner, &id).await;
+    }
+
+    result
+}
+
+#[tokio::test]
+async fn test_plan_a_parent_child_batch_delete_effective_success(
+) -> Result<(), Box<dyn std::error::Error>> {
+    if !integration_enabled() || !omnifocus_running() {
+        return Ok(());
+    }
+    let _guard = test_lock().lock().await;
+    let runner = IntegrationRunner;
+    let mut extra_tag_ids: Vec<String> = Vec::new();
+    let mut extra_folder_ids: Vec<String> = Vec::new();
+
+    let prefix = unique_name("Plan A hierarchy");
+    let result: Result<(), Box<dyn std::error::Error>> = async {
+        let parent_tag_name = format!("{prefix} parent tag");
+        let child_tag_name = format!("{prefix} child tag");
+        let parent_tag = create_tag(&runner, &parent_tag_name, None).await?;
+        let parent_tag_id = require_str_field(&parent_tag, "id");
+        extra_tag_ids.push(parent_tag_id.clone());
+        let child_tag = create_tag(&runner, &child_tag_name, Some(&parent_tag_name)).await?;
+        let child_tag_id = require_str_field(&child_tag, "id");
+        extra_tag_ids.push(child_tag_id.clone());
+
+        let deleted_tags =
+            delete_tags_batch(&runner, vec![parent_tag_id.clone(), child_tag_id.clone()]).await?;
+        assert_eq!(
+            deleted_tags
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("deleted"))
+                .and_then(Value::as_i64),
+            Some(2)
+        );
+        assert_eq!(
+            deleted_tags
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("failed"))
+                .and_then(Value::as_i64),
+            Some(0)
+        );
+        assert_eq!(
+            deleted_tags.get("partial_success").and_then(Value::as_bool),
+            Some(false)
+        );
+        let tag_results = require_array(
+            deleted_tags
+                .get("results")
+                .ok_or_else(|| "delete_tags_batch result missing results".to_string())?,
+            "delete_tags_batch results",
+        );
+        assert!(!tag_results.is_empty());
+        for item in tag_results {
+            assert_eq!(item.get("deleted").and_then(Value::as_bool), Some(true));
+            let message = item
+                .get("error")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            assert!(!(message.contains("invalid") && message.contains("instance")));
+        }
+        extra_tag_ids.clear();
+
+        let parent_folder_name = format!("{prefix} parent folder");
+        let child_folder_name = format!("{prefix} child folder");
+        let parent_folder = create_folder(&runner, &parent_folder_name, None).await?;
+        let parent_folder_id = require_str_field(&parent_folder, "id");
+        extra_folder_ids.push(parent_folder_id.clone());
+        let child_folder =
+            create_folder(&runner, &child_folder_name, Some(&parent_folder_name)).await?;
+        let child_folder_id = require_str_field(&child_folder, "id");
+        extra_folder_ids.push(child_folder_id.clone());
+
+        let deleted_folders = delete_folders_batch(
+            &runner,
+            vec![parent_folder_id.clone(), child_folder_id.clone()],
+        )
+        .await?;
+        assert_eq!(
+            deleted_folders
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("deleted"))
+                .and_then(Value::as_i64),
+            Some(2)
+        );
+        assert_eq!(
+            deleted_folders
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("failed"))
+                .and_then(Value::as_i64),
+            Some(0)
+        );
+        assert_eq!(
+            deleted_folders
+                .get("partial_success")
+                .and_then(Value::as_bool),
+            Some(false)
+        );
+        let folder_results = require_array(
+            deleted_folders
+                .get("results")
+                .ok_or_else(|| "delete_folders_batch result missing results".to_string())?,
+            "delete_folders_batch results",
+        );
+        assert!(!folder_results.is_empty());
+        for item in folder_results {
+            assert_eq!(item.get("deleted").and_then(Value::as_bool), Some(true));
+            let message = item
+                .get("error")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            assert!(!(message.contains("invalid") && message.contains("instance")));
+        }
+        extra_folder_ids.clear();
+
+        Ok(())
+    }
+    .await;
+
+    for id in &extra_tag_ids {
+        let _ = delete_tag(&runner, id).await;
+    }
+    for id in &extra_folder_ids {
+        let _ = delete_folder(&runner, id).await;
     }
 
     result

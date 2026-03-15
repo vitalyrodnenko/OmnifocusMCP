@@ -12,6 +12,50 @@ fn parse_task_list(value: Value) -> Result<Vec<TaskResult>> {
     Ok(serde_json::from_value(value)?)
 }
 
+fn normalize_tag_filter_mode_input(value: &str) -> Result<&'static str> {
+    let normalized_value = value.trim().to_ascii_lowercase();
+    match normalized_value.as_str() {
+        "any" => Ok("any"),
+        "all" => Ok("all"),
+        "and" => Ok("all"),
+        "or" => Ok("any"),
+        _ => Err(OmniFocusError::Validation(format!(
+            "tagFilterMode must be one of: any, all. received: {}.",
+            serde_json::to_string(value).unwrap_or_else(|_| "\"<invalid>\"".to_string())
+        ))),
+    }
+}
+
+fn normalize_task_status_input(value: &str) -> Result<&'static str> {
+    let normalized_value = value.trim().to_ascii_lowercase().replace(['-', ' '], "_");
+    match normalized_value.as_str() {
+        "available" => Ok("available"),
+        "due_soon" | "duesoon" => Ok("due_soon"),
+        "overdue" => Ok("overdue"),
+        "on_hold" | "onhold" => Ok("on_hold"),
+        "completed" => Ok("completed"),
+        "all" => Ok("all"),
+        _ => Err(OmniFocusError::Validation(format!(
+            "status must be one of: available, due_soon, overdue, on_hold, completed, all. received: {}.",
+            serde_json::to_string(value).unwrap_or_else(|_| "\"<invalid>\"".to_string())
+        ))),
+    }
+}
+
+fn normalize_sort_order_input(value: &str) -> Result<&'static str> {
+    let normalized_value = value.trim().to_ascii_lowercase();
+    match normalized_value.as_str() {
+        "asc" => Ok("asc"),
+        "desc" => Ok("desc"),
+        "ascending" => Ok("asc"),
+        "descending" => Ok("desc"),
+        _ => Err(OmniFocusError::Validation(format!(
+            "sortOrder must be one of: asc, desc. received: {}.",
+            serde_json::to_string(value).unwrap_or_else(|_| "\"<invalid>\"".to_string())
+        ))),
+    }
+}
+
 #[allow(clippy::too_many_arguments)]
 pub async fn get_task_counts_with_added_changed<R: JxaRunner>(
     runner: &R,
@@ -55,11 +99,7 @@ pub async fn get_task_counts_with_added_changed<R: JxaRunner>(
             }
         }
     }
-    if !matches!(tag_filter_mode, "any" | "all") {
-        return Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        ));
-    }
+    let normalized_tag_filter_mode = normalize_tag_filter_mode_input(tag_filter_mode)?;
     if let Some(max_minutes) = max_estimated_minutes {
         if max_minutes < 0 {
             return Err(OmniFocusError::Validation(
@@ -91,7 +131,7 @@ pub async fn get_task_counts_with_added_changed<R: JxaRunner>(
     } else {
         serde_json::to_string(&merged_tag_names)?
     };
-    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
@@ -351,11 +391,7 @@ pub async fn get_task_counts_legacy1<R: JxaRunner>(
             }
         }
     }
-    if !matches!(tag_filter_mode, "any" | "all") {
-        return Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        ));
-    }
+    let normalized_tag_filter_mode = normalize_tag_filter_mode_input(tag_filter_mode)?;
     if let Some(max_minutes) = max_estimated_minutes {
         if max_minutes < 0 {
             return Err(OmniFocusError::Validation(
@@ -387,7 +423,7 @@ pub async fn get_task_counts_legacy1<R: JxaRunner>(
     } else {
         serde_json::to_string(&merged_tag_names)?
     };
-    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
@@ -538,11 +574,7 @@ pub async fn get_task_counts_legacy3<R: JxaRunner>(
             }
         }
     }
-    if !matches!(tag_filter_mode, "any" | "all") {
-        return Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        ));
-    }
+    let normalized_tag_filter_mode = normalize_tag_filter_mode_input(tag_filter_mode)?;
     if let Some(max_minutes) = max_estimated_minutes {
         if max_minutes < 0 {
             return Err(OmniFocusError::Validation(
@@ -574,7 +606,7 @@ pub async fn get_task_counts_legacy3<R: JxaRunner>(
     } else {
         serde_json::to_string(&merged_tag_names)?
     };
-    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
@@ -736,11 +768,7 @@ pub async fn list_tasks_with_added_changed<R: JxaRunner>(
             }
         }
     }
-    if !matches!(tag_filter_mode, "any" | "all") {
-        return Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        ));
-    }
+    let normalized_tag_filter_mode = normalize_tag_filter_mode_input(tag_filter_mode)?;
     if let Some(max_minutes) = max_estimated_minutes {
         if max_minutes < 0 {
             return Err(OmniFocusError::Validation(
@@ -770,22 +798,11 @@ pub async fn list_tasks_with_added_changed<R: JxaRunner>(
             ));
         }
     }
-    if !matches!(sort_order, "asc" | "desc") {
-        return Err(OmniFocusError::Validation(
-            "sortOrder must be one of: asc, desc.".to_string(),
-        ));
-    }
-    if !matches!(
-        status,
-        "available" | "due_soon" | "overdue" | "completed" | "all"
-    ) {
-        return Err(OmniFocusError::Validation(
-            "status must be one of: available, due_soon, overdue, completed, all.".to_string(),
-        ));
-    }
+    let normalized_sort_order = normalize_sort_order_input(sort_order)?;
+    let normalized_status = normalize_task_status_input(status)?;
 
     let mut effective_sort_by = sort_by;
-    let mut effective_sort_order = sort_order;
+    let mut effective_sort_order = normalized_sort_order;
     if (completed_before.is_some() || completed_after.is_some()) && effective_sort_by.is_none() {
         effective_sort_by = Some("completionDate");
         effective_sort_order = "desc";
@@ -813,7 +830,7 @@ pub async fn list_tasks_with_added_changed<R: JxaRunner>(
     } else {
         serde_json::to_string(&merged_tag_names)?
     };
-    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
@@ -823,12 +840,13 @@ pub async fn list_tasks_with_added_changed<R: JxaRunner>(
             }
         })
         .unwrap_or_else(|| "null".to_string());
-    let effective_status =
-        if (completed_before.is_some() || completed_after.is_some()) && status != "completed" {
-            "all"
-        } else {
-            status
-        };
+    let effective_status = if (completed_before.is_some() || completed_after.is_some())
+        && normalized_status != "completed"
+    {
+        "all"
+    } else {
+        normalized_status
+    };
     let status_filter = escape_for_jxa(effective_status);
     let due_before_filter = due_before
         .map(escape_for_jxa)
@@ -972,6 +990,9 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       }} else if (statusFilter === "due_soon") {{
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }} else if (statusFilter === "on_hold") {{
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches = projectStatus.includes("onhold") || projectStatus.includes("on hold") || projectStatus.includes("on_hold");
       }}
     }}
     if (!statusMatches) return false;
@@ -1228,11 +1249,7 @@ pub async fn get_task_counts_duplicate<R: JxaRunner>(
             }
         }
     }
-    if !matches!(tag_filter_mode, "any" | "all") {
-        return Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        ));
-    }
+    let normalized_tag_filter_mode = normalize_tag_filter_mode_input(tag_filter_mode)?;
     if let Some(max_minutes) = max_estimated_minutes {
         if max_minutes < 0 {
             return Err(OmniFocusError::Validation(
@@ -1264,7 +1281,7 @@ pub async fn get_task_counts_duplicate<R: JxaRunner>(
     } else {
         serde_json::to_string(&merged_tag_names)?
     };
-    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
@@ -1705,19 +1722,8 @@ pub async fn search_tasks_with_added_changed<R: JxaRunner>(
             }
         }
     }
-    if !matches!(tag_filter_mode, "any" | "all") {
-        return Err(OmniFocusError::Validation(
-            "tagFilterMode must be one of: any, all.".to_string(),
-        ));
-    }
-    if !matches!(
-        status,
-        "available" | "due_soon" | "overdue" | "completed" | "all"
-    ) {
-        return Err(OmniFocusError::Validation(
-            "status must be one of: available, due_soon, overdue, completed, all.".to_string(),
-        ));
-    }
+    let normalized_tag_filter_mode = normalize_tag_filter_mode_input(tag_filter_mode)?;
+    let normalized_status = normalize_task_status_input(status)?;
     if let Some(sort_field) = sort_by {
         if !matches!(
             sort_field,
@@ -1740,11 +1746,7 @@ pub async fn search_tasks_with_added_changed<R: JxaRunner>(
             ));
         }
     }
-    if !matches!(sort_order, "asc" | "desc") {
-        return Err(OmniFocusError::Validation(
-            "sortOrder must be one of: asc, desc.".to_string(),
-        ));
-    }
+    let normalized_sort_order = normalize_sort_order_input(sort_order)?;
     if let Some(max_minutes) = max_estimated_minutes {
         if max_minutes < 0 {
             return Err(OmniFocusError::Validation(
@@ -1759,7 +1761,7 @@ pub async fn search_tasks_with_added_changed<R: JxaRunner>(
     }
 
     let mut effective_sort_by = sort_by;
-    let mut effective_sort_order = sort_order;
+    let mut effective_sort_order = normalized_sort_order;
     if (completed_before.is_some() || completed_after.is_some()) && effective_sort_by.is_none() {
         effective_sort_by = Some("completionDate");
         effective_sort_order = "desc";
@@ -1787,7 +1789,7 @@ pub async fn search_tasks_with_added_changed<R: JxaRunner>(
     } else {
         serde_json::to_string(&merged_tag_names)?
     };
-    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
@@ -1797,12 +1799,13 @@ pub async fn search_tasks_with_added_changed<R: JxaRunner>(
             }
         })
         .unwrap_or_else(|| "null".to_string());
-    let effective_status =
-        if (completed_before.is_some() || completed_after.is_some()) && status != "completed" {
-            "all"
-        } else {
-            status
-        };
+    let effective_status = if (completed_before.is_some() || completed_after.is_some())
+        && normalized_status != "completed"
+    {
+        "all"
+    } else {
+        normalized_status
+    };
     let status_filter = escape_for_jxa(effective_status);
     let due_before_filter = due_before
         .map(escape_for_jxa)
@@ -1951,6 +1954,9 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       }} else if (statusFilter === "due_soon") {{
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }} else if (statusFilter === "on_hold") {{
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches = projectStatus.includes("onhold") || projectStatus.includes("on hold") || projectStatus.includes("on_hold");
       }}
     }}
     if (!statusMatches) return false;
