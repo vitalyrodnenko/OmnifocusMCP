@@ -6,6 +6,39 @@ from omnifocus_mcp.registration import typed_tool
 from omnifocus_mcp.app import mcp
 
 
+def _normalize_tag_filter_mode_input(value: str) -> Literal["any", "all"]:
+    normalized_value = value.strip().lower()
+    if normalized_value in ("any", "all"):
+        return normalized_value
+    if normalized_value == "and":
+        return "all"
+    if normalized_value == "or":
+        return "any"
+    raise ValueError("tagFilterMode must be one of: any, all.")
+
+
+def _normalize_task_status_input(
+    value: str,
+) -> Literal["available", "due_soon", "overdue", "completed", "all"]:
+    normalized_value = value.strip().lower().replace("-", "_").replace(" ", "_")
+    if normalized_value in ("available", "overdue", "completed", "all"):
+        return normalized_value
+    if normalized_value in ("due_soon", "duesoon"):
+        return "due_soon"
+    raise ValueError("status must be one of: available, due_soon, overdue, completed, all.")
+
+
+def _normalize_sort_order_input(value: str) -> Literal["asc", "desc"]:
+    normalized_value = value.strip().lower()
+    if normalized_value in ("asc", "desc"):
+        return normalized_value
+    if normalized_value == "ascending":
+        return "asc"
+    if normalized_value == "descending":
+        return "desc"
+    raise ValueError("sortOrder must be one of: asc, desc.")
+
+
 @typed_tool(mcp)
 async def get_inbox(limit: int = 100) -> str:
     """get inbox tasks from omnifocus.
@@ -116,8 +149,7 @@ async def list_tasks(
         for tag_name in tags:
             if tag_name.strip() == "":
                 raise ValueError("tags entries must not be empty when provided.")
-    if tagFilterMode not in ("any", "all"):
-        raise ValueError("tagFilterMode must be one of: any, all.")
+    normalized_tag_filter_mode = _normalize_tag_filter_mode_input(tagFilterMode)
     if sortBy is not None and sortBy not in (
         "dueDate",
         "deferDate",
@@ -136,17 +168,13 @@ async def list_tasks(
         raise ValueError(
             "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, added, modified, planned."
         )
-    if sortOrder not in ("asc", "desc"):
-        raise ValueError("sortOrder must be one of: asc, desc.")
+    normalized_sort_order = _normalize_sort_order_input(sortOrder)
     if maxEstimatedMinutes is not None and maxEstimatedMinutes < 0:
         raise ValueError("maxEstimatedMinutes must be greater than or equal to 0.")
-    if status not in ("available", "due_soon", "overdue", "completed", "all"):
-        raise ValueError(
-            "status must be one of: available, due_soon, overdue, completed, all."
-        )
+    normalized_status = _normalize_task_status_input(status)
 
     effective_sort_by = sortBy
-    effective_sort_order = sortOrder
+    effective_sort_order = normalized_sort_order
     if (
         completedBefore is not None or completedAfter is not None
     ) and effective_sort_by is None:
@@ -170,12 +198,12 @@ async def list_tasks(
     tag_names_filter = (
         "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
     )
-    tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
+    tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode)
     flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
-    effective_status = status
+    effective_status = normalized_status
     if (
         completedBefore is not None or completedAfter is not None
-    ) and status != "completed":
+    ) and normalized_status != "completed":
         effective_status = "all"
     status_filter = escape_for_jxa(effective_status)
     due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)
@@ -454,8 +482,7 @@ async def _get_task_counts_legacy(
         for tag_name in tags:
             if tag_name.strip() == "":
                 raise ValueError("tags entries must not be empty when provided.")
-    if tagFilterMode not in ("any", "all"):
-        raise ValueError("tagFilterMode must be one of: any, all.")
+    normalized_tag_filter_mode = _normalize_tag_filter_mode_input(tagFilterMode)
     if maxEstimatedMinutes is not None and maxEstimatedMinutes < 0:
         raise ValueError("maxEstimatedMinutes must be greater than or equal to 0.")
 
@@ -476,7 +503,7 @@ async def _get_task_counts_legacy(
     tag_names_filter = (
         "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
     )
-    tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
+    tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode)
     flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
     due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)
     due_after_filter = "null" if dueAfter is None else escape_for_jxa(dueAfter)
@@ -1057,12 +1084,8 @@ async def search_tasks(
         raise ValueError("tag must not be empty when provided.")
     if tags is not None and any(tag_name.strip() == "" for tag_name in tags):
         raise ValueError("tags entries must not be empty when provided.")
-    if tagFilterMode not in ("any", "all"):
-        raise ValueError("tagFilterMode must be one of: any, all.")
-    if status not in ("available", "due_soon", "overdue", "completed", "all"):
-        raise ValueError(
-            "status must be one of: available, due_soon, overdue, completed, all."
-        )
+    normalized_tag_filter_mode = _normalize_tag_filter_mode_input(tagFilterMode)
+    normalized_status = _normalize_task_status_input(status)
     if sortBy is not None and sortBy not in (
         "dueDate",
         "deferDate",
@@ -1081,15 +1104,14 @@ async def search_tasks(
         raise ValueError(
             "sortBy must be one of: dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, added, modified, planned."
         )
-    if sortOrder not in ("asc", "desc"):
-        raise ValueError("sortOrder must be one of: asc, desc.")
+    normalized_sort_order = _normalize_sort_order_input(sortOrder)
     if maxEstimatedMinutes is not None and maxEstimatedMinutes < 0:
         raise ValueError("maxEstimatedMinutes must be greater than or equal to 0.")
     if limit < 1:
         raise ValueError("limit must be greater than 0.")
 
     effective_sort_by = sortBy
-    effective_sort_order = sortOrder
+    effective_sort_order = normalized_sort_order
     if (
         completedBefore is not None or completedAfter is not None
     ) and effective_sort_by is None:
@@ -1110,12 +1132,12 @@ async def search_tasks(
     tag_names_filter = (
         "null" if len(merged_tag_names) == 0 else json.dumps(merged_tag_names)
     )
-    tag_filter_mode_filter = escape_for_jxa(tagFilterMode)
+    tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode)
     flagged_filter = "null" if flagged is None else ("true" if flagged else "false")
-    effective_status = status
+    effective_status = normalized_status
     if (
         completedBefore is not None or completedAfter is not None
-    ) and status != "completed":
+    ) and normalized_status != "completed":
         effective_status = "all"
     status_filter = escape_for_jxa(effective_status)
     due_before_filter = "null" if dueBefore is None else escape_for_jxa(dueBefore)

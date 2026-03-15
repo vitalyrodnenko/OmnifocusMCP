@@ -3,6 +3,50 @@ import { z } from "zod";
 import { escapeForJxa, runOmniJs } from "../jxa.js";
 import { errorResult, normalizeError, textResult, type Server, type TaskStatus } from "../types.js";
 
+function normalizeTagFilterModeInput(value: string): "any" | "all" {
+  const normalizedValue = value.trim().toLowerCase();
+  if (normalizedValue === "any" || normalizedValue === "all") {
+    return normalizedValue;
+  }
+  if (normalizedValue === "and") {
+    return "all";
+  }
+  if (normalizedValue === "or") {
+    return "any";
+  }
+  throw new Error("tagFilterMode must be one of: any, all.");
+}
+
+function normalizeTaskStatusInput(value: string): TaskStatus {
+  const normalizedValue = value.trim().toLowerCase().replace(/-/g, "_").replace(/\s+/g, "_");
+  if (
+    normalizedValue === "available" ||
+    normalizedValue === "overdue" ||
+    normalizedValue === "completed" ||
+    normalizedValue === "all"
+  ) {
+    return normalizedValue;
+  }
+  if (normalizedValue === "due_soon" || normalizedValue === "duesoon") {
+    return "due_soon";
+  }
+  throw new Error("status must be one of: available, due_soon, overdue, completed, all.");
+}
+
+function normalizeSortOrderInput(value: string): "asc" | "desc" {
+  const normalizedValue = value.trim().toLowerCase();
+  if (normalizedValue === "asc" || normalizedValue === "desc") {
+    return normalizedValue;
+  }
+  if (normalizedValue === "ascending") {
+    return "asc";
+  }
+  if (normalizedValue === "descending") {
+    return "desc";
+  }
+  throw new Error("sortOrder must be one of: asc, desc.");
+}
+
 export function register(server: Server): void {
   server.tool(
     "get_inbox",
@@ -24,9 +68,9 @@ export function register(server: Server): void {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       tags: z.array(z.string().min(1)).optional(),
-      tagFilterMode: z.enum(["any", "all"]).default("any"),
+      tagFilterMode: z.string().default("any"),
       flagged: z.boolean().optional(),
-      status: z.enum(["available", "due_soon", "overdue", "completed", "all"]).default("available"),
+      status: z.string().default("available"),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
       deferBefore: z.string().optional(),
@@ -57,7 +101,7 @@ export function register(server: Server): void {
           "planned",
         ])
         .optional(),
-      sortOrder: z.enum(["asc", "desc"]).default("asc"),
+      sortOrder: z.string().default("asc"),
       limit: z.number().int().min(1).default(100),
     },
     async ({
@@ -85,14 +129,17 @@ export function register(server: Server): void {
       limit,
     }) => {
       try {
+        const normalizedTagFilterMode = normalizeTagFilterModeInput(tagFilterMode ?? "any");
+        const normalizedStatus = normalizeTaskStatusInput(status ?? "available");
+        const normalizedSortOrder = normalizeSortOrderInput(sortOrder ?? "asc");
         return textResult(
           await listTasksData(
             project,
             tag,
             tags,
-            tagFilterMode ?? "any",
+            normalizedTagFilterMode,
             flagged,
-            status,
+            normalizedStatus,
             dueBefore,
             dueAfter,
             deferBefore,
@@ -107,7 +154,7 @@ export function register(server: Server): void {
             plannedAfter,
             maxEstimatedMinutes,
             sortBy,
-            sortOrder,
+            normalizedSortOrder,
             limit
           )
         );
@@ -124,7 +171,7 @@ export function register(server: Server): void {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       tags: z.array(z.string().min(1)).optional(),
-      tagFilterMode: z.enum(["any", "all"]).default("any"),
+      tagFilterMode: z.string().default("any"),
       flagged: z.boolean().optional(),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
@@ -157,12 +204,13 @@ export function register(server: Server): void {
       maxEstimatedMinutes,
     }) => {
       try {
+        const normalizedTagFilterMode = normalizeTagFilterModeInput(tagFilterMode ?? "any");
         return textResult(
           await getTaskCountsData(
             project,
             tag,
             tags,
-            tagFilterMode ?? "any",
+            normalizedTagFilterMode,
             flagged,
             dueBefore,
             dueAfter,
@@ -551,9 +599,9 @@ return {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       tags: z.array(z.string().min(1)).optional(),
-      tagFilterMode: z.enum(["any", "all"]).default("any"),
+      tagFilterMode: z.string().default("any"),
       flagged: z.boolean().optional(),
-      status: z.enum(["available", "due_soon", "overdue", "completed", "all"]).default("available"),
+      status: z.string().default("available"),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
       deferBefore: z.string().optional(),
@@ -584,7 +632,7 @@ return {
           "planned",
         ])
         .optional(),
-      sortOrder: z.enum(["asc", "desc"]).default("asc"),
+      sortOrder: z.string().default("asc"),
       limit: z.number().int().min(1).default(100),
     },
     async ({
@@ -613,15 +661,18 @@ return {
       limit,
     }) => {
       try {
+        const normalizedTagFilterMode = normalizeTagFilterModeInput(tagFilterMode ?? "any");
+        const normalizedStatus = normalizeTaskStatusInput(status ?? "available");
+        const normalizedSortOrder = normalizeSortOrderInput(sortOrder ?? "asc");
         return textResult(
           await searchTasksData(
             query,
             project,
             tag,
             tags,
-            tagFilterMode ?? "any",
+            normalizedTagFilterMode,
             flagged,
-            status ?? "available",
+            normalizedStatus,
             dueBefore,
             dueAfter,
             deferBefore,
@@ -636,7 +687,7 @@ return {
             plannedAfter,
             maxEstimatedMinutes,
             sortBy,
-            sortOrder,
+            normalizedSortOrder,
             limit
           )
         );
