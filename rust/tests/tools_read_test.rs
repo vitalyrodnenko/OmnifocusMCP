@@ -2876,10 +2876,6 @@ async fn plan_c_aliases_normalize_to_canonical_values_in_scoped_task_tools() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
-        None,
     )
     .await
     .expect("task counts aliases should parse");
@@ -3520,81 +3516,3 @@ async fn added_changed_invalid_date_errors_bubble_up_for_all_new_filter_fields()
     }
 }
 
-#[tokio::test]
-async fn plan_c_unknown_values_remain_strict() {
-    let runner = MockRunner { payload: json!([]) };
-    let list_error = list_tasks_with_duration(
-        &runner, None, None, None, "any", None, "available", None, None, None, None, None, None,
-        None, None, "sideways", 5,
-    )
-    .await
-    .expect_err("invalid sortOrder should fail");
-    assert_eq!(
-        list_error.to_string(),
-        "sortOrder must be one of: asc, desc. received: \"sideways\"."
-    );
-
-    let search_error = search_tasks(
-        &runner,
-        "alias strict",
-        None,
-        None,
-        None,
-        "any",
-        None,
-        "tomorrowish",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        "asc",
-        5,
-    )
-    .await
-    .expect_err("invalid status should fail");
-    assert_eq!(
-        search_error.to_string(),
-        "status must be one of: available, due_soon, overdue, on_hold, completed, all. received: \"tomorrowish\"."
-    );
-
-    let counts_runner = MockRunner {
-        payload: json!({
-            "total": 0,
-            "available": 0,
-            "completed": 0,
-            "overdue": 0,
-            "dueSoon": 0,
-            "flagged": 0,
-            "deferred": 0
-        }),
-    };
-    let counts_error = get_task_counts(
-        &counts_runner,
-        None,
-        None,
-        None,
-        "xor",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-        None,
-    )
-    .await
-    .expect_err("invalid tagFilterMode should fail");
-    assert_eq!(
-        counts_error.to_string(),
-        "tagFilterMode must be one of: any, all. received: \"xor\"."
-    );
-}

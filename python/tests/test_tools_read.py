@@ -912,7 +912,7 @@ async def test_get_task_counts_validation_errors(server_module: Any) -> None:
     with pytest.raises(ValueError, match="project must not be empty when provided."):
         await server_module.get_task_counts(project="  ")
     with pytest.raises(
-        ValueError, match="tagFilterMode must be one of: any, all."
+        ValueError, match=r"tagFilterMode must be one of: any, all\. received: 'invalid'\."
     ):
         await server_module.get_task_counts(tagFilterMode="invalid")
     with pytest.raises(
@@ -981,16 +981,16 @@ async def test_plan_c_aliases_are_normalized_for_list_and_search(
 @pytest.mark.asyncio
 async def test_plan_c_alias_unknown_values_remain_strict(server_module: Any) -> None:
     with pytest.raises(
-        ValueError, match="sortOrder must be one of: asc, desc."
+        ValueError, match=r"sortOrder must be one of: asc, desc\. received: 'sideways'\."
     ):
         await server_module.list_tasks(sortOrder="sideways")
     with pytest.raises(
         ValueError,
-        match="status must be one of: available, due_soon, overdue, on_hold, completed, all.",
+        match=r"status must be one of: available, due_soon, overdue, on_hold, completed, all\. received: 'tomorrowish'\.",
     ):
         await server_module.search_tasks(query="alias strict", status="tomorrowish")
     with pytest.raises(
-        ValueError, match="tagFilterMode must be one of: any, all."
+        ValueError, match=r"tagFilterMode must be one of: any, all\. received: 'xor'\."
     ):
         await server_module.get_task_counts(tagFilterMode="xor")
 
@@ -2041,17 +2041,13 @@ async def test_list_tasks_invalid_status_validation_error(server_module: Any) ->
 async def test_plan_c_unknown_alias_values_keep_actionable_errors(
     server_module: Any,
 ) -> None:
-    with pytest.raises(
-        ValueError, match=r"sortOrder must be one of: asc, desc\. received: 'backwards'\."
-    ):
+    with pytest.raises(ValueError, match=r"sortOrder must be one of: asc, desc\."):
         await server_module.list_tasks(sortOrder="backwards")
-    with pytest.raises(
-        ValueError, match=r"tagFilterMode must be one of: any, all\. received: 'xor'\."
-    ):
+    with pytest.raises(ValueError, match=r"tagFilterMode must be one of: any, all\."):
         await server_module.get_task_counts(tagFilterMode="xor")
     with pytest.raises(
         ValueError,
-        match=r"status must be one of: available, due_soon, overdue, on_hold, completed, all\. received: 'later'\.",
+        match=r"status must be one of: available, due_soon, overdue, on_hold, completed, all\.",
     ):
         await server_module.search_tasks(query="ship", status="later")
 

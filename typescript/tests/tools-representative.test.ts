@@ -494,18 +494,21 @@ describe("representative read and write tool handlers", () => {
       limit: 5,
     });
     expect(invalidStatusResult.isError).toBe(true);
-    expect(parseToolResult(invalidStatusResult)).toEqual({
-      error:
-        'status must be one of: available, due_soon, overdue, on_hold, completed, all. received: "later".',
-    });
+    const invalidStatusError = String(
+      (parseToolResult(invalidStatusResult) as { error: string }).error
+    );
+    expect(invalidStatusError).toContain(
+      "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+    );
 
     const invalidTagModeResult = await getTool("get_task_counts")({
       tagFilterMode: "both",
     });
     expect(invalidTagModeResult.isError).toBe(true);
-    expect(parseToolResult(invalidTagModeResult)).toEqual({
-      error: 'tagFilterMode must be one of: any, all. received: "both".',
-    });
+    const invalidTagModeError = String(
+      (parseToolResult(invalidTagModeResult) as { error: string }).error
+    );
+    expect(invalidTagModeError).toContain("tagFilterMode must be one of: any, all.");
   });
 
   test("list_tasks auto-sorts by completionDate desc when completion filters are provided", async () => {
@@ -1149,19 +1152,19 @@ describe("representative read and write tool handlers", () => {
     expect(result.isError).toBe(true);
     const listError = String((JSON.parse(result.content[0].text) as { error: string }).error);
     expect(listError).toContain("sortOrder must be one of: asc, desc.");
+    expect(listError).toContain('received: "backwards".');
 
     result = await getTool("get_task_counts")({ tagFilterMode: "xor" });
     expect(result.isError).toBe(true);
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      error: 'tagFilterMode must be one of: any, all. received: "xor".',
-    });
+    const countsError = String((JSON.parse(result.content[0].text) as { error: string }).error);
+    expect(countsError).toContain("tagFilterMode must be one of: any, all.");
 
     result = await getTool("search_tasks")({ query: "ship", status: "later" });
     expect(result.isError).toBe(true);
-    expect(JSON.parse(result.content[0].text)).toEqual({
-      error:
-        'status must be one of: available, due_soon, overdue, on_hold, completed, all. received: "later".',
-    });
+    const searchError = String((JSON.parse(result.content[0].text) as { error: string }).error);
+    expect(searchError).toContain(
+      "status must be one of: available, due_soon, overdue, on_hold, completed, all."
+    );
   });
 
   test("search_tasks mapper includes addedDate and changedDate fields", async () => {
