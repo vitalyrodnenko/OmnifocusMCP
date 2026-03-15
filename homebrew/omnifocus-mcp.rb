@@ -9,18 +9,18 @@
 class OmnifocusMcp < Formula
   desc "Model Context Protocol server for OmniFocus"
   homepage "https://github.com/vitalyrodnenko/OmnifocusMCP"
-  version "1.1.6"
+  version "1.1.7"
   license "MIT"
 
   depends_on :macos
 
   on_arm do
-    url "https://github.com/vitalyrodnenko/OmnifocusMCP/releases/download/rust-v1.1.6/omnifocus-mcp-1.1.6-aarch64-apple-darwin.tar.gz"
+    url "https://github.com/vitalyrodnenko/OmnifocusMCP/releases/download/rust-v1.1.7/omnifocus-mcp-1.1.7-aarch64-apple-darwin.tar.gz"
     sha256 "REPLACE_WITH_ARM64_SHA256"
   end
 
   on_intel do
-    url "https://github.com/vitalyrodnenko/OmnifocusMCP/releases/download/rust-v1.1.6/omnifocus-mcp-1.1.6-x86_64-apple-darwin.tar.gz"
+    url "https://github.com/vitalyrodnenko/OmnifocusMCP/releases/download/rust-v1.1.7/omnifocus-mcp-1.1.7-x86_64-apple-darwin.tar.gz"
     sha256 "REPLACE_WITH_INTEL_SHA256"
   end
 
