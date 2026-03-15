@@ -62,8 +62,12 @@ struct ListTasksParams {
     tag: Option<String>,
     tags: Option<Vec<String>>,
     #[serde(rename = "tagFilterMode")]
+    #[schemars(description = "tag matching mode: any/all. aliases: and/or (case-insensitive).")]
     tag_filter_mode: Option<String>,
     flagged: Option<bool>,
+    #[schemars(
+        description = "task status filter: available, due_soon, overdue, on_hold, completed, all. aliases: due soon/due-soon, on hold/on-hold."
+    )]
     status: Option<String>,
     #[serde(rename = "dueBefore")]
     due_before: Option<String>,
@@ -90,6 +94,7 @@ struct ListTasksParams {
     #[serde(rename = "sortBy")]
     sort_by: Option<String>,
     #[serde(rename = "sortOrder")]
+    #[schemars(description = "sort direction: asc/desc. aliases: ascending/descending.")]
     sort_order: Option<String>,
     limit: Option<i32>,
 }
@@ -100,6 +105,7 @@ struct GetTaskCountsParams {
     tag: Option<String>,
     tags: Option<Vec<String>>,
     #[serde(rename = "tagFilterMode")]
+    #[schemars(description = "tag matching mode: any/all. aliases: and/or (case-insensitive).")]
     tag_filter_mode: Option<String>,
     flagged: Option<bool>,
     #[serde(rename = "dueBefore")]
@@ -166,8 +172,12 @@ struct SearchTasksParams {
     tag: Option<String>,
     tags: Option<Vec<String>>,
     #[serde(rename = "tagFilterMode")]
+    #[schemars(description = "tag matching mode: any/all. aliases: and/or (case-insensitive).")]
     tag_filter_mode: Option<String>,
     flagged: Option<bool>,
+    #[schemars(
+        description = "task status filter: available, due_soon, overdue, on_hold, completed, all. aliases: due soon/due-soon, on hold/on-hold."
+    )]
     status: Option<String>,
     #[serde(rename = "dueBefore")]
     due_before: Option<String>,
@@ -194,6 +204,7 @@ struct SearchTasksParams {
     #[serde(rename = "sortBy")]
     sort_by: Option<String>,
     #[serde(rename = "sortOrder")]
+    #[schemars(description = "sort direction: asc/desc. aliases: ascending/descending.")]
     sort_order: Option<String>,
     limit: Option<i32>,
 }
@@ -485,7 +496,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "list tasks with optional project/tag filters, status, date ranges, and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon, and tagFilterMode and/or. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
+        description = "list tasks with optional project/tag filters, status, date ranges, and sorting. canonical status values are available, due_soon, overdue, on_hold, completed, and all. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon and on hold or on-hold, and tagFilterMode and/or. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
     )]
     async fn list_tasks(
         &self,
@@ -670,7 +681,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
     }
 
     #[tool(
-        description = "search tasks by case-insensitive name/note text with optional filters and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon, and tagFilterMode and/or. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
+        description = "search tasks by case-insensitive name/note text with optional filters and sorting. canonical status values are available, due_soon, overdue, on_hold, completed, and all. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon and on hold or on-hold, and tagFilterMode and/or. sortBy accepts dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned. returns task summaries."
     )]
     async fn search_tasks(
         &self,

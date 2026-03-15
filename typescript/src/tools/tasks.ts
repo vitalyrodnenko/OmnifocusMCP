@@ -70,14 +70,22 @@ export function register(server: Server): void {
 
   server.tool(
     "list_tasks",
-    "list tasks with optional filters for project, tag/tags, flagged state, status, date ranges, and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon, and tagFilterMode and/or. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
+    "list tasks with optional filters for project, tag/tags, flagged state, status, date ranges, and sorting. canonical status values are available, due_soon, overdue, on_hold, completed, and all. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon and on hold or on-hold, and tagFilterMode and/or. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
     {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       tags: z.array(z.string().min(1)).optional(),
-      tagFilterMode: z.string().default("any"),
+      tagFilterMode: z
+        .string()
+        .default("any")
+        .describe("tag matching mode: any/all. aliases: and/or (case-insensitive)."),
       flagged: z.boolean().optional(),
-      status: z.string().default("available"),
+      status: z
+        .string()
+        .default("available")
+        .describe(
+          "task status filter: available, due_soon, overdue, on_hold, completed, all. aliases: due soon/due-soon, on hold/on-hold."
+        ),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
       deferBefore: z.string().optional(),
@@ -108,7 +116,10 @@ export function register(server: Server): void {
           "planned",
         ])
         .optional(),
-      sortOrder: z.string().default("asc"),
+      sortOrder: z
+        .string()
+        .default("asc")
+        .describe("sort direction: asc/desc. aliases: ascending/descending."),
       limit: z.number().int().min(1).default(100),
     },
     async ({
@@ -178,7 +189,10 @@ export function register(server: Server): void {
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       tags: z.array(z.string().min(1)).optional(),
-      tagFilterMode: z.string().default("any"),
+      tagFilterMode: z
+        .string()
+        .default("any")
+        .describe("tag matching mode: any/all. aliases: and/or (case-insensitive)."),
       flagged: z.boolean().optional(),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
@@ -600,15 +614,23 @@ return {
 
   server.tool(
     "search_tasks",
-    "search tasks by case-insensitive query across name and note with optional filters and sorting. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon, and tagFilterMode and/or. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
+    "search tasks by case-insensitive query across name and note with optional filters and sorting. canonical status values are available, due_soon, overdue, on_hold, completed, and all. added_* and changed_* filters must be ISO 8601 date strings; changed maps to task.modified. accepted aliases (case-insensitive): sortOrder ascending/descending, status due soon or due-soon and on hold or on-hold, and tagFilterMode and/or. sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes, project, flagged, addedDate, changedDate, plannedDate, and aliases added/modified/planned.",
     {
       query: z.string().min(1),
       project: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       tags: z.array(z.string().min(1)).optional(),
-      tagFilterMode: z.string().default("any"),
+      tagFilterMode: z
+        .string()
+        .default("any")
+        .describe("tag matching mode: any/all. aliases: and/or (case-insensitive)."),
       flagged: z.boolean().optional(),
-      status: z.string().default("available"),
+      status: z
+        .string()
+        .default("available")
+        .describe(
+          "task status filter: available, due_soon, overdue, on_hold, completed, all. aliases: due soon/due-soon, on hold/on-hold."
+        ),
       dueBefore: z.string().optional(),
       dueAfter: z.string().optional(),
       deferBefore: z.string().optional(),
@@ -639,7 +661,10 @@ return {
           "planned",
         ])
         .optional(),
-      sortOrder: z.string().default("asc"),
+      sortOrder: z
+        .string()
+        .default("asc")
+        .describe("sort direction: asc/desc. aliases: ascending/descending."),
       limit: z.number().int().min(1).default(100),
     },
     async ({

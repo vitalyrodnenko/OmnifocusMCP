@@ -8,8 +8,10 @@ from omnifocus_mcp.app import mcp
 
 def _normalize_tag_filter_mode_input(value: str) -> Literal["any", "all"]:
     normalized_value = value.strip().lower()
-    if normalized_value in ("any", "all"):
-        return normalized_value
+    if normalized_value == "any":
+        return "any"
+    if normalized_value == "all":
+        return "all"
     if normalized_value == "and":
         return "all"
     if normalized_value == "or":
@@ -21,8 +23,14 @@ def _normalize_task_status_input(
     value: str,
 ) -> Literal["available", "due_soon", "overdue", "on_hold", "completed", "all"]:
     normalized_value = value.strip().lower().replace("-", "_").replace(" ", "_")
-    if normalized_value in ("available", "overdue", "completed", "all"):
-        return normalized_value
+    if normalized_value == "available":
+        return "available"
+    if normalized_value == "overdue":
+        return "overdue"
+    if normalized_value == "completed":
+        return "completed"
+    if normalized_value == "all":
+        return "all"
     if normalized_value in ("on_hold", "onhold"):
         return "on_hold"
     if normalized_value in ("due_soon", "duesoon"):
@@ -35,8 +43,10 @@ def _normalize_task_status_input(
 
 def _normalize_sort_order_input(value: str) -> Literal["asc", "desc"]:
     normalized_value = value.strip().lower()
-    if normalized_value in ("asc", "desc"):
-        return normalized_value
+    if normalized_value == "asc":
+        return "asc"
+    if normalized_value == "desc":
+        return "desc"
     if normalized_value == "ascending":
         return "asc"
     if normalized_value == "descending":
