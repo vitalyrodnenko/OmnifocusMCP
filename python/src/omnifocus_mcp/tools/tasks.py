@@ -19,13 +19,15 @@ def _normalize_tag_filter_mode_input(value: str) -> Literal["any", "all"]:
 
 def _normalize_task_status_input(
     value: str,
-) -> Literal["available", "due_soon", "overdue", "completed", "all"]:
+) -> Literal["available", "due_soon", "overdue", "on_hold", "completed", "all"]:
     normalized_value = value.strip().lower().replace("-", "_").replace(" ", "_")
     if normalized_value in ("available", "overdue", "completed", "all"):
         return normalized_value
+    if normalized_value in ("on_hold", "onhold"):
+        return "on_hold"
     if normalized_value in ("due_soon", "duesoon"):
         return "due_soon"
-    raise ValueError("status must be one of: available, due_soon, overdue, completed, all.")
+    raise ValueError("status must be one of: available, due_soon, overdue, on_hold, completed, all.")
 
 
 def _normalize_sort_order_input(value: str) -> Literal["asc", "desc"]:
@@ -336,6 +338,9 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       }} else if (statusFilter === "due_soon") {{
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }} else if (statusFilter === "on_hold") {{
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches = projectStatus.includes("onhold") || projectStatus.includes("on hold") || projectStatus.includes("on_hold");
       }}
     }}
     if (!statusMatches) return false;
@@ -1271,6 +1276,9 @@ const filteredTasks = document.flattenedTasks
         statusMatches = dueDate !== null && dueDate < now;
       }} else if (statusFilter === "due_soon") {{
         statusMatches = dueDate !== null && dueDate >= now && dueDate <= soon;
+      }} else if (statusFilter === "on_hold") {{
+        const projectStatus = task.containingProject ? String(task.containingProject.status || "").toLowerCase() : "";
+        statusMatches = projectStatus.includes("onhold") || projectStatus.includes("on hold") || projectStatus.includes("on_hold");
       }}
     }}
     if (!statusMatches) return false;
