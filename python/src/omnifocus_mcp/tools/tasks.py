@@ -1026,7 +1026,7 @@ async def search_tasks(
     project: str | None = None,
     tag: str | None = None,
     tags: list[str] | None = None,
-    tagFilterMode: Literal["any", "all"] = "any",
+    tagFilterMode: str = "any",
     flagged: bool | None = None,
     status: str = "available",
     dueBefore: str | None = None,

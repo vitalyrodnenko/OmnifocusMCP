@@ -1276,7 +1276,7 @@ pub async fn get_task_counts_duplicate<R: JxaRunner>(
     } else {
         serde_json::to_string(&merged_tag_names)?
     };
-    let tag_filter_mode_filter = escape_for_jxa(tag_filter_mode);
+    let tag_filter_mode_filter = escape_for_jxa(normalized_tag_filter_mode);
     let flagged_filter = flagged
         .map(|value| {
             if value {
