@@ -97,8 +97,19 @@ if (!folder) {{
 }}
 
 const normalizeStatus = (value) => {{
-  const raw = String(value || "").split(".").pop() || "";
-  return raw.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toLowerCase();
+  const raw = String(value || "").toLowerCase();
+  const flattened = raw
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{{}}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) return "on_hold";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
+  return "active";
 }};
 
 return {{
@@ -194,7 +205,17 @@ if (statusValue !== null) {{
 
 const normalizeFolderStatus = (item) => {{
   const rawStatus = String(item.status || "").toLowerCase();
-  if (rawStatus.includes("dropped")) return "dropped";
+  const flattened = rawStatus
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{{}}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) return "on_hold";
+  if (flattened.includes("dropped")) return "dropped";
+  if (flattened.includes("active")) return "active";
   return "active";
 }};
 

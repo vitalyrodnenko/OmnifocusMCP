@@ -595,14 +595,20 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
         assert_eq!(removed.get("removed").and_then(Value::as_bool), Some(true));
         notification_id = None;
 
-        let tag_one = create_tag(&runner, &unique_name("Parity batch tag one"), None).await?;
-        let tag_two = create_tag(&runner, &unique_name("Parity batch tag two"), None).await?;
-        let tag_one_id = require_str_field(&tag_one, "id");
-        let tag_two_id = require_str_field(&tag_two, "id");
-        extra_tag_ids.push(tag_one_id.clone());
-        extra_tag_ids.push(tag_two_id.clone());
+        let tag_parent = create_tag(&runner, &unique_name("Parity batch parent tag"), None).await?;
+        let tag_parent_id = require_str_field(&tag_parent, "id");
+        let tag_parent_name = require_str_field(&tag_parent, "name");
+        let tag_child = create_tag(
+            &runner,
+            &unique_name("Parity batch child tag"),
+            Some(&tag_parent_name),
+        )
+        .await?;
+        let tag_child_id = require_str_field(&tag_child, "id");
+        extra_tag_ids.push(tag_parent_id.clone());
+        extra_tag_ids.push(tag_child_id.clone());
         let deleted_tags =
-            delete_tags_batch(&runner, vec![tag_one_id.clone(), tag_two_id.clone()]).await?;
+            delete_tags_batch(&runner, vec![tag_parent_id.clone(), tag_child_id.clone()]).await?;
         assert_eq!(
             deleted_tags
                 .get("summary")
@@ -611,18 +617,50 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
                 .and_then(Value::as_i64),
             Some(2)
         );
+        assert_eq!(
+            deleted_tags
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("failed"))
+                .and_then(Value::as_i64),
+            Some(0)
+        );
+        assert_eq!(
+            deleted_tags
+                .get("partial_success")
+                .and_then(Value::as_bool),
+            Some(false)
+        );
+        let tag_error_text = deleted_tags
+            .get("results")
+            .and_then(Value::as_array)
+            .map(|results| {
+                results
+                    .iter()
+                    .filter_map(|item| item.get("error").and_then(Value::as_str))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    .to_lowercase()
+            })
+            .unwrap_or_default();
+        assert!(!tag_error_text.contains("invalid object instance"));
         extra_tag_ids.clear();
 
-        let folder_one =
-            create_folder(&runner, &unique_name("Parity batch folder one"), None).await?;
-        let folder_two =
-            create_folder(&runner, &unique_name("Parity batch folder two"), None).await?;
-        let folder_one_id = require_str_field(&folder_one, "id");
-        let folder_two_id = require_str_field(&folder_two, "id");
-        extra_folder_ids.push(folder_one_id.clone());
-        extra_folder_ids.push(folder_two_id.clone());
+        let folder_parent =
+            create_folder(&runner, &unique_name("Parity batch parent folder"), None).await?;
+        let folder_parent_id = require_str_field(&folder_parent, "id");
+        let folder_parent_name = require_str_field(&folder_parent, "name");
+        let folder_child = create_folder(
+            &runner,
+            &unique_name("Parity batch child folder"),
+            Some(&folder_parent_name),
+        )
+        .await?;
+        let folder_child_id = require_str_field(&folder_child, "id");
+        extra_folder_ids.push(folder_parent_id.clone());
+        extra_folder_ids.push(folder_child_id.clone());
         let deleted_folders =
-            delete_folders_batch(&runner, vec![folder_one_id.clone(), folder_two_id.clone()])
+            delete_folders_batch(&runner, vec![folder_parent_id.clone(), folder_child_id.clone()])
                 .await?;
         assert_eq!(
             deleted_folders
@@ -632,6 +670,33 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
                 .and_then(Value::as_i64),
             Some(2)
         );
+        assert_eq!(
+            deleted_folders
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("failed"))
+                .and_then(Value::as_i64),
+            Some(0)
+        );
+        assert_eq!(
+            deleted_folders
+                .get("partial_success")
+                .and_then(Value::as_bool),
+            Some(false)
+        );
+        let folder_error_text = deleted_folders
+            .get("results")
+            .and_then(Value::as_array)
+            .map(|results| {
+                results
+                    .iter()
+                    .filter_map(|item| item.get("error").and_then(Value::as_str))
+                    .collect::<Vec<_>>()
+                    .join(" ")
+                    .to_lowercase()
+            })
+            .unwrap_or_default();
+        assert!(!folder_error_text.contains("invalid object instance"));
         extra_folder_ids.clear();
 
         let project_one = create_project(
@@ -690,6 +755,133 @@ async fn test_new_feature_parity_matrix() -> Result<(), Box<dyn std::error::Erro
     }
     for id in &extra_project_ids {
         let _ = delete_project(&runner, id).await;
+    }
+
+    result
+}
+
+#[tokio::test]
+async fn test_plan_a_parent_child_batch_delete_effective_success(
+) -> Result<(), Box<dyn std::error::Error>> {
+    let _guard = test_lock().lock().await;
+    let runner = RealJxaRunner::new();
+    let mut extra_tag_ids: Vec<String> = Vec::new();
+    let mut extra_folder_ids: Vec<String> = Vec::new();
+
+    let prefix = unique_name("Plan A hierarchy");
+    let result: Result<(), Box<dyn std::error::Error>> = async {
+        let parent_tag_name = format!("{prefix} parent tag");
+        let child_tag_name = format!("{prefix} child tag");
+        let parent_tag = create_tag(&runner, &parent_tag_name, None).await?;
+        let parent_tag_id = require_str_field(&parent_tag, "id");
+        extra_tag_ids.push(parent_tag_id.clone());
+        let child_tag = create_tag(&runner, &child_tag_name, Some(&parent_tag_name)).await?;
+        let child_tag_id = require_str_field(&child_tag, "id");
+        extra_tag_ids.push(child_tag_id.clone());
+
+        let deleted_tags =
+            delete_tags_batch(&runner, vec![parent_tag_id.clone(), child_tag_id.clone()]).await?;
+        assert_eq!(
+            deleted_tags
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("deleted"))
+                .and_then(Value::as_i64),
+            Some(2)
+        );
+        assert_eq!(
+            deleted_tags
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("failed"))
+                .and_then(Value::as_i64),
+            Some(0)
+        );
+        assert_eq!(
+            deleted_tags.get("partial_success").and_then(Value::as_bool),
+            Some(false)
+        );
+        let tag_results = require_array(
+            deleted_tags
+                .get("results")
+                .ok_or_else(|| "delete_tags_batch result missing results".to_string())?,
+            "delete_tags_batch results",
+        );
+        assert!(!tag_results.is_empty());
+        for item in tag_results {
+            assert_eq!(item.get("deleted").and_then(Value::as_bool), Some(true));
+            let message = item
+                .get("error")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            assert!(!(message.contains("invalid") && message.contains("instance")));
+        }
+        extra_tag_ids.clear();
+
+        let parent_folder_name = format!("{prefix} parent folder");
+        let child_folder_name = format!("{prefix} child folder");
+        let parent_folder = create_folder(&runner, &parent_folder_name, None).await?;
+        let parent_folder_id = require_str_field(&parent_folder, "id");
+        extra_folder_ids.push(parent_folder_id.clone());
+        let child_folder = create_folder(&runner, &child_folder_name, Some(&parent_folder_name)).await?;
+        let child_folder_id = require_str_field(&child_folder, "id");
+        extra_folder_ids.push(child_folder_id.clone());
+
+        let deleted_folders = delete_folders_batch(
+            &runner,
+            vec![parent_folder_id.clone(), child_folder_id.clone()],
+        )
+        .await?;
+        assert_eq!(
+            deleted_folders
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("deleted"))
+                .and_then(Value::as_i64),
+            Some(2)
+        );
+        assert_eq!(
+            deleted_folders
+                .get("summary")
+                .and_then(Value::as_object)
+                .and_then(|summary| summary.get("failed"))
+                .and_then(Value::as_i64),
+            Some(0)
+        );
+        assert_eq!(
+            deleted_folders
+                .get("partial_success")
+                .and_then(Value::as_bool),
+            Some(false)
+        );
+        let folder_results = require_array(
+            deleted_folders
+                .get("results")
+                .ok_or_else(|| "delete_folders_batch result missing results".to_string())?,
+            "delete_folders_batch results",
+        );
+        assert!(!folder_results.is_empty());
+        for item in folder_results {
+            assert_eq!(item.get("deleted").and_then(Value::as_bool), Some(true));
+            let message = item
+                .get("error")
+                .and_then(Value::as_str)
+                .unwrap_or("")
+                .to_ascii_lowercase();
+            assert!(!(message.contains("invalid") && message.contains("instance")));
+        }
+        extra_folder_ids.clear();
+
+        Ok(())
+    }
+    .await;
+
+    for id in &extra_tag_ids {
+        let _ = delete_tag(&runner, id).await;
+    }
+    for id in &extra_folder_ids {
+        let _ = delete_folder(&runner, id).await;
     }
 
     result
