@@ -276,12 +276,14 @@ pub async fn delete_folders_batch<R: JxaRunner>(
     let folder_ids_or_names_value = serde_json::to_string(&normalized_folder_ids_or_names)?;
     let script = format!(
         r#"const folderIdsOrNames = {folder_ids_or_names_value};
+const requests = folderIdsOrNames.map((idOrName, index) => ({{ idOrName, index }}));
 const folders = document.flattenedFolders
   .map(item => {{
     try {{
       return {{
         id: item.id.primaryKey,
         name: item.name,
+        parentId: item.parent ? item.parent.id.primaryKey : null,
         ref: item
       }};
     }} catch (e) {{
@@ -289,39 +291,100 @@ const folders = document.flattenedFolders
     }}
   }})
   .filter(item => item !== null);
-const results = folderIdsOrNames.map(idOrName => {{
-  const folder = folders.find(item => item.id === idOrName || item.name === idOrName);
-  if (folder === undefined) {{
-    return {{
-      id_or_name: idOrName,
-      id: null,
-      name: null,
-      deleted: false,
-      error: "not found"
-    }};
-  }}
+const foldersById = new Map(folders.map(folder => [folder.id, folder]));
 
-  const resolvedId = folder.id;
-  const resolvedName = folder.name;
-  try {{
-    deleteObject(folder.ref);
-    return {{
-      id_or_name: idOrName,
-      id: resolvedId,
-      name: resolvedName,
-      deleted: true,
-      error: null
-    }};
-  }} catch (e) {{
-    const errorMessage = e && e.message ? String(e.message) : String(e);
-    return {{
-      id_or_name: idOrName,
-      id: resolvedId,
-      name: resolvedName,
-      deleted: false,
-      error: errorMessage
-    }};
+const resolveFolder = (idOrName) => {{
+  const byId = foldersById.get(idOrName);
+  if (byId) return byId;
+  return folders.find(folder => folder.name === idOrName);
+}};
+
+const depthCache = new Map();
+const getDepth = (folderId, stack = new Set()) => {{
+  if (depthCache.has(folderId)) return depthCache.get(folderId);
+  if (stack.has(folderId)) return 0;
+  stack.add(folderId);
+  const folder = foldersById.get(folderId);
+  let depth = 0;
+  if (folder && folder.parentId && foldersById.has(folder.parentId)) {{
+    depth = getDepth(folder.parentId, stack) + 1;
   }}
+  stack.delete(folderId);
+  depthCache.set(folderId, depth);
+  return depth;
+}};
+
+const existsFolderById = (folderId) => {{
+  return document.flattenedFolders.some(folder => {{
+    try {{
+      return folder.id.primaryKey === folderId;
+    }} catch (e) {{
+      return false;
+    }}
+  }});
+}};
+
+const results = new Array(requests.length);
+const unresolved = [];
+const resolved = [];
+
+requests.forEach(request => {{
+  const folder = resolveFolder(request.idOrName);
+  if (!folder) {{
+    unresolved.push(request);
+    return;
+  }}
+  resolved.push({{
+    ...request,
+    folder,
+    depth: getDepth(folder.id)
+  }});
+}});
+
+resolved
+  .sort((left, right) => right.depth - left.depth || left.index - right.index)
+  .forEach(request => {{
+    const resolvedId = request.folder.id;
+    const resolvedName = request.folder.name;
+    try {{
+      deleteObject(request.folder.ref);
+      results[request.index] = {{
+        id_or_name: request.idOrName,
+        id: resolvedId,
+        name: resolvedName,
+        deleted: true,
+        error: null
+      }};
+    }} catch (e) {{
+      if (!existsFolderById(resolvedId)) {{
+        results[request.index] = {{
+          id_or_name: request.idOrName,
+          id: resolvedId,
+          name: resolvedName,
+          deleted: true,
+          error: null
+        }};
+        return;
+      }}
+      const errorMessage = e && e.message ? String(e.message) : String(e);
+      results[request.index] = {{
+        id_or_name: request.idOrName,
+        id: resolvedId,
+        name: resolvedName,
+        deleted: false,
+        error: errorMessage
+      }};
+    }}
+  }});
+
+unresolved.forEach(request => {{
+  results[request.index] = {{
+    id_or_name: request.idOrName,
+    id: null,
+    name: null,
+    deleted: false,
+    error: "not found"
+  }};
 }});
 
 const deletedCount = results.filter(result => result.deleted).length;

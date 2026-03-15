@@ -309,8 +309,7 @@ const tags = document.flattenedTags
       return {{
         id: item.id.primaryKey,
         name: item.name,
-        parentId: item.parent ? item.parent.id.primaryKey : null,
-        ref: item
+        parentId: item.parent ? item.parent.id.primaryKey : null
       }};
     }} catch (e) {{
       return null;
@@ -350,6 +349,16 @@ const existsTagById = (tagId) => {{
   }});
 }};
 
+const getLiveTagById = (tagId) => {{
+  return document.flattenedTags.find(tag => {{
+    try {{
+      return tag.id.primaryKey === tagId;
+    }} catch (e) {{
+      return false;
+    }}
+  }});
+}};
+
 const results = new Array(requests.length);
 const unresolved = [];
 const resolved = [];
@@ -372,8 +381,19 @@ resolved
   .forEach(request => {{
     const resolvedId = request.tag.id;
     const resolvedName = request.tag.name;
+    const liveTag = getLiveTagById(resolvedId);
+    if (!liveTag) {{
+      results[request.index] = {{
+        id_or_name: request.idOrName,
+        id: resolvedId,
+        name: resolvedName,
+        deleted: true,
+        error: null
+      }};
+      return;
+    }}
     try {{
-      deleteObject(request.tag.ref);
+      deleteObject(liveTag);
       results[request.index] = {{
         id_or_name: request.idOrName,
         id: resolvedId,

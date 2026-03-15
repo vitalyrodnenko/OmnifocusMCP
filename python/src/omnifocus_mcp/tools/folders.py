@@ -268,8 +268,7 @@ const folders = document.flattenedFolders
       return {{
         id: item.id.primaryKey,
         name: item.name,
-        parentId: item.parent ? item.parent.id.primaryKey : null,
-        ref: item
+        parentId: item.parent ? item.parent.id.primaryKey : null
       }};
     }} catch (e) {{
       return null;
@@ -309,6 +308,16 @@ const existsFolderById = (folderId) => {{
   }});
 }};
 
+const getLiveFolderById = (folderId) => {{
+  return document.flattenedFolders.find(folder => {{
+    try {{
+      return folder.id.primaryKey === folderId;
+    }} catch (e) {{
+      return false;
+    }}
+  }});
+}};
+
 const results = new Array(requests.length);
 const unresolved = [];
 const resolved = [];
@@ -331,8 +340,19 @@ resolved
   .forEach(request => {{
     const resolvedId = request.folder.id;
     const resolvedName = request.folder.name;
+    const liveFolder = getLiveFolderById(resolvedId);
+    if (!liveFolder) {{
+      results[request.index] = {{
+        id_or_name: request.idOrName,
+        id: resolvedId,
+        name: resolvedName,
+        deleted: true,
+        error: null
+      }};
+      return;
+    }}
     try {{
-      deleteObject(request.folder.ref);
+      deleteObject(liveFolder);
       results[request.index] = {{
         id_or_name: request.idOrName,
         id: resolvedId,
