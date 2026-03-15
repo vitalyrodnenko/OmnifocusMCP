@@ -1413,8 +1413,6 @@ async fn get_task_counts_script_includes_filters_and_counts() {
         None,
         None,
         None,
-        None,
-        None,
     )
     .await
     .expect("task counts should parse");
