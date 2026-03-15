@@ -43,7 +43,13 @@ except Exception:
     sys.modules["mcp.server.fastmcp"] = mcp_fastmcp_module
 
 from omnifocus_mcp.jxa import run_omnijs
-from omnifocus_mcp.tools.folders import create_folder, delete_folder, delete_folders_batch, list_folders
+from omnifocus_mcp.tools.folders import (
+    create_folder,
+    delete_folder,
+    delete_folders_batch,
+    get_folder,
+    list_folders,
+)
 from omnifocus_mcp.tools.forecast import get_forecast
 from omnifocus_mcp.tools.perspectives import list_perspectives
 from omnifocus_mcp.tools.projects import (
@@ -250,12 +256,28 @@ async def test_read_tools_return_valid_json(cleanup_registry: dict[str, list[str
     if tags:
         assert isinstance(tags[0], dict)
         _assert_keys(tags[0], {"id", "name", "parent", "availableTaskCount", "totalTaskCount", "status"})
+        allowed_statuses = {"active", "on_hold", "dropped"}
+        for item in tags:
+            if isinstance(item, dict):
+                assert item.get("status") in allowed_statuses
 
     folders = _parse_json(await list_folders(limit=20))
     assert isinstance(folders, list)
     if folders:
         assert isinstance(folders[0], dict)
         _assert_keys(folders[0], {"id", "name", "parentName", "projectCount"})
+
+    status_folder = _parse_json(await create_folder(name=_test_name("Status probe folder")))
+    assert isinstance(status_folder, dict)
+    status_folder_id = status_folder.get("id")
+    assert isinstance(status_folder_id, str)
+    cleanup_registry["folder_ids"].append(status_folder_id)
+    folder_details = _parse_json(await get_folder(folder_name_or_id=status_folder_id))
+    assert isinstance(folder_details, dict)
+    assert folder_details.get("status") in {"active", "on_hold", "dropped"}
+    for project in folder_details.get("projects", []):
+        if isinstance(project, dict):
+            assert project.get("status") in {"active", "on_hold", "dropped"}
 
     forecast = _parse_json(await get_forecast(limit=20))
     assert isinstance(forecast, dict)

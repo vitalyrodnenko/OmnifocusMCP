@@ -1,6 +1,7 @@
 import json
 from collections.abc import Callable
 import importlib
+import re
 import sys
 import types
 from typing import Any
@@ -25,6 +26,37 @@ def _patch_run_omnijs(
         monkeypatch.setattr(
             importlib.import_module(module_name), "run_omnijs", fake_run_omnijs
         )
+
+
+def _normalize_status_fixture(raw_status: str) -> str:
+    flattened = re.sub(
+        r"\s+",
+        " ",
+        re.sub(
+            r"[_-]",
+            " ",
+            re.sub(
+                r"[:.=]",
+                " ",
+                re.sub(
+                    r"status",
+                    " ",
+                    re.sub(
+                        r"[\[\]{}()]",
+                        " ",
+                        re.sub(r"^\[object_", "", str(raw_status).lower()),
+                    ),
+                ),
+            ),
+        ),
+    ).strip()
+    if "onhold" in flattened or re.search(r"(^|\s)on\s*hold(\s|$)", flattened):
+        return "on_hold"
+    if "dropped" in flattened:
+        return "dropped"
+    if "active" in flattened:
+        return "active"
+    return "active"
 
 
 @pytest.fixture
@@ -1381,6 +1413,13 @@ async def test_get_project_happy_path(
     assert 'const projectFilter = "p2";' in script
     assert "const nextTask = project.nextTask;" in script
     assert 'const isStalled = normalizeProjectStatus(project) === "active"' in script
+    assert ".replace(/^\\[object_/g, \"\")" in script
+    assert ".replace(/status/g, \" \")" in script
+    assert ".replace(/[_-]/g, \" \")" in script
+    assert "on\\s*hold" in script
+    assert 'if (flattened.includes("completed")) return "completed";' in script
+    assert 'if (flattened.includes("dropped")) return "dropped";' in script
+    assert 'if (flattened.includes("active")) return "active";' in script
     assert (
         "completedTaskCount: allProjectTasks.filter(task => task.completed).length,"
         in script
@@ -1505,6 +1544,20 @@ async def test_list_tags_name_sort_script(
     assert 'const sortBy = "name";' in script
     assert 'const sortOrder = "asc";' in script
     assert 'if (sortBy === "name") {' in script
+
+
+@pytest.mark.parametrize(
+    ("raw_status", "expected"),
+    [
+        ("[object_tag.status:_active]", "active"),
+        ("status: active]", "active"),
+        ("On Hold", "on_hold"),
+        ("on-hold", "on_hold"),
+        ("Dropped", "dropped"),
+    ],
+)
+def test_status_normalizer_fixtures_plan_b(raw_status: str, expected: str) -> None:
+    assert _normalize_status_fixture(raw_status) == expected
 
 
 @pytest.mark.asyncio

@@ -68,6 +68,28 @@ function parseToolResult(result: { content: [{ type: "text"; text: string }] }):
   return JSON.parse(result.content[0].text);
 }
 
+function normalizeStatusFixture(rawStatus: string): string {
+  const flattened = String(rawStatus)
+    .toLowerCase()
+    .replace(/^\[object_/g, "")
+    .replace(/[\[\]{}()]/g, " ")
+    .replace(/status/g, " ")
+    .replace(/[:.=]/g, " ")
+    .replace(/[_-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {
+    return "on_hold";
+  }
+  if (flattened.includes("dropped")) {
+    return "dropped";
+  }
+  if (flattened.includes("active")) {
+    return "active";
+  }
+  return "active";
+}
+
 describe("representative read and write tool handlers", () => {
   beforeAll(async () => {
     await import("../src/index.js");
@@ -1101,6 +1123,11 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('statusFilter === "all" || normalizeTagStatus(tag) === statusFilter');
     expect(script).toContain('.replace(/^\\[object_/g, "")');
     expect(script).toContain('.replace(/status/g, " ")');
+    expect(script).toContain('.replace(/[:.=]/g, " ")');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain('/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain("/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)");
     expect(script).toContain('flattened.includes("onhold")');
     expect(script).toContain('if (flattened.includes("dropped")) return "dropped";');
     expect(script).toContain('if (flattened.includes("active")) return "active";');
@@ -1121,12 +1148,47 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("return sortedTags.slice(0, 5);");
   });
 
+  test("get_folder script normalizes leaked status artifacts", async () => {
+    runOmniJsMock.mockResolvedValueOnce({
+      id: "folder-1",
+      name: "Work",
+      status: "active",
+      parentName: null,
+      projects: [],
+      subfolders: [],
+    });
+    const result = await getTool("get_folder")({ folder_name_or_id: "folder-1" });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('.replace(/^\\[object_/g, "")');
+    expect(script).toContain('.replace(/status/g, " ")');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain("/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)");
+    expect(script).toContain('flattened.includes("onhold")');
+    expect(script).toContain('if (flattened.includes("dropped")) return "dropped";');
+    expect(script).toContain('if (flattened.includes("active")) return "active";');
+    expect(parseToolResult(result)).toEqual({
+      id: "folder-1",
+      name: "Work",
+      status: "active",
+      parentName: null,
+      projects: [],
+      subfolders: [],
+    });
+  });
+
   test("get_project generates id/name lookup script", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "proj-1", name: "Project", modified: null });
     const result = await getTool("get_project")({ project_id_or_name: "Project" });
     const script = String(runOmniJsMock.mock.calls[0]?.[0]);
     expect(script).toContain('const projectFilter = "Project";');
     expect(script).toContain("item.id.primaryKey === projectFilter || item.name === projectFilter");
+    expect(script).toContain('.replace(/^\\[object_/g, "")');
+    expect(script).toContain('.replace(/status/g, " ")');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain("on\\s*hold");
+    expect(script).toContain('if (flattened.includes("completed")) return "completed";');
+    expect(script).toContain('if (flattened.includes("dropped")) return "dropped";');
+    expect(script).toContain('if (flattened.includes("active")) return "active";');
     expect(script).toContain("const nextTask = project.nextTask;");
     expect(script).toContain('const isStalled = normalizeProjectStatus(project) === "active"');
     expect(script).toContain("completedTaskCount: allProjectTasks.filter(task => task.completed).length,");

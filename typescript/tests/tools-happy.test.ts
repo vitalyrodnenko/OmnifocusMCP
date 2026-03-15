@@ -1348,6 +1348,9 @@ describe("tool happy paths", () => {
     expect(script).toContain("subfolders: folder.folders.map");
     expect(script).toContain('.replace(/^\\[object_/g, "")');
     expect(script).toContain('.replace(/status/g, " ")');
+    expect(script).toContain('.replace(/[:.=]/g, " ")');
+    expect(script).toContain('.replace(/[_-]/g, " ")');
+    expect(script).toContain('/(^|\\s)on\\s*hold(\\s|$)/.test(flattened)');
     expect(script).toContain('flattened.includes("onhold")');
     expect(script).toContain('if (flattened.includes("dropped")) return "dropped";');
     expect(script).toContain('if (flattened.includes("active")) return "active";');
