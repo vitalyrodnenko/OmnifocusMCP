@@ -30,7 +30,7 @@ use serde_json::Value;
 use tokio::sync::Mutex;
 
 static TEST_LOCK: OnceLock<Mutex<()>> = OnceLock::new();
-const INTEGRATION_TIMEOUT_SECONDS: f64 = 120.0;
+const INTEGRATION_TIMEOUT_SECONDS: f64 = 60.0;
 
 #[derive(Default)]
 struct CleanupRegistry {
