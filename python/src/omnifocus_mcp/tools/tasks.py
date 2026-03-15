@@ -136,8 +136,10 @@ async def list_tasks(
 
     added_* and changed_* filters expect ISO 8601 date strings; changed maps to
     the task's last modified timestamp (`task.modified`).
-    accepted aliases: sortOrder `ascending`/`descending`, status `due soon` or
-    `due-soon`, and tagFilterMode `and`/`or` (case-insensitive).
+    canonical status values: `available`, `due_soon`, `overdue`, `on_hold`,
+    `completed`, `all`. accepted aliases: sortOrder `ascending`/`descending`,
+    status `due soon`/`due-soon` and `on hold`/`on-hold`, and tagFilterMode
+    `and`/`or` (case-insensitive).
     sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes,
     project, flagged, addedDate, changedDate, plannedDate, and aliases
     added/modified/planned.
@@ -1076,8 +1078,10 @@ async def search_tasks(
 
     added_* and changed_* filters expect ISO 8601 date strings; changed maps to
     the task's last modified timestamp (`task.modified`).
-    accepted aliases: sortOrder `ascending`/`descending`, status `due soon` or
-    `due-soon`, and tagFilterMode `and`/`or` (case-insensitive).
+    canonical status values: `available`, `due_soon`, `overdue`, `on_hold`,
+    `completed`, `all`. accepted aliases: sortOrder `ascending`/`descending`,
+    status `due soon`/`due-soon` and `on hold`/`on-hold`, and tagFilterMode
+    `and`/`or` (case-insensitive).
     sortBy supports dueDate, deferDate, name, completionDate, estimatedMinutes,
     project, flagged, addedDate, changedDate, plannedDate, and aliases
     added/modified/planned.
