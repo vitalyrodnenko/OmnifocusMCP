@@ -1426,11 +1426,6 @@ async fn get_task_counts_script_includes_filters_and_counts() {
         None,
         None,
         None,
-        None,
-        None,
-        None,
-        None,
-        None,
     )
     .await
     .expect("task counts should parse");
@@ -1469,6 +1464,9 @@ async fn get_task_counts_validation_errors() {
             None,
             None,
             None,
+            None,
+            None,
+            None,
         )
         .await,
         Err(OmniFocusError::Validation(_))
@@ -1488,6 +1486,8 @@ async fn get_task_counts_validation_errors() {
             None,
             None,
             "any",
+            None,
+            None,
             None,
             None,
             None,
@@ -3077,6 +3077,9 @@ async fn get_task_counts_invalid_date_error_bubbles_up() {
         "any",
         None,
         Some("bad-date"),
+        None,
+        None,
+        None,
         None,
         None,
         None,
