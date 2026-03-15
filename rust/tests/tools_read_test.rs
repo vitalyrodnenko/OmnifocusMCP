@@ -1063,6 +1063,48 @@ async fn get_inbox_script_includes_completion_and_children_fields() {
 }
 
 #[tokio::test]
+async fn plan_c_unknown_alias_values_keep_actionable_errors() {
+    let runner = MockRunner { payload: json!([]) };
+
+    match list_tasks_with_duration(
+        &runner, None, None, None, "any", None, "available", None, None, None, None, None, None,
+        None, None, "backwards", 100,
+    )
+    .await
+    {
+        Err(OmniFocusError::Validation(message)) => {
+            assert_eq!(message, "sortOrder must be one of: asc, desc.")
+        }
+        other => panic!("expected validation error, got {other:?}"),
+    }
+
+    match get_task_counts_with_added_changed(
+        &runner, None, None, None, "xor", None, None, None, None, None, None, None, None, None,
+        None, None, None,
+    )
+    .await
+    {
+        Err(OmniFocusError::Validation(message)) => {
+            assert_eq!(message, "tagFilterMode must be one of: any, all.")
+        }
+        other => panic!("expected validation error, got {other:?}"),
+    }
+
+    match search_tasks(
+        &runner, "ship", None, None, None, "any", None, "later", None, None, None, None, None,
+        None, None, None, "asc", 100,
+    )
+    .await
+    {
+        Err(OmniFocusError::Validation(message)) => assert_eq!(
+            message,
+            "status must be one of: available, due_soon, overdue, completed, all."
+        ),
+        other => panic!("expected validation error, got {other:?}"),
+    }
+}
+
+#[tokio::test]
 async fn get_forecast_script_includes_deferred_due_this_week_counts_and_enriched_fields_variant() {
     let last_script = Arc::new(Mutex::new(String::new()));
     let runner = CapturingRunner {
@@ -2739,6 +2781,173 @@ async fn list_tasks_sort_added_alias_is_included_in_script() {
     assert!(script.contains(r#"const sortBy = "added";"#));
     assert!(script.contains(r#"const sortOrder = "desc";"#));
     assert!(script.contains(r#"sortBy === "addedDate" || sortBy === "added""#));
+}
+
+#[tokio::test]
+async fn plan_c_aliases_normalize_to_canonical_values_in_scoped_task_tools() {
+    let last_script = Arc::new(Mutex::new(String::new()));
+    let runner = CapturingRunner {
+        payload: json!([task_value("t-alias", "alias task")]),
+        last_script: last_script.clone(),
+    };
+
+    let listed = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        Some(vec!["Home".to_string(), "Deep".to_string()]),
+        "AND",
+        None,
+        "due soon",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "Descending",
+        5,
+    )
+    .await
+    .expect("list tasks aliases should parse");
+
+    assert_eq!(listed.len(), 1);
+    let list_script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(list_script.contains(r#"const tagFilterMode = "all";"#));
+    assert!(list_script.contains(r#"const statusFilter = "due_soon";"#));
+    assert!(list_script.contains(r#"const sortOrder = "desc";"#));
+
+    let searched = search_tasks(
+        &runner,
+        "audit",
+        None,
+        None,
+        Some(vec!["Home".to_string(), "Deep".to_string()]),
+        "or",
+        None,
+        "Due-Soon",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "ascending",
+        5,
+    )
+    .await
+    .expect("search tasks aliases should parse");
+    assert_eq!(searched.len(), 1);
+    let search_script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(search_script.contains(r#"const tagFilterMode = "any";"#));
+    assert!(search_script.contains(r#"const statusFilter = "due_soon";"#));
+    assert!(search_script.contains(r#"const sortOrder = "asc";"#));
+
+    let counts = get_task_counts(
+        &runner,
+        None,
+        None,
+        Some(vec!["Home".to_string()]),
+        "OR",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    .expect("task counts aliases should parse");
+    assert_eq!(counts.total, 1);
+    let counts_script = last_script
+        .lock()
+        .expect("script capture lock should succeed")
+        .clone();
+    assert!(counts_script.contains(r#"const tagFilterMode = "any";"#));
+}
+
+#[tokio::test]
+async fn plan_c_unknown_values_keep_canonical_actionable_errors() {
+    let runner = MockRunner {
+        payload: json!([task_value("t-invalid", "invalid task")]),
+    };
+
+    let invalid_sort = list_tasks_with_duration(
+        &runner,
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "available",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "backwards",
+        5,
+    )
+    .await
+    .expect_err("invalid sort order should fail");
+    assert_eq!(invalid_sort.to_string(), "sortOrder must be one of: asc, desc.");
+
+    let invalid_status = search_tasks(
+        &runner,
+        "audit",
+        None,
+        None,
+        None,
+        "any",
+        None,
+        "later",
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        "asc",
+        5,
+    )
+    .await
+    .expect_err("invalid status should fail");
+    assert_eq!(
+        invalid_status.to_string(),
+        "status must be one of: available, due_soon, overdue, completed, all."
+    );
+
+    let invalid_tag_mode = get_task_counts(
+        &runner, None, None, None, "both", None, None, None, None, None, None, None, None, None,
+        None, None, None,
+    )
+    .await
+    .expect_err("invalid tag filter mode should fail");
+    assert_eq!(
+        invalid_tag_mode.to_string(),
+        "tagFilterMode must be one of: any, all."
+    );
 }
 
 #[tokio::test]

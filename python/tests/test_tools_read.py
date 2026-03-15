@@ -920,6 +920,29 @@ async def test_get_task_counts_validation_errors(server_module: Any) -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_task_counts_tag_filter_mode_alias_maps_to_all(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs(
+        {
+            "total": 1,
+            "available": 1,
+            "completed": 0,
+            "overdue": 0,
+            "dueSoon": 0,
+            "flagged": 0,
+            "deferred": 0,
+        }
+    )
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.get_task_counts(project="Errands", tagFilterMode="AND")
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "all";' in script
+
+
+@pytest.mark.asyncio
 async def test_list_subtasks_happy_path(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:
@@ -1299,6 +1322,29 @@ async def test_search_tasks_validation_errors(server_module: Any) -> None:
         ValueError, match="maxEstimatedMinutes must be greater than or equal to 0."
     ):
         await server_module.search_tasks("shape", maxEstimatedMinutes=-1)
+
+
+@pytest.mark.asyncio
+async def test_search_tasks_aliases_map_to_canonical_values(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    configured = mock_server_run_omnijs([{"id": "t-alias", "name": "task"}])
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.search_tasks(
+        query="shape",
+        tags=["Home"],
+        tagFilterMode="OR",
+        status="Due Soon",
+        sortBy="name",
+        sortOrder="Ascending",
+        limit=5,
+    )
+    script = state["calls"][0]["script"]
+    assert 'const tagFilterMode = "any";' in script
+    assert 'const statusFilter = "due_soon";' in script
+    assert 'const sortOrder = "asc";' in script
 
 
 @pytest.mark.asyncio
@@ -1950,7 +1996,7 @@ async def test_plan_c_unknown_alias_values_keep_actionable_errors(
         await server_module.get_task_counts(tagFilterMode="xor")
     with pytest.raises(
         ValueError,
-        match="status must be one of: available, due_soon, overdue, completed, all.",
+        match="status must be one of: available, due_soon, overdue, on_hold, completed, all.",
     ):
         await server_module.search_tasks(query="ship", status="later")
 

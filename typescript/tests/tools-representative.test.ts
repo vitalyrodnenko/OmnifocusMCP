@@ -430,6 +430,82 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('if (left < right) return sortOrder === "asc" ? -1 : 1;');
   });
 
+  test("plan c aliases normalize to canonical values in list_tasks", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-alias-list", name: "alias list" }]);
+    await getTool("list_tasks")({
+      tags: ["Home", "Deep"],
+      tagFilterMode: "AND",
+      status: "due soon",
+      sortOrder: "Descending",
+      limit: 5,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const tagFilterMode = "all";');
+    expect(script).toContain('const statusFilter = "due_soon";');
+    expect(script).toContain('const sortOrder = "desc";');
+  });
+
+  test("plan c aliases normalize to canonical values in search_tasks and get_task_counts", async () => {
+    runOmniJsMock.mockResolvedValueOnce([{ id: "task-alias-search", name: "alias search" }]);
+    await getTool("search_tasks")({
+      query: "audit",
+      tags: ["Home", "Deep"],
+      tagFilterMode: "or",
+      status: "Due-Soon",
+      sortOrder: "ascending",
+      limit: 5,
+    });
+    const searchScript = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(searchScript).toContain('const tagFilterMode = "any";');
+    expect(searchScript).toContain('const statusFilter = "due_soon";');
+    expect(searchScript).toContain('const sortOrder = "asc";');
+
+    runOmniJsMock.mockResolvedValueOnce({
+      total: 0,
+      available: 0,
+      completed: 0,
+      overdue: 0,
+      dueSoon: 0,
+      flagged: 0,
+      deferred: 0,
+    });
+    await getTool("get_task_counts")({
+      tags: ["Home"],
+      tagFilterMode: "OR",
+    });
+    const countsScript = String(runOmniJsMock.mock.calls[1]?.[0]);
+    expect(countsScript).toContain('const tagFilterMode = "any";');
+  });
+
+  test("plan c unknown values keep canonical actionable errors", async () => {
+    const invalidSortResult = await getTool("list_tasks")({
+      sortOrder: "backwards",
+      limit: 5,
+    });
+    expect(invalidSortResult.isError).toBe(true);
+    expect(parseToolResult(invalidSortResult)).toEqual({
+      error: "sortOrder must be one of: asc, desc.",
+    });
+
+    const invalidStatusResult = await getTool("search_tasks")({
+      query: "audit",
+      status: "later",
+      limit: 5,
+    });
+    expect(invalidStatusResult.isError).toBe(true);
+    expect(parseToolResult(invalidStatusResult)).toEqual({
+      error: "status must be one of: available, due_soon, overdue, completed, all.",
+    });
+
+    const invalidTagModeResult = await getTool("get_task_counts")({
+      tagFilterMode: "both",
+    });
+    expect(invalidTagModeResult.isError).toBe(true);
+    expect(parseToolResult(invalidTagModeResult)).toEqual({
+      error: "tagFilterMode must be one of: any, all.",
+    });
+  });
+
   test("list_tasks auto-sorts by completionDate desc when completion filters are provided", async () => {
     runOmniJsMock.mockResolvedValueOnce([{ id: "task-sort-auto", name: "auto sorted" }]);
     await getTool("list_tasks")({
@@ -1065,6 +1141,26 @@ describe("representative read and write tool handlers", () => {
         error: `${field} must be a valid ISO 8601 date string.`,
       });
     }
+  });
+
+  test("plan c unknown alias values keep actionable errors", async () => {
+    let result = await getTool("list_tasks")({ sortOrder: "backwards" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "sortOrder must be one of: asc, desc.",
+    });
+
+    result = await getTool("get_task_counts")({ tagFilterMode: "xor" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "tagFilterMode must be one of: any, all.",
+    });
+
+    result = await getTool("search_tasks")({ query: "ship", status: "later" });
+    expect(result.isError).toBe(true);
+    expect(JSON.parse(result.content[0].text)).toEqual({
+      error: "status must be one of: available, due_soon, overdue, completed, all.",
+    });
   });
 
   test("search_tasks mapper includes addedDate and changedDate fields", async () => {
