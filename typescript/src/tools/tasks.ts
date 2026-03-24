@@ -738,17 +738,19 @@ return {
       note: z.string().optional(),
       dueDate: z.string().optional(),
       deferDate: z.string().optional(),
+      plannedDate: z.string().optional(),
       flagged: z.boolean().optional(),
       tags: z.array(z.string()).optional(),
       estimatedMinutes: z.number().int().optional(),
     },
-    async ({ name, project, note, dueDate, deferDate, flagged, tags, estimatedMinutes }) => {
+    async ({ name, project, note, dueDate, deferDate, plannedDate, flagged, tags, estimatedMinutes }) => {
       try {
         const taskName = escapeForJxa(name.trim());
         const projectName = project === undefined ? "null" : escapeForJxa(project.trim());
         const noteValue = note === undefined ? "null" : escapeForJxa(note);
         const dueDateValue = dueDate === undefined ? "null" : escapeForJxa(dueDate);
         const deferDateValue = deferDate === undefined ? "null" : escapeForJxa(deferDate);
+        const plannedDateValue = plannedDate === undefined ? "null" : escapeForJxa(plannedDate);
         const flaggedValue = flagged === undefined ? "null" : flagged ? "true" : "false";
         const tagsValue = tags === undefined ? "null" : JSON.stringify(tags);
         const estimatedMinutesValue =
@@ -759,6 +761,7 @@ const projectName = ${projectName};
 const noteValue = ${noteValue};
 const dueDateValue = ${dueDateValue};
 const deferDateValue = ${deferDateValue};
+const plannedDateValue = ${plannedDateValue};
 const flaggedValue = ${flaggedValue};
 const tagNames = ${tagsValue};
 const estimatedMinutesValue = ${estimatedMinutesValue};
@@ -772,6 +775,7 @@ const task = new Task(taskName, parent);
 if (noteValue !== null) task.note = noteValue;
 if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
 if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (plannedDateValue !== null) task.plannedDate = new Date(plannedDateValue);
 if (flaggedValue !== null) task.flagged = flaggedValue;
 if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
 if (tagNames !== null) {
@@ -798,11 +802,12 @@ return { id: task.id.primaryKey, name: task.name };
       note: z.string().optional(),
       dueDate: z.string().optional(),
       deferDate: z.string().optional(),
+      plannedDate: z.string().optional(),
       flagged: z.boolean().optional(),
       tags: z.array(z.string()).optional(),
       estimatedMinutes: z.number().int().optional(),
     },
-    async ({ name, parent_task_id, note, dueDate, deferDate, flagged, tags, estimatedMinutes }) => {
+    async ({ name, parent_task_id, note, dueDate, deferDate, plannedDate, flagged, tags, estimatedMinutes }) => {
       try {
         const normalizedName = name.trim();
         if (normalizedName === "") {
@@ -817,6 +822,7 @@ return { id: task.id.primaryKey, name: task.name };
         const noteValue = note === undefined ? "null" : escapeForJxa(note);
         const dueDateValue = dueDate === undefined ? "null" : escapeForJxa(dueDate);
         const deferDateValue = deferDate === undefined ? "null" : escapeForJxa(deferDate);
+        const plannedDateValue = plannedDate === undefined ? "null" : escapeForJxa(plannedDate);
         const flaggedValue = flagged === undefined ? "null" : flagged ? "true" : "false";
         const tagsValue = tags === undefined ? "null" : JSON.stringify(tags);
         const estimatedMinutesValue =
@@ -827,6 +833,7 @@ const parentTaskId = ${parentTaskId};
 const noteValue = ${noteValue};
 const dueDateValue = ${dueDateValue};
 const deferDateValue = ${deferDateValue};
+const plannedDateValue = ${plannedDateValue};
 const flaggedValue = ${flaggedValue};
 const tagNames = ${tagsValue};
 const estimatedMinutesValue = ${estimatedMinutesValue};
@@ -841,6 +848,7 @@ const task = new Task(taskName, parentTask.ending);
 if (noteValue !== null) task.note = noteValue;
 if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
 if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (plannedDateValue !== null) task.plannedDate = new Date(plannedDateValue);
 if (flaggedValue !== null) task.flagged = flaggedValue;
 if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
 
@@ -1003,6 +1011,7 @@ return {
       note: z.string().optional(),
       dueDate: z.string().optional(),
       deferDate: z.string().optional(),
+      plannedDate: z.string().optional(),
       flagged: z.boolean().optional(),
       tags: z.array(z.string()).optional(),
       estimatedMinutes: z.number().int().optional(),
@@ -1022,6 +1031,7 @@ if (updates.name !== undefined) task.name = updates.name;
 if (updates.note !== undefined) task.note = updates.note;
 if (updates.dueDate !== undefined) task.dueDate = updates.dueDate ? new Date(updates.dueDate) : null;
 if (updates.deferDate !== undefined) task.deferDate = updates.deferDate ? new Date(updates.deferDate) : null;
+if (updates.plannedDate !== undefined) task.plannedDate = updates.plannedDate ? new Date(updates.plannedDate) : null;
 if (updates.flagged !== undefined) task.flagged = updates.flagged;
 if (updates.estimatedMinutes !== undefined) task.estimatedMinutes = updates.estimatedMinutes;
 if (updates.tags !== undefined) {
@@ -1041,6 +1051,7 @@ return {
   changedDate: task.modified ? task.modified.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
   completed: task.completed,
+  plannedDate: task.plannedDate ? task.plannedDate.toISOString() : null,
   projectName: task.containingProject ? task.containingProject.name : null
 };
 `.trim();

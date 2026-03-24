@@ -2187,6 +2187,8 @@ pub struct CreateTaskInput {
     pub due_date: Option<String>,
     #[serde(rename = "deferDate")]
     pub defer_date: Option<String>,
+    #[serde(rename = "plannedDate")]
+    pub planned_date: Option<String>,
     pub flagged: Option<bool>,
     pub tags: Option<Vec<String>>,
     #[serde(rename = "estimatedMinutes")]
@@ -2201,6 +2203,7 @@ pub async fn create_task<R: JxaRunner>(
     note: Option<&str>,
     due_date: Option<&str>,
     defer_date: Option<&str>,
+    planned_date: Option<&str>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
     estimated_minutes: Option<i32>,
@@ -2231,6 +2234,9 @@ pub async fn create_task<R: JxaRunner>(
     let defer_date_value = defer_date
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let planned_date_value = planned_date
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
     let flagged_value = flagged
         .map(|value| {
             if value {
@@ -2255,6 +2261,7 @@ const projectName = {project_name};
 const noteValue = {note_value};
 const dueDateValue = {due_date_value};
 const deferDateValue = {defer_date_value};
+const plannedDateValue = {planned_date_value};
 const flaggedValue = {flagged_value};
 const tagNames = {tags_value};
 const estimatedMinutesValue = {estimated_minutes_value};
@@ -2273,6 +2280,7 @@ const task = new Task(taskName, parent);
 if (noteValue !== null) task.note = noteValue;
 if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
 if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (plannedDateValue !== null) task.plannedDate = new Date(plannedDateValue);
 if (flaggedValue !== null) task.flagged = flaggedValue;
 if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
 
@@ -2300,6 +2308,7 @@ pub async fn create_subtask<R: JxaRunner>(
     note: Option<&str>,
     due_date: Option<&str>,
     defer_date: Option<&str>,
+    planned_date: Option<&str>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
     estimated_minutes: Option<i32>,
@@ -2326,6 +2335,9 @@ pub async fn create_subtask<R: JxaRunner>(
     let defer_date_value = defer_date
         .map(escape_for_jxa)
         .unwrap_or_else(|| "null".to_string());
+    let planned_date_value = planned_date
+        .map(escape_for_jxa)
+        .unwrap_or_else(|| "null".to_string());
     let flagged_value = flagged
         .map(|value| {
             if value {
@@ -2350,6 +2362,7 @@ const parentTaskId = {parent_task_id_value};
 const noteValue = {note_value};
 const dueDateValue = {due_date_value};
 const deferDateValue = {defer_date_value};
+const plannedDateValue = {planned_date_value};
 const flaggedValue = {flagged_value};
 const tagNames = {tags_value};
 const estimatedMinutesValue = {estimated_minutes_value};
@@ -2364,6 +2377,7 @@ const task = new Task(taskName, parentTask.ending);
 if (noteValue !== null) task.note = noteValue;
 if (dueDateValue !== null) task.dueDate = new Date(dueDateValue);
 if (deferDateValue !== null) task.deferDate = new Date(deferDateValue);
+if (plannedDateValue !== null) task.plannedDate = new Date(plannedDateValue);
 if (flaggedValue !== null) task.flagged = flaggedValue;
 if (estimatedMinutesValue !== null) task.estimatedMinutes = estimatedMinutesValue;
 
@@ -2504,6 +2518,7 @@ pub async fn create_tasks_batch<R: JxaRunner>(
             note: task.note,
             due_date: task.due_date,
             defer_date: task.defer_date,
+            planned_date: task.planned_date,
             flagged: task.flagged,
             tags: task.tags,
             estimated_minutes: task.estimated_minutes,
@@ -2530,6 +2545,7 @@ const created = taskInputs.map(input => {{
   if (input.note !== null && input.note !== undefined) task.note = input.note;
   if (input.dueDate !== null && input.dueDate !== undefined) task.dueDate = new Date(input.dueDate);
   if (input.deferDate !== null && input.deferDate !== undefined) task.deferDate = new Date(input.deferDate);
+  if (input.plannedDate !== null && input.plannedDate !== undefined) task.plannedDate = new Date(input.plannedDate);
   if (input.flagged !== null && input.flagged !== undefined) task.flagged = input.flagged;
   if (input.estimatedMinutes !== null && input.estimatedMinutes !== undefined) {{
     task.estimatedMinutes = input.estimatedMinutes;
@@ -2646,6 +2662,7 @@ pub async fn update_task<R: JxaRunner>(
     note: Option<&str>,
     due_date: Option<&str>,
     defer_date: Option<&str>,
+    planned_date: Option<&str>,
     flagged: Option<bool>,
     tags: Option<Vec<String>>,
     estimated_minutes: Option<i32>,
@@ -2675,6 +2692,9 @@ pub async fn update_task<R: JxaRunner>(
     }
     if let Some(value) = defer_date {
         updates.insert("deferDate".to_string(), Value::String(value.to_string()));
+    }
+    if let Some(value) = planned_date {
+        updates.insert("plannedDate".to_string(), Value::String(value.to_string()));
     }
     if let Some(value) = flagged {
         updates.insert("flagged".to_string(), Value::Bool(value));
@@ -2706,6 +2726,7 @@ if (has("name")) task.name = updates.name;
 if (has("note")) task.note = updates.note;
 if (has("dueDate")) task.dueDate = new Date(updates.dueDate);
 if (has("deferDate")) task.deferDate = new Date(updates.deferDate);
+if (has("plannedDate")) task.plannedDate = new Date(updates.plannedDate);
 if (has("flagged")) task.flagged = updates.flagged;
 if (has("estimatedMinutes")) task.estimatedMinutes = updates.estimatedMinutes;
 
@@ -2733,6 +2754,7 @@ return {{
   effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null,
   effectiveFlagged: task.effectiveFlagged,
   completed: task.completed,
+  plannedDate: task.plannedDate ? task.plannedDate.toISOString() : null,
   projectName: task.containingProject ? task.containingProject.name : null,
   tags: task.tags.map(tag => tag.name),
   estimatedMinutes: task.estimatedMinutes

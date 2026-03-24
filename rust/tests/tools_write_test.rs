@@ -76,6 +76,7 @@ async fn write_task_tools_happy_path() {
         Some("note"),
         Some("2026-03-01T12:00:00Z"),
         Some("2026-02-29T12:00:00Z"),
+        None,
         Some(true),
         Some(vec!["home".to_string()]),
         Some(30),
@@ -92,6 +93,7 @@ async fn write_task_tools_happy_path() {
             note: Some("note".to_string()),
             due_date: None,
             defer_date: None,
+            planned_date: None,
             flagged: Some(false),
             tags: Some(vec!["home".to_string()]),
             estimated_minutes: Some(15),
@@ -113,6 +115,7 @@ async fn write_task_tools_happy_path() {
         Some("note"),
         Some("2026-03-02T12:00:00Z"),
         Some("2026-03-01T12:00:00Z"),
+        None,
         Some(true),
         Some(vec!["home".to_string()]),
         Some(10),
@@ -141,6 +144,7 @@ async fn write_task_tools_happy_path() {
         "t1",
         Some("updated"),
         Some("updated note"),
+        None,
         None,
         None,
         Some(false),
@@ -833,15 +837,15 @@ async fn validation_errors_for_write_tools() {
     let runner = MockRunner { payload: json!({}) };
 
     assert!(matches!(
-        create_task(&runner, "   ", None, None, None, None, None, None, None).await,
+        create_task(&runner, "   ", None, None, None, None, None, None, None, None).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        create_subtask(&runner, "   ", "task-id", None, None, None, None, None, None).await,
+        create_subtask(&runner, "   ", "task-id", None, None, None, None, None, None, None).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
-        create_subtask(&runner, "name", "   ", None, None, None, None, None, None).await,
+        create_subtask(&runner, "name", "   ", None, None, None, None, None, None, None).await,
         Err(OmniFocusError::Validation(_))
     ));
     assert!(matches!(
@@ -861,6 +865,7 @@ async fn validation_errors_for_write_tools() {
             &runner,
             "name",
             Some("   "),
+            None,
             None,
             None,
             None,
@@ -1504,6 +1509,7 @@ async fn create_task_script_contains_expected_escaped_values() {
         Some(note),
         Some(due_date),
         None,
+        None,
         Some(true),
         Some(vec!["tag-a".to_string(), "tag-b".to_string()]),
         Some(25),
@@ -1548,6 +1554,7 @@ async fn create_subtask_script_contains_parent_lookup_and_insert_position() {
         Some("detail"),
         Some("2026-03-10T10:00:00Z"),
         Some("2026-03-09T10:00:00Z"),
+        None,
         Some(true),
         Some(vec!["home".to_string()]),
         Some(15),
