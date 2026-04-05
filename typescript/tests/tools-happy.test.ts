@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { z, type ZodRawShape } from "zod";
 
 type ToolHandler = (args: Record<string, unknown>) => Promise<{
   content: Array<{ type: string; text: string }>;
@@ -356,6 +357,7 @@ describe("tool happy paths", () => {
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain("const taskName = \"New task\";");
     expect(script).toContain("const projectName = \"Errands\";");
+    expect(script).toContain('const tagNames = ["Home"];');
   });
 
   test("create_subtask returns created child task summary", async () => {
@@ -398,6 +400,114 @@ describe("tool happy paths", () => {
     const script = String(runOmniJsMock.mock.calls[0][0]);
     expect(script).toContain("const taskId = \"u1\";");
     expect(script).toContain("const updates = {\"name\":\"Updated task\",\"flagged\":true};");
+  });
+
+  test("update_task replaces tags when tags array is provided", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "u1", name: "t" });
+    const handler = registeredTools.get("update_task");
+    expect(handler).toBeDefined();
+    await handler!({ task_id: "u1", tags: ["Work", "Focus"] });
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain('"tags":["Work","Focus"]');
+    expect(script).toContain("task.removeTag(tag)");
+    expect(script).toContain("document.flattenedTags.byName(tagName)");
+  });
+
+  test("write task tool zod schemas use camelCase wire keys and array tags", () => {
+    const assertCamelAndNoSnakeDates = (shape: z.ZodRawShape) => {
+      expect(shape).toHaveProperty("dueDate");
+      expect(shape).toHaveProperty("deferDate");
+      expect(shape).toHaveProperty("estimatedMinutes");
+      expect(shape).not.toHaveProperty("due_date");
+      expect(shape).not.toHaveProperty("defer_date");
+      expect(shape).not.toHaveProperty("estimated_minutes");
+    };
+
+    const createShape = registeredSchemas.get("create_task") as z.ZodRawShape;
+    const createSchema = z.object(createShape);
+    assertCamelAndNoSnakeDates(createShape);
+    expect(createSchema.safeParse({ name: "a", tags: '["Quick"]' }).success).toBe(false);
+    expect(createSchema.safeParse({ name: "a", tags: ["Home"] }).success).toBe(true);
+    expect(
+      createSchema.safeParse({
+        name: "Test task",
+        tags: ["Home", "Urgent"],
+        dueDate: "2026-06-01T10:00:00Z",
+        estimatedMinutes: 30,
+      }).success
+    ).toBe(true);
+
+    const subShape = registeredSchemas.get("create_subtask") as z.ZodRawShape;
+    const subSchema = z.object(subShape);
+    assertCamelAndNoSnakeDates(subShape);
+    expect(
+      subSchema.safeParse({
+        name: "a",
+        parent_task_id: "p1",
+        tags: '["Quick"]',
+      }).success
+    ).toBe(false);
+    expect(
+      subSchema.safeParse({ name: "a", parent_task_id: "p1", tags: ["Home"] }).success
+    ).toBe(true);
+
+    const updateShape = registeredSchemas.get("update_task") as z.ZodRawShape;
+    const updateSchema = z.object(updateShape);
+    assertCamelAndNoSnakeDates(updateShape);
+    expect(updateSchema.safeParse({ task_id: "t1", tags: '["Quick"]' }).success).toBe(false);
+    expect(updateSchema.safeParse({ task_id: "t1", tags: ["Work", "Focus"] }).success).toBe(true);
+
+    const batchShape = registeredSchemas.get("create_tasks_batch") as z.ZodRawShape;
+    const batchSchema = z.object(batchShape);
+    expect(batchSchema.safeParse({ tasks: [{ name: "a", tags: '["Quick"]' }] }).success).toBe(false);
+    expect(batchSchema.safeParse({ tasks: [{ name: "a", tags: ["Home"] }] }).success).toBe(true);
+    const tasksZod = batchShape.tasks;
+    expect(tasksZod).toBeInstanceOf(z.ZodArray);
+    const batchItemShape = (tasksZod as z.ZodArray<z.ZodObject<z.ZodRawShape>>).element.shape;
+    assertCamelAndNoSnakeDates(batchItemShape);
+    expect(z.object(batchItemShape).safeParse({ name: "a", tags: '["Quick"]' }).success).toBe(false);
+    expect(
+      batchSchema.safeParse({
+        tasks: [
+          {
+            name: "Test task",
+            tags: ["Home", "Urgent"],
+            dueDate: "2026-06-01T10:00:00Z",
+            estimatedMinutes: 30,
+          },
+        ],
+      }).success
+    ).toBe(true);
+  });
+
+  test("create_tasks_batch builds taskInputs with tags dates and estimated minutes", async () => {
+    runOmniJsMock.mockResolvedValueOnce([
+      { id: "a1", name: "one" },
+      { id: "a2", name: "two" },
+    ]);
+    const handler = registeredTools.get("create_tasks_batch");
+    expect(handler).toBeDefined();
+    const result = await handler!({
+      tasks: [
+        {
+          name: "one",
+          tags: ["Home", "Urgent"],
+          dueDate: "2026-06-01T10:00:00Z",
+          estimatedMinutes: 30,
+        },
+        { name: "two", project: "Work" },
+      ],
+    });
+    expect(JSON.parse(result.content[0].text)).toEqual([
+      { id: "a1", name: "one" },
+      { id: "a2", name: "two" },
+    ]);
+    const script = String(runOmniJsMock.mock.calls[0][0]);
+    expect(script).toContain("const taskInputs = ");
+    expect(script).toContain('"tags":["Home","Urgent"]');
+    expect(script).toContain('"dueDate":"2026-06-01T10:00:00Z"');
+    expect(script).toContain('"estimatedMinutes":30');
+    expect(script).toContain("input.tags.forEach(tagName =>");
   });
 
   test("move_task supports parent_task_id destination", async () => {

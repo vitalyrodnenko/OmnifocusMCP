@@ -7,6 +7,7 @@ use std::{
 use omnifocus_mcp::{
     error::OmniFocusError,
     jxa::{escape_for_jxa, JxaRunner},
+    server::{BatchCreateTaskInput, CreateTaskParams, UpdateTaskParams},
     tools::{
         folders::{create_folder, delete_folder, delete_folders_batch, get_folder, update_folder},
         projects::{
@@ -1528,6 +1529,41 @@ async fn create_task_script_contains_expected_escaped_values() {
 }
 
 #[tokio::test]
+async fn create_task_script_matches_parity_matrix_sample_payload() {
+    let scripts = Arc::new(Mutex::new(Vec::new()));
+    let runner = RecordingRunner {
+        payload: json!({"id": "t-parity", "name": "Test task"}),
+        scripts: Arc::clone(&scripts),
+        error_message: None,
+    };
+
+    let result = create_task(
+        &runner,
+        "Test task",
+        None,
+        None,
+        Some("2026-06-01T10:00:00Z"),
+        None,
+        None,
+        Some(vec!["Home".to_string(), "Urgent".to_string()]),
+        Some(30),
+    )
+    .await;
+    assert!(result.is_ok());
+
+    let captured = scripts
+        .lock()
+        .expect("scripts lock should succeed")
+        .last()
+        .cloned()
+        .expect("one script should be captured");
+
+    assert!(captured.contains(r#"const tagNames = ["Home","Urgent"];"#));
+    assert!(captured.contains(r#"const dueDateValue = "2026-06-01T10:00:00Z";"#));
+    assert!(captured.contains("const estimatedMinutesValue = 30;"));
+}
+
+#[tokio::test]
 async fn create_subtask_script_contains_parent_lookup_and_insert_position() {
     let scripts = Arc::new(Mutex::new(Vec::new()));
     let runner = RecordingRunner {
@@ -2338,4 +2374,131 @@ async fn move_task_script_uses_parity_parameter_names_and_cycle_guards() {
     assert!(captured.contains("throw new Error(\"Cannot move a task under its own descendant.\");"));
     assert!(captured.contains("moveTasks([task], destinationInfo.location);"));
     assert!(captured.contains("inInbox: task.inInbox"));
+}
+
+#[test]
+fn create_task_params_deserializes_camel_case_wire_fields() {
+    let json = r#"{
+        "name": "Test",
+        "dueDate": "2026-06-01T10:00:00Z",
+        "deferDate": "2026-05-01T10:00:00Z",
+        "estimatedMinutes": 30,
+        "tags": ["Home", "Urgent"]
+    }"#;
+    let p: CreateTaskParams =
+        serde_json::from_str(json).expect("camelCase JSON should deserialize");
+    let v = serde_json::to_value(&p).expect("serialize CreateTaskParams");
+    assert_eq!(v["name"], "Test");
+    assert_eq!(v["dueDate"], "2026-06-01T10:00:00Z");
+    assert_eq!(v["deferDate"], "2026-05-01T10:00:00Z");
+    assert_eq!(v["estimatedMinutes"], 30);
+    assert_eq!(v["tags"], json!(["Home", "Urgent"]));
+}
+
+#[test]
+fn create_task_params_deserializes_snake_case_aliases() {
+    let json = r#"{
+        "name": "Test",
+        "due_date": "2026-06-01T10:00:00Z",
+        "defer_date": "2026-05-01T10:00:00Z",
+        "estimated_minutes": 45,
+        "tags": ["Quick"]
+    }"#;
+    let p: CreateTaskParams =
+        serde_json::from_str(json).expect("snake_case aliases should deserialize");
+    let v = serde_json::to_value(&p).expect("serialize CreateTaskParams");
+    assert_eq!(v["dueDate"], "2026-06-01T10:00:00Z");
+    assert_eq!(v["deferDate"], "2026-05-01T10:00:00Z");
+    assert_eq!(v["estimatedMinutes"], 45);
+    assert_eq!(v["tags"], json!(["Quick"]));
+}
+
+#[test]
+fn create_task_params_rejects_tags_as_string_typed_json() {
+    let json = r#"{"name":"x","tags":"[\"Quick\"]"}"#;
+    let err = serde_json::from_str::<CreateTaskParams>(json).unwrap_err();
+    assert!(
+        err.to_string().contains("tags") || err.to_string().contains("invalid type"),
+        "expected type error for string-typed tags: {}",
+        err
+    );
+}
+
+#[test]
+fn batch_create_task_input_deserializes_camel_case_wire_fields() {
+    let json = r#"{
+        "name": "Batch item",
+        "dueDate": "2026-06-01T10:00:00Z",
+        "deferDate": "2026-05-01T10:00:00Z",
+        "estimatedMinutes": 20,
+        "tags": ["A", "B"]
+    }"#;
+    let p: BatchCreateTaskInput =
+        serde_json::from_str(json).expect("camelCase batch item should deserialize");
+    let v = serde_json::to_value(&p).expect("serialize BatchCreateTaskInput");
+    assert_eq!(v["name"], "Batch item");
+    assert_eq!(v["dueDate"], "2026-06-01T10:00:00Z");
+    assert_eq!(v["estimatedMinutes"], 20);
+    assert_eq!(v["tags"], json!(["A", "B"]));
+}
+
+#[test]
+fn batch_create_task_input_deserializes_snake_case_aliases() {
+    let json = r#"{
+        "name": "Batch item",
+        "due_date": "2026-06-01T10:00:00Z",
+        "defer_date": "2026-05-01T10:00:00Z",
+        "estimated_minutes": 15,
+        "tags": ["C"]
+    }"#;
+    let p: BatchCreateTaskInput =
+        serde_json::from_str(json).expect("snake_case batch item should deserialize");
+    let v = serde_json::to_value(&p).expect("serialize BatchCreateTaskInput");
+    assert_eq!(v["estimatedMinutes"], 15);
+    assert_eq!(v["tags"], json!(["C"]));
+}
+
+#[test]
+fn batch_create_task_input_rejects_tags_as_string_typed_json() {
+    let json = r#"{"name":"x","tags":"[\"Quick\"]"}"#;
+    assert!(serde_json::from_str::<BatchCreateTaskInput>(json).is_err());
+}
+
+#[test]
+fn update_task_params_deserializes_camel_case_wire_fields() {
+    let json = r#"{
+        "task_id": "tid-1",
+        "dueDate": "2026-06-01T10:00:00Z",
+        "deferDate": "2026-05-01T10:00:00Z",
+        "estimatedMinutes": 25,
+        "tags": ["Work", "Focus"]
+    }"#;
+    let p: UpdateTaskParams =
+        serde_json::from_str(json).expect("camelCase update should deserialize");
+    let v = serde_json::to_value(&p).expect("serialize UpdateTaskParams");
+    assert_eq!(v["task_id"], "tid-1");
+    assert_eq!(v["dueDate"], "2026-06-01T10:00:00Z");
+    assert_eq!(v["estimatedMinutes"], 25);
+    assert_eq!(v["tags"], json!(["Work", "Focus"]));
+}
+
+#[test]
+fn update_task_params_deserializes_snake_case_aliases() {
+    let json = r#"{
+        "task_id": "tid-1",
+        "due_date": "2026-06-01T10:00:00Z",
+        "defer_date": "2026-05-01T10:00:00Z",
+        "estimated_minutes": 10,
+        "tags": ["X"]
+    }"#;
+    let p: UpdateTaskParams =
+        serde_json::from_str(json).expect("snake_case update should deserialize");
+    let v = serde_json::to_value(&p).expect("serialize UpdateTaskParams");
+    assert_eq!(v["estimatedMinutes"], 10);
+}
+
+#[test]
+fn update_task_params_rejects_tags_as_string_typed_json() {
+    let json = r#"{"task_id":"t1","tags":"[\"Quick\"]"}"#;
+    assert!(serde_json::from_str::<UpdateTaskParams>(json).is_err());
 }

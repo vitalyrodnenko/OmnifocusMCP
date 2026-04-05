@@ -719,6 +719,28 @@ async def test_create_task_happy_path(mock_server_run_omnijs: Callable[[Any], di
 
 
 @pytest.mark.asyncio
+async def test_create_task_parity_matrix_fixed_payload_script_fragments(
+    mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
+) -> None:
+    payload = {"id": "t-parity", "name": "Test task"}
+    configured = mock_server_run_omnijs(payload)
+    state = configured["state"]
+    server = configured["server"]
+
+    await server.create_task(
+        name="Test task",
+        tags=["Home", "Urgent"],
+        dueDate="2026-06-01T10:00:00Z",
+        estimatedMinutes=30,
+    )
+
+    script = state["calls"][0]["script"]
+    assert json.dumps(["Home", "Urgent"]) in script
+    assert 'const dueDateValue = "2026-06-01T10:00:00Z";' in script
+    assert "const estimatedMinutesValue = 30;" in script
+
+
+@pytest.mark.asyncio
 async def test_create_tasks_batch_happy_path_duplicate(
     mock_server_run_omnijs: Callable[[Any], dict[str, Any]],
 ) -> None:

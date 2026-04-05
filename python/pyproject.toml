@@ -11,6 +11,7 @@ license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
   "mcp",
+  "typing-extensions>=4.12",
 ]
 
 [project.optional-dependencies]

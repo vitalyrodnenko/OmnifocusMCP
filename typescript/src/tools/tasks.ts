@@ -54,6 +54,54 @@ function normalizeSortOrderInput(value: string): "asc" | "desc" {
   throw new Error(`sortOrder must be one of: asc, desc. received: ${JSON.stringify(value)}.`);
 }
 
+export const createTaskParamsShape = {
+  name: z.string().min(1),
+  project: z.string().min(1).optional(),
+  note: z.string().optional(),
+  dueDate: z.string().optional(),
+  deferDate: z.string().optional(),
+  flagged: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+  estimatedMinutes: z.number().int().optional(),
+};
+
+export const createSubtaskParamsShape = {
+  name: z.string().min(1),
+  parent_task_id: z.string().min(1),
+  note: z.string().optional(),
+  dueDate: z.string().optional(),
+  deferDate: z.string().optional(),
+  flagged: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+  estimatedMinutes: z.number().int().optional(),
+};
+
+export const createTaskBatchItemShape = {
+  name: z.string().min(1),
+  project: z.string().optional(),
+  note: z.string().optional(),
+  dueDate: z.string().optional(),
+  deferDate: z.string().optional(),
+  flagged: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+  estimatedMinutes: z.number().int().optional(),
+};
+
+export const createTasksBatchParamsShape = {
+  tasks: z.array(z.object(createTaskBatchItemShape)).min(1),
+};
+
+export const updateTaskParamsShape = {
+  task_id: z.string().min(1),
+  name: z.string().min(1).optional(),
+  note: z.string().optional(),
+  dueDate: z.string().optional(),
+  deferDate: z.string().optional(),
+  flagged: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+  estimatedMinutes: z.number().int().optional(),
+};
+
 export function register(server: Server): void {
   server.tool(
     "get_inbox",
@@ -732,16 +780,7 @@ return {
   server.tool(
     "create_task",
     "create a new task in inbox or a named project and return the created task summary.",
-    {
-      name: z.string().min(1),
-      project: z.string().min(1).optional(),
-      note: z.string().optional(),
-      dueDate: z.string().optional(),
-      deferDate: z.string().optional(),
-      flagged: z.boolean().optional(),
-      tags: z.array(z.string()).optional(),
-      estimatedMinutes: z.number().int().optional(),
-    },
+    createTaskParamsShape,
     async ({ name, project, note, dueDate, deferDate, flagged, tags, estimatedMinutes }) => {
       try {
         const taskName = escapeForJxa(name.trim());
@@ -792,16 +831,7 @@ return { id: task.id.primaryKey, name: task.name };
   server.tool(
     "create_subtask",
     "create a new subtask under an existing parent task by id.",
-    {
-      name: z.string().min(1),
-      parent_task_id: z.string().min(1),
-      note: z.string().optional(),
-      dueDate: z.string().optional(),
-      deferDate: z.string().optional(),
-      flagged: z.boolean().optional(),
-      tags: z.array(z.string()).optional(),
-      estimatedMinutes: z.number().int().optional(),
-    },
+    createSubtaskParamsShape,
     async ({ name, parent_task_id, note, dueDate, deferDate, flagged, tags, estimatedMinutes }) => {
       try {
         const normalizedName = name.trim();
@@ -868,18 +898,74 @@ return {
   server.tool(
     "create_tasks_batch",
     "create multiple tasks in one call and return created task summaries.",
-    { tasks: z.array(z.object({ name: z.string().min(1), project: z.string().optional() })).min(1) },
+    createTasksBatchParamsShape,
     async ({ tasks }) => {
       try {
-        const tasksValue = escapeForJxa(JSON.stringify(tasks));
+        if (tasks.length === 0) {
+          throw new Error("tasks must contain at least one task definition.");
+        }
+
+        const normalized = tasks.map((task) => {
+          const nameValue = task.name.trim();
+          if (nameValue === "") {
+            throw new Error("each task must include a non-empty name.");
+          }
+
+          if (task.project !== undefined && task.project.trim() === "") {
+            throw new Error("project must not be empty when provided.");
+          }
+
+          return {
+            name: nameValue,
+            project: task.project === undefined ? null : task.project.trim(),
+            note: task.note ?? null,
+            dueDate: task.dueDate ?? null,
+            deferDate: task.deferDate ?? null,
+            flagged: task.flagged ?? null,
+            tags: task.tags ?? null,
+            estimatedMinutes: task.estimatedMinutes ?? null,
+          };
+        });
+
+        const tasksLiteral = JSON.stringify(normalized);
         const script = `
-const tasks = JSON.parse(${tasksValue});
-return tasks.map(item => {
-  const parent = item.project ? document.flattenedProjects.byName(item.project) : null;
-  if (item.project && !parent) throw new Error(\`Project not found: \${item.project}\`);
-  const task = new Task(item.name, parent ? parent.ending : inbox.ending);
-  return { id: task.id.primaryKey, name: task.name };
+const taskInputs = ${tasksLiteral};
+
+const resolveParent = (projectName) => {
+  if (projectName === null || projectName === "") return inbox.ending;
+  const targetProject = document.flattenedProjects.byName(projectName);
+  if (!targetProject) {
+    throw new Error(\`Project not found: \${projectName}\`);
+  }
+  return targetProject.ending;
+};
+
+const created = taskInputs.map(input => {
+  const parent = resolveParent(input.project);
+  const task = new Task(input.name, parent);
+
+  if (input.note !== null && input.note !== undefined) task.note = input.note;
+  if (input.dueDate !== null && input.dueDate !== undefined) task.dueDate = new Date(input.dueDate);
+  if (input.deferDate !== null && input.deferDate !== undefined) task.deferDate = new Date(input.deferDate);
+  if (input.flagged !== null && input.flagged !== undefined) task.flagged = input.flagged;
+  if (input.estimatedMinutes !== null && input.estimatedMinutes !== undefined) {
+    task.estimatedMinutes = input.estimatedMinutes;
+  }
+
+  if (input.tags !== null && input.tags !== undefined) {
+    input.tags.forEach(tagName => {
+      const tag = document.flattenedTags.byName(tagName);
+      if (tag) task.addTag(tag);
+    });
+  }
+
+  return {
+    id: task.id.primaryKey,
+    name: task.name
+  };
 });
+
+return created;
 `.trim();
         return textResult(await runOmniJs(script));
       } catch (error: unknown) {
@@ -997,16 +1083,7 @@ return {
   server.tool(
     "update_task",
     "update one task with partial fields and return the updated task payload.",
-    {
-      task_id: z.string().min(1),
-      name: z.string().min(1).optional(),
-      note: z.string().optional(),
-      dueDate: z.string().optional(),
-      deferDate: z.string().optional(),
-      flagged: z.boolean().optional(),
-      tags: z.array(z.string()).optional(),
-      estimatedMinutes: z.number().int().optional(),
-    },
+    updateTaskParamsShape,
     async ({ task_id, ...rawUpdates }) => {
       try {
         const taskId = escapeForJxa(task_id);

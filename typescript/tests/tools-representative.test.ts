@@ -1586,6 +1586,41 @@ describe("representative read and write tool handlers", () => {
     expect(JSON.parse(result.content[0].text)).toEqual({ id: "task-3", name: "created" });
   });
 
+  test("create_task maps tags to tagNames array in script", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "task-tags", name: "Test task" });
+    await getTool("create_task")({
+      name: "Test task",
+      tags: ["Home"],
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const tagNames = ["Home"]');
+  });
+
+  test("update_task replaces tags when tags are provided", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "task-tags", name: "x" });
+    await getTool("update_task")({
+      task_id: "task-tags",
+      tags: ["Work", "Focus"],
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('"tags":["Work","Focus"]');
+    expect(script).toContain("updates.tags.forEach");
+  });
+
+  test("create_task parity matrix sample includes tagNames dueDate and estimated minutes", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "t-parity", name: "Test task" });
+    await getTool("create_task")({
+      name: "Test task",
+      tags: ["Home", "Urgent"],
+      dueDate: "2026-06-01T10:00:00Z",
+      estimatedMinutes: 30,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const tagNames = ["Home","Urgent"]');
+    expect(script).toContain('const dueDateValue = "2026-06-01T10:00:00Z"');
+    expect(script).toContain("const estimatedMinutesValue = 30");
+  });
+
   test("update_task only sends provided fields", async () => {
     runOmniJsMock.mockResolvedValueOnce({ id: "task-4", name: "updated" });
     const result = await getTool("update_task")({
@@ -1596,6 +1631,32 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('const taskId = "task-4";');
     expect(script).toContain('const updates = {"name":"updated"};');
     expect(JSON.parse(result.content[0].text)).toEqual({ id: "task-4", name: "updated" });
+  });
+
+  test("issue 7 create_task wires tag array and camelCase dates into jxa", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "t-parity", name: "Test task" });
+    await getTool("create_task")({
+      name: "Test task",
+      tags: ["Home", "Urgent"],
+      dueDate: "2026-06-01T10:00:00Z",
+      estimatedMinutes: 30,
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('const tagNames = ["Home","Urgent"];');
+    expect(script).toContain('const dueDateValue = "2026-06-01T10:00:00Z";');
+    expect(script).toContain("const estimatedMinutesValue = 30;");
+  });
+
+  test("issue 7 update_task replaces tags when tags array is provided", async () => {
+    runOmniJsMock.mockResolvedValueOnce({ id: "task-9", name: "x" });
+    await getTool("update_task")({
+      task_id: "task-9",
+      tags: ["Work", "Focus"],
+    });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    expect(script).toContain('"tags":["Work","Focus"]');
+    expect(script).toContain("if (updates.tags !== undefined)");
+    expect(script).toContain("task.removeTag(tag)");
   });
 
   test("move_task supports project, inbox default, and parent destinations", async () => {

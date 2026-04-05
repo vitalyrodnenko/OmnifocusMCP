@@ -1,9 +1,22 @@
 import json
 from typing import Any, Literal
 
+from typing_extensions import NotRequired, Required, TypedDict
+
+from omnifocus_mcp.app import mcp
 from omnifocus_mcp.jxa import escape_for_jxa, run_omnijs
 from omnifocus_mcp.registration import typed_tool
-from omnifocus_mcp.app import mcp
+
+
+class CreateTaskBatchItem(TypedDict, total=False):
+    name: Required[str]
+    project: NotRequired[str | None]
+    note: NotRequired[str | None]
+    dueDate: NotRequired[str | None]
+    deferDate: NotRequired[str | None]
+    flagged: NotRequired[bool | None]
+    tags: NotRequired[list[str] | None]
+    estimatedMinutes: NotRequired[int | None]
 
 
 def _normalize_tag_filter_mode_input(value: str) -> Literal["any", "all"]:
@@ -1752,7 +1765,7 @@ return {{
 
 @typed_tool(mcp)
 async def create_tasks_batch(
-    tasks: list[dict[str, Any]],
+    tasks: list[CreateTaskBatchItem],
 ) -> str:
     """create multiple tasks in a single omnijs call for efficiency.
 
