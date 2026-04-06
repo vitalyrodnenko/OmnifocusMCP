@@ -2414,13 +2414,21 @@ fn create_task_params_deserializes_snake_case_aliases() {
 }
 
 #[test]
-fn create_task_params_rejects_tags_as_string_typed_json() {
-    let json = r#"{"name":"x","tags":"[\"Quick\"]"}"#;
+fn create_task_params_accepts_tags_as_json_encoded_string() {
+    let json = r#"{"name":"x","tags":"[\"Quick\",\"Computer\"]"}"#;
+    let p: CreateTaskParams =
+        serde_json::from_str(json).expect("string-encoded JSON array tags should deserialize");
+    let tags = p.tags.expect("tags present").into_vec();
+    assert_eq!(tags, vec!["Quick".to_string(), "Computer".to_string()]);
+}
+
+#[test]
+fn create_task_params_rejects_malformed_tags_string() {
+    let json = r#"{"name":"x","tags":"not-a-json-array"}"#;
     let err = serde_json::from_str::<CreateTaskParams>(json).unwrap_err();
     assert!(
-        err.to_string().contains("tags") || err.to_string().contains("invalid type"),
-        "expected type error for string-typed tags: {}",
-        err
+        err.to_string().contains("tags string") || err.to_string().contains("JSON array"),
+        "err={err}"
     );
 }
 
@@ -2459,9 +2467,11 @@ fn batch_create_task_input_deserializes_snake_case_aliases() {
 }
 
 #[test]
-fn batch_create_task_input_rejects_tags_as_string_typed_json() {
+fn batch_create_task_input_accepts_tags_as_json_encoded_string() {
     let json = r#"{"name":"x","tags":"[\"Quick\"]"}"#;
-    assert!(serde_json::from_str::<BatchCreateTaskInput>(json).is_err());
+    let p: BatchCreateTaskInput =
+        serde_json::from_str(json).expect("string-encoded tags on batch item");
+    assert_eq!(p.tags.expect("tags").into_vec(), vec!["Quick".to_string()]);
 }
 
 #[test]
@@ -2498,7 +2508,8 @@ fn update_task_params_deserializes_snake_case_aliases() {
 }
 
 #[test]
-fn update_task_params_rejects_tags_as_string_typed_json() {
+fn update_task_params_accepts_tags_as_json_encoded_string() {
     let json = r#"{"task_id":"t1","tags":"[\"Quick\"]"}"#;
-    assert!(serde_json::from_str::<UpdateTaskParams>(json).is_err());
+    let p: UpdateTaskParams = serde_json::from_str(json).expect("string-encoded tags on update");
+    assert_eq!(p.tags.expect("tags").into_vec(), vec!["Quick".to_string()]);
 }

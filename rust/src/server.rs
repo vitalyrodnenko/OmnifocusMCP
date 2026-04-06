@@ -19,6 +19,7 @@ use std::sync::Arc;
 
 use crate::{
     error::OmniFocusError,
+    flexible_tags::{tags_as_opt_vec, FlexibleTagList},
     jxa::JxaRunner,
     prompts::{daily_review, inbox_processing, project_planning, weekly_review},
     resources::{
@@ -60,7 +61,7 @@ struct LimitParams {
 struct ListTasksParams {
     project: Option<String>,
     tag: Option<String>,
-    tags: Option<Vec<String>>,
+    tags: Option<FlexibleTagList>,
     #[serde(rename = "tagFilterMode", alias = "tag_filter_mode")]
     #[schemars(description = "tag matching mode: any/all. aliases: and/or (case-insensitive).")]
     tag_filter_mode: Option<String>,
@@ -103,7 +104,7 @@ struct ListTasksParams {
 struct GetTaskCountsParams {
     project: Option<String>,
     tag: Option<String>,
-    tags: Option<Vec<String>>,
+    tags: Option<FlexibleTagList>,
     #[serde(rename = "tagFilterMode", alias = "tag_filter_mode")]
     #[schemars(description = "tag matching mode: any/all. aliases: and/or (case-insensitive).")]
     tag_filter_mode: Option<String>,
@@ -170,7 +171,7 @@ struct SearchTasksParams {
     query: String,
     project: Option<String>,
     tag: Option<String>,
-    tags: Option<Vec<String>>,
+    tags: Option<FlexibleTagList>,
     #[serde(rename = "tagFilterMode", alias = "tag_filter_mode")]
     #[schemars(description = "tag matching mode: any/all. aliases: and/or (case-insensitive).")]
     tag_filter_mode: Option<String>,
@@ -219,7 +220,7 @@ pub struct CreateTaskParams {
     #[serde(rename = "deferDate", alias = "defer_date")]
     pub defer_date: Option<String>,
     pub flagged: Option<bool>,
-    pub tags: Option<Vec<String>>,
+    pub tags: Option<FlexibleTagList>,
     #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
     pub estimated_minutes: Option<i32>,
 }
@@ -234,7 +235,7 @@ struct CreateSubtaskParams {
     #[serde(rename = "deferDate", alias = "defer_date")]
     defer_date: Option<String>,
     flagged: Option<bool>,
-    tags: Option<Vec<String>>,
+    tags: Option<FlexibleTagList>,
     #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
     estimated_minutes: Option<i32>,
 }
@@ -254,7 +255,7 @@ pub struct BatchCreateTaskInput {
     #[serde(rename = "deferDate", alias = "defer_date")]
     pub defer_date: Option<String>,
     pub flagged: Option<bool>,
-    pub tags: Option<Vec<String>>,
+    pub tags: Option<FlexibleTagList>,
     #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
     pub estimated_minutes: Option<i32>,
 }
@@ -269,7 +270,7 @@ pub struct UpdateTaskParams {
     #[serde(rename = "deferDate", alias = "defer_date")]
     pub defer_date: Option<String>,
     pub flagged: Option<bool>,
-    pub tags: Option<Vec<String>>,
+    pub tags: Option<FlexibleTagList>,
     #[serde(rename = "estimatedMinutes", alias = "estimated_minutes")]
     pub estimated_minutes: Option<i32>,
 }
@@ -396,7 +397,7 @@ struct UpdateProjectParams {
     #[serde(rename = "deferDate", alias = "defer_date")]
     defer_date: Option<String>,
     flagged: Option<bool>,
-    tags: Option<Vec<String>>,
+    tags: Option<FlexibleTagList>,
     sequential: Option<bool>,
     #[serde(rename = "completedByChildren", alias = "completed_by_children")]
     completed_by_children: Option<bool>,
@@ -539,7 +540,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             self.runner.as_ref(),
             project.as_deref(),
             tag.as_deref(),
-            tags,
+            tags_as_opt_vec(tags),
             tag_filter_mode.as_deref().unwrap_or("any"),
             flagged,
             status.as_deref().unwrap_or("available"),
@@ -576,7 +577,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             self.runner.as_ref(),
             params.project.as_deref(),
             params.tag.as_deref(),
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.tag_filter_mode.as_deref().unwrap_or("any"),
             params.flagged,
             params.due_before.as_deref(),
@@ -701,7 +702,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             &params.query,
             params.project.as_deref(),
             params.tag.as_deref(),
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.tag_filter_mode.as_deref().unwrap_or("any"),
             params.flagged,
             params.status.as_deref().unwrap_or("available"),
@@ -742,7 +743,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.due_date.as_deref(),
             params.defer_date.as_deref(),
             params.flagged,
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.estimated_minutes,
         )
         .await
@@ -767,7 +768,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
                 due_date: task.due_date,
                 defer_date: task.defer_date,
                 flagged: task.flagged,
-                tags: task.tags,
+                tags: tags_as_opt_vec(task.tags),
                 estimated_minutes: task.estimated_minutes,
             })
             .collect();
@@ -792,7 +793,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.due_date.as_deref(),
             params.defer_date.as_deref(),
             params.flagged,
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.estimated_minutes,
         )
         .await
@@ -859,7 +860,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.due_date.as_deref(),
             params.defer_date.as_deref(),
             params.flagged,
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.estimated_minutes,
         )
         .await
@@ -1118,7 +1119,7 @@ impl<R: JxaRunner + Send + Sync + 'static> OmniFocusServer<R> {
             params.due_date.as_deref(),
             params.defer_date.as_deref(),
             params.flagged,
-            params.tags,
+            tags_as_opt_vec(params.tags),
             params.sequential,
             params.completed_by_children,
             params.review_interval.as_deref(),
