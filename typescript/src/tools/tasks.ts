@@ -1117,8 +1117,13 @@ return {
   addedDate: task.added ? task.added.toISOString() : null,
   changedDate: task.modified ? task.modified.toISOString() : null,
   deferDate: task.deferDate ? task.deferDate.toISOString() : null,
+  effectiveDueDate: task.effectiveDueDate ? task.effectiveDueDate.toISOString() : null,
+  effectiveDeferDate: task.effectiveDeferDate ? task.effectiveDeferDate.toISOString() : null,
+  effectiveFlagged: task.effectiveFlagged,
   completed: task.completed,
-  projectName: task.containingProject ? task.containingProject.name : null
+  projectName: task.containingProject ? task.containingProject.name : null,
+  tags: task.tags.map(tag => tag.name),
+  estimatedMinutes: task.estimatedMinutes
 };
 `.trim();
         return textResult(await runOmniJs(script));
