@@ -91,7 +91,7 @@ const normalizeProjectStatus = (project) => {
   if (rawStatus.includes("on hold") || rawStatus.includes("on_hold") || rawStatus.includes("onhold")) {
     return "on_hold";
   }
-  if (rawStatus.includes("completed")) return "completed";
+  if (rawStatus.includes("completed") || rawStatus.includes("done")) return "completed";
   if (rawStatus.includes("dropped")) return "dropped";
   return "active";
 };

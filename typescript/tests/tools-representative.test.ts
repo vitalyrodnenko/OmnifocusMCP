@@ -1322,7 +1322,7 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain('.replace(/status/g, " ")');
     expect(script).toContain('.replace(/[_-]/g, " ")');
     expect(script).toContain("on\\s*hold");
-    expect(script).toContain('if (flattened.includes("completed")) return "completed";');
+    expect(script).toContain('if (flattened.includes("completed") || flattened.includes("done")) return "completed";');
     expect(script).toContain('if (flattened.includes("dropped")) return "dropped";');
     expect(script).toContain('if (flattened.includes("active")) return "active";');
     expect(script).toContain("const nextTask = project.nextTask;");
@@ -1345,6 +1345,23 @@ describe("representative read and write tool handlers", () => {
     expect(script).toContain("nextTaskId: nextTask ? nextTask.id.primaryKey : null,");
     expect(script).toContain("nextTaskName: nextTask ? nextTask.name : null,");
     expect(JSON.parse(result.content[0].text)).toEqual([{ id: "proj-2", name: "Project 2" }]);
+  });
+
+  test.each([
+    ["[object Project.Status: Active]", "active"],
+    ["[object Project.Status: Done]", "completed"],
+    ["[object Project.Status: Dropped]", "dropped"],
+    ["[object Project.Status: OnHold]", "on_hold"],
+  ])("list_projects script normalizes project status %s to %s", async (rawStatus, expected) => {
+    runOmniJsMock.mockResolvedValueOnce([]);
+    await getTool("list_projects")({ status: "active", limit: 5 });
+    const script = String(runOmniJsMock.mock.calls[0]?.[0]);
+    const match = script.match(/const normalizeProjectStatus = \(project\) => \{[\s\S]*?\n\};/);
+    expect(match).not.toBeNull();
+    const normalizeProjectStatus = new Function(`${match![0]}\nreturn normalizeProjectStatus;`)() as (
+      project: { status: string }
+    ) => string;
+    expect(normalizeProjectStatus({ status: rawStatus })).toBe(expected);
   });
 
   test("list_projects completion filters auto-set completed status and sorting", async () => {

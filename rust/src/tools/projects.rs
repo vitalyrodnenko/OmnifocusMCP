@@ -126,7 +126,7 @@ const normalizeProjectStatus = (project) => {{
   if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("completed") || flattened.includes("done")) return "completed";
   if (flattened.includes("dropped")) return "dropped";
   if (flattened.includes("active")) return "active";
   return "active";
@@ -245,7 +245,7 @@ const normalizeProjectStatus = (project) => {{
   if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("completed") || flattened.includes("done")) return "completed";
   if (flattened.includes("dropped")) return "dropped";
   if (flattened.includes("active")) return "active";
   return "active";
@@ -297,7 +297,7 @@ const normalizeProjectStatus = (project) => {{
   if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("completed") || flattened.includes("done")) return "completed";
   if (flattened.includes("dropped")) return "dropped";
   if (flattened.includes("active")) return "active";
   return "active";
@@ -368,7 +368,7 @@ const normalizeProjectStatus = (item) => {{
   if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("completed") || flattened.includes("done")) return "completed";
   if (flattened.includes("dropped")) return "dropped";
   if (flattened.includes("active")) return "active";
   return "active";
@@ -909,7 +909,7 @@ const normalizeProjectStatus = (item) => {{
   if (flattened.includes("onhold") || /(^|\s)on\s*hold(\s|$)/.test(flattened)) {{
     return "on_hold";
   }}
-  if (flattened.includes("completed")) return "completed";
+  if (flattened.includes("completed") || flattened.includes("done")) return "completed";
   if (flattened.includes("dropped")) return "dropped";
   if (flattened.includes("active")) return "active";
   return "active";

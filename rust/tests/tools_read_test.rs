@@ -1611,7 +1611,9 @@ async fn list_projects_script_includes_stalled_and_next_task_fields() {
     assert!(script.contains(r#"/(^|\s)on\s*hold(\s|$)/.test(flattened)"#));
     assert!(script.contains(r#".replace(/[_-]/g, " ")"#));
     assert!(script.contains(r#"on\s*hold"#));
-    assert!(script.contains(r#"if (flattened.includes("completed")) return "completed";"#));
+    assert!(script.contains(
+        r#"if (flattened.includes("completed") || flattened.includes("done")) return "completed";"#
+    ));
     assert!(script.contains(r#"if (flattened.includes("dropped")) return "dropped";"#));
     assert!(script.contains(r#"if (flattened.includes("active")) return "active";"#));
     assert!(script.contains("const nextTask = project.nextTask;"));
