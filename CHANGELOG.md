@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented in this file.
 
+## [Unreleased]
+
+### Fixed
+- project status normalization now maps `Project.Status.Done` to `completed`. Previously completed projects were reported as `active`, so `list_projects` with `status: "active"` returned completed projects and `status: "completed"` returned none (issue #10). Applies to Python, TypeScript, and Rust, including the TypeScript `omnifocus://projects` resource.
+
 ## [1.1.9] - 2026-04-05
 
 ### Fixed

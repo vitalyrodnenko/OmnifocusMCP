@@ -1436,6 +1436,10 @@ async def test_list_projects_happy_path(
     assert "const nextTask = project.nextTask;" in script
     assert 'const isStalled = normalizeProjectStatus(project) === "active"' in script
     assert (
+        'if (flattened.includes("completed") || flattened.includes("done")) return "completed";'
+        in script
+    )
+    assert (
         "completionDate: project.completionDate ? project.completionDate.toISOString() : null,"
         in script
     )
@@ -1585,7 +1589,7 @@ async def test_get_project_happy_path(
     assert ".replace(/status/g, \" \")" in script
     assert ".replace(/[_-]/g, \" \")" in script
     assert "on\\s*hold" in script
-    assert 'if (flattened.includes("completed")) return "completed";' in script
+    assert 'if (flattened.includes("completed") || flattened.includes("done")) return "completed";' in script
     assert 'if (flattened.includes("dropped")) return "dropped";' in script
     assert 'if (flattened.includes("active")) return "active";' in script
     assert (
